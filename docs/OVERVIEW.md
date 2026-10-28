@@ -15,6 +15,8 @@ This release restores the original Firefox VPN Client engine by Arman. It does n
 
 Windows x64 and the .NET Framework 4.8 compiler are required.
 
+The optional developer-only BAT proxy experiment uses Python 3.11 and its standard library: `python -I tools/test-bot-proxy.py`. Python is not an application runtime dependency. The experiment does not run real bot scripts; see [its scope and limitations](bot-routing.md).
+
 ```powershell
 .\tools\get-engine.ps1 -EngineDirectory 'C:\path\to\original\core' -SourceArchive 'C:\path\to\upstream-source.zip'
 .\tools\test.ps1
