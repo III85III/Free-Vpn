@@ -1,3 +1,7 @@
+<!-- language-selector:start -->
+**🇬🇧 English** · [🇮🇷 فارسی](docs/readme/README.fa.md) · [🇸🇦 العربية](docs/readme/README.ar.md) · [🇹🇷 Türkçe](docs/readme/README.tr.md) · [🇩🇪 Deutsch](docs/readme/README.de.md) · [🇫🇷 Français](docs/readme/README.fr.md) · [🇪🇸 Español](docs/readme/README.es.md) · [🇧🇷 Português](docs/readme/README.pt.md) · [🇷🇺 Русский](docs/readme/README.ru.md) · [🇨🇳 简体中文](docs/readme/README.zh.md) · [🇯🇵 日本語](docs/readme/README.ja.md) · [🇮🇳 हिन्दी](docs/readme/README.hi.md)
+<!-- language-selector:end -->
+
 <p align="center"><img src="native/assets/brand/iii85iii-luxury.png" width="128" alt="III85III"></p>
 
 # III85III VPN
