@@ -1,0 +1,28 @@
+III85III VPN Independent — connection test candidate
+
+This preview keeps the accepted III85III desktop interface and uses the
+independent local engine. It does not replace the working old application
+or import that application's saved account.
+
+1. Run III85III VPN.exe in this folder.
+2. Open the Account page and sign in yourself. Use your Mozilla
+   account password; do not enter a Google password for a Google-only
+   account. If requested, enter the Mozilla verification code yourself.
+   No password or verification code needs to be sent in chat.
+3. First report whether account sign-in succeeds. If it fails, report
+   only the short error message, without credentials or tokens.
+4. Live routing validation follows after account access is confirmed.
+
+No personal VPS is required. This installation contacts Mozilla services
+directly. Eligibility, region restrictions, quotas and any verification
+remain enforced by the service.
+
+Each Windows user gets a separate local data directory and DPAPI account
+vault. The local API binds to authenticated 127.0.0.1 only. Selective
+routing needs Windows approval for a local network adapter; other apps
+are configured to stay direct. Real selected/direct egress is not yet
+validated. Do not treat a configuration check as that validation.
+
+The Mozilla service supports web TCP connections; this candidate does not
+support selected-app UDP or arbitrary TCP ports. Do not use it as a
+validated replacement until the live connection tests are complete.
