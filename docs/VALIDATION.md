@@ -1,8 +1,8 @@
-# Validation — restored original engine
+# Validation — III85III VPN 2.2.0
 
-The original engine components are checked against pinned SHA-256 digests and are identical to those in the working desktop 1.3.3 build. They have not been renamed internally, republished as newly authored binaries or rebuilt from the snapshot.
+The release engine is built from the owner's current Go source. Its hashes are recorded in the packaged core/manifest.json. The earlier original-engine hashes describe historical builds, not the current binaries.
 
-The interface and installer identify III85III as their publisher. The original engine's authorship, licenses and source snapshot remain included.
+The interface, engine and installer identify III85III as their publisher. Application and engine source and dependency licenses are included. Builds without an update signing key now refuse update verification and privileged TUN replacement instead of accepting empty signatures; the signing suite and three TUN signed-update tests passed after this limited correction. No private signing key is distributed.
 
 Desktop API/state regression checks and geometry checks exercise the interface, including the email/password-only first screen and separate email/TOTP verification window. These checks do not establish successful real sign-in or remote service compatibility.
 
@@ -25,8 +25,12 @@ Twenty-nine keyboard checks exercise the custom navigation, location picker, rou
 Required live checks:
 1. The previously affected user signs in and completes verification.
 2. A real remote connection succeeds within the account's normal entitlement and quota.
-3. Verify the original engine's app exclusions and connection/disconnection behavior.
+3. Verify the current engine's app exclusions and connection/disconnection behavior.
 
 This release does not provide the experimental include-only routing, DPAPI account vault or independent Node/sing-box core. A universal resolution of HTTP 406 is not claimed.
 
-The upstream core's build metadata identifies commit 88c6f0b3f2795daa09226ec3f7ecea6a220e36db with vcs.modified=true. The corresponding public snapshot is included; exact source/build reproducibility remains unverified.
+The earlier original-core snapshot and build metadata refer to historical versions. Current engine source is included under source/core in the installer.
+
+The rebuilt 2.2.0 engine passed an isolated empty-profile startup check with local-proxy-only configuration: authenticated loopback API, empty account list, disconnected status and clean shutdown. No real account was loaded, no TUN service was installed and no VPN connection was attempted by this check.
+
+Twelve new shortcut checks passed for Ctrl+1 through Ctrl+6 page navigation, context-aware Ctrl+F, selecting existing search text, Escape filter clearing and F1 Help. The current native suite totals 672 checks, including 519 layout/shortcut checks. Live account success reported by the owner has not been independently reproduced for the previously affected account.

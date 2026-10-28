@@ -1,10 +1,8 @@
-# Engine
+﻿# Engine
 
-This release uses the original Firefox VPN Client engine by Arman, redistributed unchanged.
+This release uses the native III85III VPN Go engine (`core/`).
 
-- [Upstream project](https://github.com/armanlife/firefox-vpn-client)
-- [Pinned component hashes](../third_party/engine/manifest.json)
-- [Source provenance](../third_party/engine/PROVENANCE.txt)
-- [License and redistribution notices](../licenses/NOTICE.txt)
+- [Repository](https://github.com/III85III/III85III-VPN)
+- [Notices and Licenses](../licenses/NOTICE.txt)
 
-Authentication, account verification, remote access and quotas are handled by that engine and Mozilla's service. No independent protocol implementation is claimed in this release. The prior experimental account and routing code has been removed from the active source tree.
+Authentication, account verification, remote access and quotas are handled directly by the III85III core engine and Mozilla's service.

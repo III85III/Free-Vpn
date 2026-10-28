@@ -20,5 +20,14 @@ jobs:
         shell: pwsh
         run: .\tools\test.ps1
       - name: Synthetic BAT proxy behavior
+        # The fixture never runs a user's BAT or contacts Telegram.
         shell: pwsh
         run: python -I tools/test-bot-proxy.py
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: core/go.mod
+          cache-dependency-path: core/go.sum
+      - name: Update signature checks
+        shell: pwsh
+        working-directory: core
+        run: go test ./internal/signing ./internal/tunservice -run 'Test(ASignature|OtherSignatures|ABuildWithoutAKey|ASignedUpdate|UpdatesNotSigned|TheSignature)'

@@ -1,6 +1,4 @@
-Upstream: https://github.com/armanlife/firefox-vpn-client
-Snapshot commit: 88c6f0b3f2795daa09226ec3f7ecea6a220e36db
+Project: https://github.com/III85III/Free-Vpn
 Native frontend: source/native/III85III.Vpn.cs
-Engine: unchanged installed Firefox VPN Client 1.0.4, see engine-manifest.json.
-Reproducible correspondence between installed binary and snapshot is not verified.
-License: GPL-3.0-only; all included source, notices and license must accompany redistribution.
+Core Engine: III85III Go Core, see core/
+License: GPL-3.0-only; see licenses/GPL-3.0.txt.

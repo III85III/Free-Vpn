@@ -26,6 +26,23 @@ namespace III85III.Vpn {
                     Check(!VerificationForm.NeedsCode("done"),"finished login cannot request another code");
                 }
                 form.Show();
+                var shortcut=form.GetType().GetMethod("ProcessCmdKey",BindingFlags.Instance|BindingFlags.NonPublic);
+                for(int page=0;page<6;page++){
+                    object[] keyArgs={new Message(),Keys.Control|(Keys)((int)Keys.D1+page)};
+                    Check((bool)shortcut.Invoke(form,keyArgs)&&(int)Field(form,"activePageIndex")==page,"keyboard navigation selects page "+page);
+                }
+                Check((bool)shortcut.Invoke(form,new object[]{new Message(),Keys.Control|Keys.F})&&(int)Field(form,"activePageIndex")==1,"find shortcut opens locations from other pages");
+                var locationInput=((LuxurySearchBox)Field(form,"locationSearch")).Input;
+                locationInput.Text="Germany";
+                shortcut.Invoke(form,new object[]{new Message(),Keys.Control|Keys.F});
+                Check(locationInput.Focused&&locationInput.SelectionLength==locationInput.TextLength,"find selects existing search text");
+                shortcut.Invoke(form,new object[]{new Message(),Keys.Escape});Check(locationInput.TextLength==0,"escape clears location filter");
+                shortcut.Invoke(form,new object[]{new Message(),Keys.Control|Keys.D3});
+                var appInput=((LuxurySearchBox)Field(form,"splitSearch")).Input;
+                appInput.Text="app";shortcut.Invoke(form,new object[]{new Message(),Keys.Control|Keys.F});
+                Check((int)Field(form,"activePageIndex")==2&&appInput.Focused,"find keeps app search on the app rules page");
+                shortcut.Invoke(form,new object[]{new Message(),Keys.Escape});Check(appInput.TextLength==0,"escape clears app filter");
+                shortcut.Invoke(form,new object[]{new Message(),Keys.F1});Check((int)Field(form,"activePageIndex")==5,"F1 opens connection help");
                 foreach(var size in new[]{new Size(680,520),new Size(800,600),new Size(1040,760),new Size(1280,900)}) {
                     form.ClientSize=size;
                     for(int page=0;page<6;page++) {

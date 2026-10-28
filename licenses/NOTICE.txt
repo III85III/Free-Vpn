@@ -1,33 +1,17 @@
-III85III VPN — Windows desktop client
+﻿III85III VPN — Windows desktop client
 
-APPLICATION
-III85III VPN interface and installer: III85III.
-Distributed under GPL-3.0-only; see LICENSE.
+APPLICATION & ENGINE
+III85III VPN interface, installer, and native engine: III85III.
+Source: https://github.com/III85III/Free-Vpn
+Distributed under GPL-3.0-only; see licenses/GPL-3.0.txt.
 
-NETWORK ENGINE
-Firefox VPN Client by Arman
-https://github.com/armanlife/firefox-vpn-client
-GNU General Public License version 3; see licenses/GPL-3.0.txt.
-
-These original engine files are redistributed unchanged from the locally
-installed Firefox VPN Client 1.0.4:
-  core/firefox-vpn-core.exe
-  core/firefox-vpn-tun.exe
-  core/firefox-vpn-tun.exe.sig
-SHA-256 digests are recorded in core/manifest.json.
-No engine publisher metadata, signatures or copyright notices are altered.
-
-The upstream source snapshot is included at source/upstream-source.zip;
-its commit is recorded in source/PROVENANCE.txt. The installed core reports
-that revision with vcs.modified=true. Byte-for-byte source/build
-reproducibility has not been established; no fresh source build is claimed.
-Application source, tests, build scripts and licenses are also included.
+Corresponding application and engine source is included under source/.
+Dependency license notices are included under licenses/dependencies/.
 
 FONTS AND SYSTEM COMPONENTS
 Lato: SIL Open Font License 1.1; assets/fonts/OFL.txt.
 Vazirmatn: SIL Open Font License 1.1; assets/fonts/Vazirmatn-OFL.txt.
 Microsoft .NET Framework and Windows are system dependencies.
 
-III85III is not affiliated with or endorsed by Mozilla or Arman.
 Mozilla and Firefox names and marks belong to their respective owners.
 Mozilla controls account eligibility, regions and service quotas.

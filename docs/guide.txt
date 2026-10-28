@@ -1,4 +1,4 @@
-III85III VPN
+﻿III85III VPN
 
 Open the app and add your own Mozilla account.
 Use your Mozilla password, not a Google password.
@@ -8,9 +8,11 @@ Choose a location and connection mode, then connect.
 App rules in this engine are exclusions: checked apps bypass VPN.
 No personal VPS is required. Mozilla eligibility, regions and quotas apply.
 
-The interface and installer are published as III85III.
-The original Firefox VPN Client engine by Arman is included unchanged.
-Read THIRD-PARTY-NOTICES.txt and the included GPL/source files.
+The interface, installer, and core engine are published by III85III.
+Read licenses/GPL-3.0.txt and the included source files.
 
-This is a development preview. Real sign-in for previously affected users
-and end-to-end routing still require validation.
+Shortcuts: Ctrl+1 through Ctrl+6 switch pages; Ctrl+F searches locations
+or app rules; Escape clears the current filter; F1 opens Help.
+
+Mozilla authentication and service availability depend on your account
+and network. This release does not guarantee that every sign-in succeeds.

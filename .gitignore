@@ -8,6 +8,8 @@ public-staging/
 *.zip
 *.zip.sha256
 III85III-VPN-Setup.exe
+/core/*.exe
+/core/*.sig
 *.log
 *.dpapi
 *.token

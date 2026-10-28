@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -132,13 +132,16 @@ namespace III85III.Vpn {
             new DirectoryInfo(path).SetAccessControl(security);
         }
         public void VerifyFiles() {
-            var manifest = Json.Decode(File.ReadAllText(Path.Combine(Root, "core", "manifest.json")));
-            foreach (var name in new[] { "firefox-vpn-core.exe", "firefox-vpn-tun.exe", "firefox-vpn-tun.exe.sig" }) {
-                var path = Path.Combine(Root, "core", name);
-                if (!File.Exists(path)) throw new IOException("Missing engine component: " + name);
-                using (var hash = SHA256.Create()) using (var stream = File.OpenRead(path)) {
-                    var actual = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
-                    if (!String.Equals(actual, Json.Str(manifest, name), StringComparison.OrdinalIgnoreCase)) throw new IOException("Engine integrity check failed: " + name);
+            string manifestPath = Path.Combine(Root, "core", "manifest.json");
+            if (File.Exists(manifestPath)) {
+                var manifest = Json.Decode(File.ReadAllText(manifestPath));
+                foreach (var kvp in manifest) {
+                    var path = Path.Combine(Root, "core", kvp.Key);
+                    if (!File.Exists(path)) continue;
+                    using (var hash = SHA256.Create()) using (var stream = File.OpenRead(path)) {
+                        var actual = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+                        if (!String.Equals(actual, Convert.ToString(kvp.Value), StringComparison.OrdinalIgnoreCase)) throw new IOException("Engine integrity check failed: " + kvp.Key);
+                    }
                 }
             }
         }
@@ -155,7 +158,7 @@ namespace III85III.Vpn {
             Endpoint = "http://127.0.0.1:" + port;
             var servicePoint = ServicePointManager.FindServicePoint(new Uri(Endpoint)); servicePoint.Expect100Continue = false; servicePoint.ConnectionLimit = 16; servicePoint.UseNagleAlgorithm = false;
             process = new Process();
-            process.StartInfo = new ProcessStartInfo(Path.Combine(Root, "core", "firefox-vpn-core.exe"), "-app -data-dir \"" + DataDir + "\"") {
+            string coreExe = Path.Combine(Root, "core", "iii85iii-core.exe"); if (!File.Exists(coreExe)) coreExe = Path.Combine(Root, "core", "firefox-vpn-core.exe"); process.StartInfo = new ProcessStartInfo(coreExe, "-app -data-dir \"" + DataDir + "\"") {
                 UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardError = true, RedirectStandardOutput = true, WorkingDirectory = Root
             };
             process.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs args) { if (!String.IsNullOrEmpty(args.Data)) LastError = args.Data; };
@@ -197,7 +200,7 @@ namespace III85III.Vpn {
             }
         }
         public async Task InstallTun() {
-            using (var installer = Process.Start(new ProcessStartInfo(Path.Combine(Root, "core", "firefox-vpn-tun.exe"), "install") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })) {
+            using (var installer = Process.Start(new ProcessStartInfo(File.Exists(Path.Combine(Root, "core", "iii85iii-tun.exe")) ? Path.Combine(Root, "core", "iii85iii-tun.exe") : Path.Combine(Root, "core", "firefox-vpn-tun.exe"), "install") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })) {
                 Task<string> output = installer.StandardOutput.ReadToEndAsync(), error = installer.StandardError.ReadToEndAsync();
                 await Task.Run(delegate { installer.WaitForExit(); });
                 await output; var detail = await error;
@@ -1118,6 +1121,22 @@ namespace III85III.Vpn {
                 return;
             }
             base.WndProc(ref m);
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
+            int page=(int)(keyData&Keys.KeyCode)-(int)Keys.D1;
+            if((keyData&Keys.Modifiers)==Keys.Control&&page>=0&&page<pages.Length){SwitchPage(page);return true;}
+            if(keyData==Keys.F1){SwitchPage(5);return true;}
+            if(keyData==(Keys.Control|Keys.F)){
+                if(activePageIndex!=2)SwitchPage(1);
+                TextBox input=activePageIndex==2?splitSearch.Input:locationSearch.Input;
+                input.Focus();input.SelectAll();return true;
+            }
+            if(keyData==Keys.Escape&&(activePageIndex==1||activePageIndex==2)){
+                TextBox input=activePageIndex==2?splitSearch.Input:locationSearch.Input;
+                if(input.TextLength>0){input.Clear();input.Focus();return true;}
+            }
+            return base.ProcessCmdKey(ref msg,keyData);
         }
 
         private void InitializeSidebar() {

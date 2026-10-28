@@ -6,28 +6,78 @@
 
 # Free VPN
 
-**A free Windows desktop interface for your own eligible Mozilla account.**
+### Your Mozilla connection, with a Windows app that feels at home.
 
-[**⬇ Download Windows Setup (.exe)**](https://github.com/III85III/Free-Vpn/releases)
+Free VPN is a free Windows desktop application by **III85III**. Sign in with your own eligible Mozilla account, choose a location and manage your connection from one place. No personal VPS or subscription to this application is required. Mozilla determines whether your account can use the service and what quota applies.
 
-One installer. English interface. No personal VPS required.
+[Getting started](#getting-started) · [Features](#features) · [Connection modes](#connection-modes) · [Privacy](#privacy-and-account-data) · [FAQ](#faq) · [Build](#build-and-validation)
 
-The III85III application and installer use the existing network engine. Required component licenses, credits and source are included with the download.
+## Getting started
 
-- Familiar III85III interface, server latency sorting and tray controls.
-- Sign in with email and your **Mozilla password**; a separate window opens if a verification code is required.
-- System VPN / proxy modes and **app exclusions**: checked apps bypass VPN in this engine. Include-only routing is not provided by this release.
-- Each user adds their own account. Mozilla controls service eligibility, regions and quota.
+1. Open the repository's [latest release](https://github.com/III85III/Free-Vpn/releases/latest) and download **III85III-VPN-Setup.exe**, the single Windows installer.
+2. Run Setup, then open **III85III VPN**. The interface starts in English.
+3. Add your own Mozilla account using your Mozilla password. If Mozilla requests a verification code, enter it in the separate code window.
+4. Choose your connection mode and location, then connect. Use **Check connection** to inspect the connection result.
 
-> **Development preview.** The restored engine's files match the working desktop engine byte for byte. Successful login for the previously affected user and end-to-end routing still require validation; no universal fix for HTTP 406 is claimed.
+Windows x64 is the supported platform. The installer keeps your saved account data separate from the application, so replacing application files does not intentionally remove your accounts. The download contains no preconfigured user account.
 
-<details>
-<summary>Setup, privacy, licenses and source</summary>
+## Features
 
-Run the installer, open the app and add your own Mozilla account. Never enter a Google password in place of a Mozilla password. Installation keeps account data separate from application files.
+| Feature | What it does |
+| --- | --- |
+| Location search | Find a server by its country name or code. |
+| Latency sorting | Measure locations when you choose and sort successful measurements from low to high. Unknown or failed measurements stay below measured results. |
+| Quick connect | Use the selected location without starting a new full location scan. |
+| App rules | Choose applications that should connect directly while whole-computer mode is active. |
+| Multiple accounts | Add and manage your own accounts and inspect the quota reported by the service. |
+| Email privacy | Hide account email addresses in the interface when sharing your screen. |
+| Tray controls | Keep the app available from the Windows notification area. |
+| Connection help | Inspect the exit result and local diagnostics without a slow log request blocking the status display. |
+| Keyboard navigation | Use Enter/Space on custom controls and jump between pages with Ctrl+1 through Ctrl+6. |
+| Search shortcuts | Press Ctrl+F to search locations or the current app list; Escape clears the filter. F1 opens Help. |
+| Installer recovery | Prepare an update before replacing the previous installation, with rollback if directory promotion fails. |
 
-[Guide](../docs/OVERVIEW.md) · [Validation](../docs/VALIDATION.md) · [Privacy](../docs/PRIVACY.md) · [Engine and licenses](../licenses/NOTICE.txt) · [Roadmap](../docs/ROADMAP.md)
+Latency measurements describe response time at the moment of testing; they are not a guarantee of download speed.
 
-Windows x64 only. Web TCP service limitations apply; arbitrary UDP and a verified kill switch are not provided. Other platforms and app stores are future plans.
+## Connection modes
 
-</details>
+| Mode | Intended use |
+| --- | --- |
+| Whole computer | Route supported traffic through the VPN, with your app exclusions applied. |
+| Windows system proxy | Configure the Windows proxy settings used by compatible browsers and applications. Applications may ignore these settings. |
+| Local proxy only | Expose local HTTP/SOCKS proxy endpoints for applications configured to use them, without changing system routing. |
+
+**App rules are exclusions:** checked applications bypass the VPN. This version does not provide enforced routing where only selected applications use the VPN. A BAT launcher or proxy environment alone cannot guarantee that every Telegram bot connection is proxied. That feature remains under development.
+
+## Privacy and account data
+
+- Each user signs in with their own account. Account sessions stay in that Windows user's local profile; they are not bundled into the installer or repository.
+- This application does not require an III85III account or a personal VPS. Mozilla authentication and network service access still contact the relevant service providers.
+- Use your **Mozilla password**, not your Google password. Signing in to Firefox in a browser does not automatically sign this application in.
+- Local diagnostic logs may contain connection information. Review them before sharing; hiding emails in the interface does not sanitize a raw log export.
+- Dependencies and fonts retain their licenses, included with the application.
+
+## FAQ
+
+**Is it free?** The application is free. Service eligibility, regional availability, quotas and renewal dates come from Mozilla. Installing this app does not create an unlimited entitlement or bypass those limits.
+
+**Does it work on Android, iOS, macOS or Linux?** This release is Windows x64. Other platforms and app-store publication are future plans; no mobile application is included.
+
+**Does it guarantee every application or protocol will work?** No. Service restrictions apply. Arbitrary UDP, a verified kill switch and enforced Telegram-bot-only routing are not promised by this release.
+
+**Will it fix every Mozilla sign-in error?** No. The automated tests validate local request handling and interface behavior; they do not establish that every account, challenge or remote service response succeeds. A universal HTTP 406 fix is not claimed.
+
+**How are engine updates handled?** Builds without a configured signing key refuse signed-update operations. Update this release through its installer; an unsigned file is not accepted as a verified update to the privileged TUN service.
+
+## Build and validation
+
+The source includes the C# Windows interface, Go engine, build scripts and local regression fixtures. Build tools are developer dependencies; users install the application through Setup.
+
+```powershell
+.\tools\test.ps1
+go -C core test ./internal/signing ./internal/tunservice
+```
+
+The regression suites cover connection-state interpretation, responsive layout, sign-in cancellation, separate verification prompts, latency actions, log polling, keyboard access and installer rollback. Generated BAT fixtures separately test local HTTP/HTTPS proxy behavior, including a direct control path. These checks do not replace live account and end-to-end tunnel validation.
+
+[Validation details](../docs/VALIDATION.md) · [User guide](../docs/OVERVIEW.md) · [Privacy details](../docs/PRIVACY.md) · [License notices](../licenses/NOTICE.txt)
