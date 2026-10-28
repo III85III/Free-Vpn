@@ -17,16 +17,9 @@ internal static class Installer {
         if(MessageBox.Show("Install III85III VPN for this Windows user?\n\nEnglish is the default language. Your account data is kept separately.\n\nThe package includes the required components and licenses.","III85III VPN Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 0;
         try{
             string root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","III85III VPN");
-            Directory.CreateDirectory(root);
-            var security=new DirectorySecurity();var sid=WindowsIdentity.GetCurrent().User;security.SetAccessRuleProtection(true,false);security.AddAccessRule(new FileSystemAccessRule(sid,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));new DirectoryInfo(root).SetAccessControl(security);
-            string prefix=Path.GetFullPath(root)+Path.DirectorySeparatorChar;
-            using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("payload"))using(var archive=new ZipArchive(stream,ZipArchiveMode.Read)){
-                foreach(var entry in archive.Entries){
-                    string name=entry.FullName.Replace('/',Path.DirectorySeparatorChar).Replace('\\',Path.DirectorySeparatorChar);int first=name.IndexOf(Path.DirectorySeparatorChar);if(first<0)continue;name=name.Substring(first+1);if(name.Length==0)continue;
-                    string output=Path.GetFullPath(Path.Combine(root,name));if(!output.StartsWith(prefix,StringComparison.OrdinalIgnoreCase))throw new IOException("Invalid package path.");
-                    if(String.IsNullOrEmpty(entry.Name)){Directory.CreateDirectory(output);continue;}Directory.CreateDirectory(Path.GetDirectoryName(output));using(var input=entry.Open())using(var target=File.Create(output))input.CopyTo(target);
-                }
-            }
+            using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("payload"))InstallPackage.Install(stream,root,delegate(string stage){
+                var security=new DirectorySecurity();var sid=WindowsIdentity.GetCurrent().User;security.SetAccessRuleProtection(true,false);security.AddAccessRule(new FileSystemAccessRule(sid,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));new DirectoryInfo(stage).SetAccessControl(security);
+            });
             string exe=Path.Combine(root,"III85III VPN.exe");if(!File.Exists(exe))throw new IOException("Incomplete package.");
             CreateShortcut(exe,root);
             if(MessageBox.Show("Installation complete. Open the preview now?\n\nLocation: "+root,"III85III VPN Setup",MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes)Process.Start(new ProcessStartInfo(exe){UseShellExecute=true,WorkingDirectory=root});

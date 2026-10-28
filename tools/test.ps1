@@ -10,3 +10,7 @@ foreach($suite in @(@{file='Tests.cs';main='III85III.Vpn.Tests';name='CoreTests'
  & "$out\$($suite.name).exe" | Tee-Object -FilePath "$out\$($suite.name).txt"
  if($LASTEXITCODE -ne 0){throw 'Native test failed.'}
 }
+& $compiler /nologo /codepage:65001 /utf8output /target:exe /platform:x64 "/out:$out\InstallerTests.exe" /reference:System.dll /reference:System.Core.dll /reference:System.IO.Compression.dll "$root\native\InstallPackage.cs" "$root\native\InstallerTests.cs"
+if($LASTEXITCODE -ne 0){throw 'Installer test compilation failed.'}
+& "$out\InstallerTests.exe" | Tee-Object -FilePath "$out\InstallerTests.txt"
+if($LASTEXITCODE -ne 0){throw 'Installer tests failed.'}

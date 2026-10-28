@@ -18,6 +18,8 @@ Four Windows BAT/Python process-environment experiments pass using generated scr
 
 Fourteen polling checks use concurrent loopback HTTP fixtures: hidden diagnostics generate no log calls, status continues while a log response is held, a diagnostic HTTP failure does not change verified connection state, errors do not echo private response details, and cursor-based log batches skip already displayed entries. This measures frontend request behavior and responsiveness, not VPN throughput.
 
+Thirty-three installer checks use generated ZIPs and disposable folders. Missing executables, mixed archive roots, traversal paths, duplicate filenames and file/directory conflicts leave the existing installation intact. The complete replacement is prepared before switching directories; an injected promotion failure verifies rollback. Successful replacement removes obsolete application files while separate fixture data remains unchanged. The installer compiles independently. These checks do not run an installed application, change the owner's core, validate a final release payload, or simulate power loss during the directory switch.
+
 Required live checks:
 1. The previously affected user signs in and completes verification.
 2. A real remote connection succeeds within the account's normal entitlement and quota.
