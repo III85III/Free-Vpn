@@ -1,5 +1,12 @@
 # Changelog
 
+## Frontend reliability
+
+- Measure server latency only on an explicit click; opening the app or Locations no longer starts a background scan.
+- Fix the manual measurement button being blocked by the general action lock.
+- Keep connection controls available while latency is measured, prevent duplicate scans and report measurement failures.
+- Verify this with 12 real loopback HTTP/UI regression checks. No VPN throughput improvement is claimed.
+
 ## 2.2.0-preview.1
 
 - Restore the unchanged original Firefox VPN Client engine used by the working desktop version.

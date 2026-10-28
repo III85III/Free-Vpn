@@ -851,7 +851,7 @@ namespace III85III.Vpn {
         readonly LuxuryButton antigravityFilterBtn = new LuxuryButton { Text = "Antigravity Safe", Variant = ButtonVariant.Ghost, Width = 140 };
         readonly List<ServerChoice> allLocations = new List<ServerChoice>();
         bool antigravityFilterOnly;
-        DateTime lastAutoPing = DateTime.MinValue;
+        bool pingScanBusy;
 
         // Split Tunnel View Controls
         readonly LuxurySearchBox splitSearch = new LuxurySearchBox("Search applications…");
@@ -951,7 +951,7 @@ namespace III85III.Vpn {
             antigravityFilterBtn.Click += delegate { ToggleAntigravityFilter(); };
             selectedLocationCard.Click += delegate { SwitchPage(1); };
 
-            pingBtn.Click += async delegate { await Run(async delegate { await AutoPingLocations(true); }); };
+            pingBtn.Click += async delegate { await MeasureLocationLatency(); };
             applyLocationBtn.Click += async delegate { await Run(ApplySelectedLocation); };
             locationSearch.Input.TextChanged += delegate { FilterLocations(); };
             sortPingBtn.Click += delegate {
@@ -1021,7 +1021,6 @@ namespace III85III.Vpn {
                     await RefreshAccounts();
                     try {
                         await LoadLocations();
-                        var _ = AutoPingLocations(true);
                     } catch { }
                 } catch (Exception e) {
                     dialSubtext.Text = "Engine error: " + e.Message;
@@ -1097,9 +1096,6 @@ namespace III85III.Vpn {
                 if (pages[i] != null) pages[i].Visible = (i == index);
             }
             ArrangeResponsive();
-            if (index == 1 && ready && (DateTime.UtcNow - lastAutoPing).TotalSeconds > 45) {
-                var _ = AutoPingLocations();
-            }
             if (index == 2 && ready && !splitLoaded) {
                 var _ = Run(LoadSplitApps);
             }
@@ -1735,7 +1731,7 @@ namespace III85III.Vpn {
             refreshQuotaBtn.Enabled = enabled;
             removeAccountBtn.Enabled = enabled;
             applyLocationBtn.Enabled = enabled;
-            pingBtn.Enabled = enabled;
+            pingBtn.Enabled = enabled && !pingScanBusy;
             splitSave.Enabled = enabled;
             splitReload.Enabled = enabled;
             splitBrowse.Enabled = enabled;
@@ -1835,16 +1831,19 @@ namespace III85III.Vpn {
                 MaskEmail(email) + " · " + (Json.Bool(usage, "unlimited") ? "Unlimited" : Theme.Bytes(Json.Num(usage, "remaining_bytes")) + " remaining");
         }
 
-        private async Task AutoPingLocations(bool force = false) {
-            if (!ready || busy || closing) return;
-            if (!force && (DateTime.UtcNow - lastAutoPing).TotalSeconds < 45) return;
-            lastAutoPing = DateTime.UtcNow;
+        private async Task MeasureLocationLatency() {
+            if (!ready || busy || closing || pingScanBusy) return;
+            pingScanBusy = true;
+            pingBtn.Enabled = false;
             pingBtn.Text = "Pinging…";
             try {
-                await engine.Api("POST", "/api/locations/ping", new { codes = new string[0] }, 20000);
-                await LoadLocations();
-            } catch { }
-            finally { pingBtn.Text = "Measure Latency"; }
+                await engine.Api("POST", "/api/locations/ping", new { codes = new string[0] }, 60000);
+                if (!closing) await LoadLocations();
+            } catch (Exception error) { if (!closing) dialSubtext.Text = error.Message; }
+            finally {
+                pingScanBusy = false;
+                if (!closing) { pingBtn.Text = "Measure Latency"; pingBtn.Enabled = ready && !busy; }
+            }
         }
 
         private async Task ConnectAntigravity() {
