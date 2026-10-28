@@ -479,8 +479,8 @@ namespace III85III.Vpn {
             using (var brush = new SolidBrush(dotColor)) g.FillEllipse(brush, 16, dotY, 8, 8);
 
             // Draw status label
-            using (var brush = new SolidBrush(Theme.TextPrimary)) {
-                var sf = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
+            using (var brush = new SolidBrush(Theme.TextPrimary))
+            using (var sf = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center }) {
                 g.DrawString(StatusText, Font, brush, new Rectangle(32, 0, Width - 36, Height), sf);
             }
         }
@@ -561,8 +561,7 @@ namespace III85III.Vpn {
             var iconBox = new Rectangle(14, 11, 36, 36);
             using (var bBrush = new SolidBrush(Theme.Sidebar)) Theme.FillRounded(g, bBrush, iconBox, 8);
             using (var bPen = new Pen(Theme.Border, 1f)) Theme.DrawRounded(g, bPen, iconBox, 8);
-            using (var font = Theme.Font(11f, FontStyle.Regular)) using (var brush = new SolidBrush(Theme.Accent)) {
-                var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            using (var brush = new SolidBrush(Theme.Accent)) {
                 g.DrawEllipse(Pens.Gray, 24, 21, 16, 16);
                 g.DrawLine(Pens.Gray, 24, 29, 40, 29);
                 g.DrawEllipse(Pens.Gray, 28, 21, 8, 16);
@@ -581,8 +580,8 @@ namespace III85III.Vpn {
             }
 
             // Latency badge and chevron on right
-            using (var latFont = Theme.Mono(9f, FontStyle.Regular)) using (var brush = new SolidBrush(Theme.TextSecondary)) {
-                var sf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
+            using (var latFont = Theme.Mono(9f, FontStyle.Regular)) using (var brush = new SolidBrush(Theme.TextSecondary))
+            using (var sf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center }) {
                 g.DrawString(Latency + "  ›", latFont, brush, new Rectangle(Width - 110, 0, 96, Height), sf);
             }
             DrawKeyboardFocus(g);
@@ -673,14 +672,14 @@ namespace III85III.Vpn {
                 DrawKeyboardFocus(g);
                 return;
             }
-            using (var iconFont = Theme.Font(10.5f, FontStyle.Regular)) using (var brush = new SolidBrush(isSelected ? Theme.Accent : fg)) {
-                var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            using (var brush = new SolidBrush(isSelected ? Theme.Accent : fg)) {
                 g.FillEllipse(brush, 20, Height / 2 - 2, 4, 4);
             }
 
-            using (var brush = new SolidBrush(fg)) {
-                var sf = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
-                g.DrawString(Title, isSelected ? Theme.Font(9.5f, FontStyle.Bold) : Font, brush, new Rectangle(38, 0, Width - 42, Height), sf);
+            using (var brush = new SolidBrush(fg))
+            using (var selectedFont = isSelected ? Theme.Font(9.5f, FontStyle.Bold) : null)
+            using (var sf = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center }) {
+                g.DrawString(Title, selectedFont ?? Font, brush, new Rectangle(38, 0, Width - 42, Height), sf);
             }
             DrawKeyboardFocus(g);
         }
@@ -1316,8 +1315,9 @@ namespace III85III.Vpn {
 
                 var nameRect = new RectangleF(18, r.Y + 12, Math.Max(80, r.Width - 110), 22);
                 using (var sf = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap, LineAlignment = StringAlignment.Center }) {
-                    using (var brush = new SolidBrush(selected ? Theme.TextPrimary : Theme.TextSecondary)) {
-                        g.DrawString(item.Name, Theme.Font(9.5f, selected ? FontStyle.Bold : FontStyle.Regular), brush, nameRect, sf);
+                    using (var brush = new SolidBrush(selected ? Theme.TextPrimary : Theme.TextSecondary))
+                    using (var font = Theme.Font(9.5f, selected ? FontStyle.Bold : FontStyle.Regular)) {
+                        g.DrawString(item.Name, font, brush, nameRect, sf);
                     }
                 }
 
