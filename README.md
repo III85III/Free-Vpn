@@ -8,7 +8,7 @@
 
 **A free Windows client for your own eligible Mozilla account.**
 
-[**⬇ Download Windows Setup (.exe)**](https://github.com/III85III/III85III-VPN/releases/download/v2.1.0-preview.3/III85III-VPN-Setup.exe)
+[**⬇ Download Windows Setup (.exe)**](https://github.com/III85III/III85III-VPN/releases)
 
 One installer includes the application and required components. **English by default**; Persian is available in Settings.
 
