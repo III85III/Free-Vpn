@@ -2,6 +2,10 @@
 
 ## Frontend reliability
 
+- Fetch diagnostic logs only while Help is open and refresh them independently of connection status.
+- A delayed or failed log request no longer holds the status loop or resets a verified connection display. Log batches are appended once and stale entries are skipped.
+- Fourteen loopback HTTP/UI checks cover hidden-page request counts, delayed/failed diagnostics, connection state, duplicate requests and log cursor updates.
+
 - Add a keyboard-reachable Show/Hide password control with descriptive accessibility names and preserved text selection.
 - Mask a revealed password immediately on submit, disable reveal while the request is pending and restore correction controls after failure.
 

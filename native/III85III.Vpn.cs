@@ -892,6 +892,7 @@ namespace III85III.Vpn {
         Dictionary<string, object> lastStatus = new Dictionary<string, object>();
         bool ready, polling, busy, closing, allowClose, testing;
         DateTime nextLogs = DateTime.MinValue;
+        bool logsPolling, logsErrorReported;
         long lastLogId;
 
         public MainForm(Engine engine, bool layoutOnly = false) {
@@ -1096,6 +1097,7 @@ namespace III85III.Vpn {
                 if (pages[i] != null) pages[i].Visible = (i == index);
             }
             ArrangeResponsive();
+            if (index == 5 && ready) { var _ = RefreshLogs(true); }
             if (index == 2 && ready && !splitLoaded) {
                 var _ = Run(LoadSplitApps);
             }
@@ -1937,17 +1939,8 @@ namespace III85III.Vpn {
                 if (egress.Count > 0) exitInfoLabel.Text = "Exit IPv4: " + Json.Str(egress, "ipv4") + "  ·  " + Json.Str(egress, "country_name");
                 tray.Text = "III85III VPN · " + (connected ? "Connected" : "Disconnected");
 
-                // Stream engine logs
-                if (DateTime.UtcNow >= nextLogs) {
-                    nextLogs = DateTime.UtcNow.AddSeconds(4);
-                    var logEntries = await engine.Api("GET", "/api/logs?after=" + lastLogId, null, 4000);
-                    foreach (var entry in Json.Rows(logEntries, "entries")) {
-                        long id = (long)Json.Num(entry, "id");
-                        if (id > lastLogId) lastLogId = id;
-                        logsBox.AppendText(Json.Str(entry, "time") + "  " + Json.Str(entry, "level") + "  " + Json.Str(entry, "message") + Environment.NewLine);
-                    }
-                    if (logsBox.TextLength > 90000) logsBox.Text = logsBox.Text.Substring(logsBox.TextLength - 60000);
-                }
+                // Diagnostics must not delay or invalidate connection status.
+                var logsRefresh = RefreshLogs();
 
                 if (!busy) SetActions(true);
                 if (!testing && !busy && warmup.ShouldTest(lastStatus, DateTime.UtcNow)) {
@@ -1957,6 +1950,31 @@ namespace III85III.Vpn {
                 dial.State = DialState.Disconnected;
                 statusPill.State = DialState.Disconnected;
             } finally { polling = false; }
+        }
+
+        private async Task RefreshLogs(bool force = false) {
+            if (!ready || closing || IsDisposed || logsPolling || activePageIndex != 5) return;
+            if (!force && DateTime.UtcNow < nextLogs) return;
+            logsPolling = true; nextLogs = DateTime.UtcNow.AddSeconds(4);
+            try {
+                var entries = await engine.Api("GET", "/api/logs?after=" + lastLogId, null, 4000);
+                if (closing || IsDisposed || logsBox.IsDisposed) return;
+                var text = new StringBuilder(); long newest = lastLogId;
+                foreach (var entry in Json.Rows(entries, "entries")) {
+                    long id = (long)Json.Num(entry, "id");
+                    if (id <= lastLogId) continue;
+                    newest = Math.Max(newest, id);
+                    text.Append(Json.Str(entry, "time")).Append("  ").Append(Json.Str(entry, "level")).Append("  ").Append(Json.Str(entry, "message")).AppendLine();
+                }
+                if (text.Length > 0) logsBox.AppendText(text.ToString());
+                lastLogId = newest; logsErrorReported = false;
+                if (logsBox.TextLength > 90000) logsBox.Text = logsBox.Text.Substring(logsBox.TextLength - 60000);
+            } catch {
+                if (!closing && !IsDisposed && !logsBox.IsDisposed && !logsErrorReported) {
+                    logsBox.AppendText("Diagnostics couldn't refresh. Connection status will keep updating." + Environment.NewLine);
+                    logsErrorReported = true;
+                }
+            } finally { logsPolling = false; }
         }
 
         private async Task TestConnection(bool show) {

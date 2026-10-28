@@ -16,6 +16,8 @@ Ten additional credential-usability checks cover password reveal/masking, access
 
 Four Windows BAT/Python process-environment experiments pass using generated scripts and loopback HTTP servers only. They show both a proxy-aware request taking its configured proxy path and a raw socket bypassing those same environment settings. The parent environment is unchanged. This validates a limitation, not a completed Telegram-bots-only feature; see [bot routing status](bot-routing.md).
 
+Fourteen polling checks use concurrent loopback HTTP fixtures: hidden diagnostics generate no log calls, status continues while a log response is held, a diagnostic HTTP failure does not change verified connection state, errors do not echo private response details, and cursor-based log batches skip already displayed entries. This measures frontend request behavior and responsiveness, not VPN throughput.
+
 Required live checks:
 1. The previously affected user signs in and completes verification.
 2. A real remote connection succeeds within the account's normal entitlement and quota.
