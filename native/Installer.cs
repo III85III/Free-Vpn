@@ -1,0 +1,34 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Reflection;
+using System.Security.AccessControl;
+using System.Security.Principal;
+using System.Windows.Forms;
+[assembly:AssemblyTitle("III85III VPN Setup")]
+[assembly:AssemblyCompany("III85III")]
+[assembly:AssemblyProduct("III85III VPN")]
+[assembly:AssemblyVersion("2.1.0.2")]
+internal static class Installer {
+    [STAThread]static int Main(){
+        Application.EnableVisualStyles();
+        if(MessageBox.Show("Install the III85III VPN development preview for this Windows user?\n\nEnglish is the default language. Mozilla sign-in is still under investigation. Your account data is kept separately.\n\nThis package includes the required runtime and open-source licenses.","III85III VPN Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 0;
+        try{
+            string root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN Preview","2.1.0-preview.2");
+            Directory.CreateDirectory(root);
+            var security=new DirectorySecurity();var sid=WindowsIdentity.GetCurrent().User;security.SetAccessRuleProtection(true,false);security.AddAccessRule(new FileSystemAccessRule(sid,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));new DirectoryInfo(root).SetAccessControl(security);
+            string prefix=Path.GetFullPath(root)+Path.DirectorySeparatorChar;
+            using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("payload"))using(var archive=new ZipArchive(stream,ZipArchiveMode.Read)){
+                foreach(var entry in archive.Entries){
+                    string name=entry.FullName.Replace('/',Path.DirectorySeparatorChar).Replace('\\',Path.DirectorySeparatorChar);int first=name.IndexOf(Path.DirectorySeparatorChar);if(first<0)continue;name=name.Substring(first+1);if(name.Length==0)continue;
+                    string output=Path.GetFullPath(Path.Combine(root,name));if(!output.StartsWith(prefix,StringComparison.OrdinalIgnoreCase))throw new IOException("Invalid package path.");
+                    if(String.IsNullOrEmpty(entry.Name)){Directory.CreateDirectory(output);continue;}Directory.CreateDirectory(Path.GetDirectoryName(output));using(var input=entry.Open())using(var target=File.Create(output))input.CopyTo(target);
+                }
+            }
+            string exe=Path.Combine(root,"III85III VPN.exe");if(!File.Exists(exe))throw new IOException("Incomplete package.");
+            if(MessageBox.Show("Installation complete. Open the preview now?\n\nLocation: "+root,"III85III VPN Setup",MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes)Process.Start(new ProcessStartInfo(exe){UseShellExecute=true,WorkingDirectory=root});
+            return 0;
+        }catch(Exception){MessageBox.Show("Installation could not finish. Close any running copy of this preview and try again. Your saved accounts were not removed.","III85III VPN Setup",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
+    }
+}

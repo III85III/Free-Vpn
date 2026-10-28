@@ -23,7 +23,7 @@ III85III VPN は、サービスの利用条件を満たす Mozilla アカウン�
 
 [⬇ Windows x64 · Releases](https://github.com/III85III/III85III-VPN/releases)
 
-1. Releases から Windows x64 ZIP を取得し、フォルダー全体を展開します。
+1. Releases から III85III-VPN-Setup.exe を取得して実行します。必要なファイルは自動展開されます。
 2. III85III VPN.exe を実行します。起動時は未接続です。
 3. 自分の Mozilla アカウントを追加し、認証は自分で行ってください。Google のパスワードをアプリに入力しないでください。
 4. アプリを選択して保存し、接続先を選んで接続します。Windows のルーティング許可が表示されたら確認してください。
@@ -36,7 +36,7 @@ III85III VPN は、サービスの利用条件を満たす Mozilla アカウン�
 
 Node テスト 25 件、デスクトップのコア確認 44 件、レイアウト確認 891 件に合格しました。実接続試験の代わりにはなりません。Android、iOS、macOS、Linux、ストア公開は将来の計画です。
 
-[詳細ガイドとソースからのビルド](../../README.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[詳細ガイドとソースからのビルド](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

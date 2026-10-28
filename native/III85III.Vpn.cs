@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("Independent III85III selected-application VPN client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.1.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.1.0.0")]
+[assembly: System.Reflection.AssemblyVersion("2.1.0.2")]
+[assembly: System.Reflection.AssemblyFileVersion("2.1.0.2")]
 
 namespace III85III.Vpn {
     internal sealed class AppBypass {

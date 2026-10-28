@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs');const path=require('node:path');
-const defaults=()=>({apps:[],selected:'REC',favorites:[],recent:[],autoReconnect:true,language:'fa',theme:'dark',closeToTray:true});
+const defaults=()=>({apps:[],selected:'REC',favorites:[],recent:[],autoReconnect:true,language:'en',theme:'dark',closeToTray:true});
 function code(value){if(typeof value!=='string'||!/^([A-Z]{2}|REC)$/.test(value))throw new Error('Invalid location code.');return value;}
 function patch(current,input){
   if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Invalid preferences.');

@@ -38,6 +38,7 @@ Get-ChildItem -LiteralPath "$root\native" -File | Copy-Item -Destination "$out\s
 if($DesktopSource){Copy-Item -LiteralPath $DesktopSource,(Join-Path (Split-Path -Parent $DesktopSource) 'DesktopFeatures.cs') -Destination "$out\source\native" -Force}
 Copy-Item -LiteralPath "$root\native\assets" -Destination "$out\source\native" -Recurse -Force
 Copy-Item -LiteralPath "$root\native\assets" -Destination $out -Recurse -Force
+if(Test-Path -LiteralPath "$root\docs"){Copy-Item -LiteralPath "$root\docs" -Destination $out -Recurse -Force;Copy-Item -LiteralPath "$root\docs" -Destination "$out\source" -Recurse -Force}
 Get-ChildItem -LiteralPath "$root\tools" -File | Copy-Item -Destination "$out\source\tools" -Force
 Get-ChildItem -LiteralPath "$root\test" -File | Copy-Item -Destination "$out\source\test" -Force
 Get-ChildItem -LiteralPath "$root\src" -Filter '*.cjs' -File | Copy-Item -Destination "$out\source\src" -Force

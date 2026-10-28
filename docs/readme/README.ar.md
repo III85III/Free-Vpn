@@ -25,7 +25,7 @@ III85III VPN عميل محلي للحسابات المؤهلة لدى Mozilla. �
 
 [⬇ Windows x64 · Releases](https://github.com/III85III/III85III-VPN/releases)
 
-1. نزّل ZIP الخاص بـ Windows x64 من Releases واستخرج المجلد كاملاً.
+1. نزّل III85III-VPN-Setup.exe من Releases وشغّله؛ يفك المكونات المطلوبة تلقائياً.
 2. شغّل III85III VPN.exe؛ يبدأ دون اتصال.
 3. أضف حساب Mozilla الخاص بك وأكمل التحقق بنفسك. لا تدخل كلمة مرور Google في التطبيق.
 4. حدد التطبيقات واحفظها، اختر الموقع ثم اتصل وراجع طلب إذن التوجيه من Windows إن ظهر.
@@ -38,7 +38,7 @@ III85III VPN عميل محلي للحسابات المؤهلة لدى Mozilla. �
 
 نجح 25 اختبار Node و44 فحصاً لنواة سطح المكتب و891 فحص تخطيط. لا تعوض هذه اختبارات الاتصال الحقيقي. Android وiOS وmacOS وLinux ومتاجر التطبيقات خطط مستقبلية.
 
-[الدليل الكامل والبناء من المصدر](../../README.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[الدليل الكامل والبناء من المصدر](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

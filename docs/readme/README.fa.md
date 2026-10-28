@@ -25,7 +25,7 @@ III85III VPN یک کلاینت محلی برای حساب‌های واجد شر
 
 [⬇ Windows x64 · Releases](https://github.com/III85III/III85III-VPN/releases)
 
-1. فایل ZIP ویندوز x64 را از Releases بگیر و کامل استخراج کن.
+1. فایل III85III-VPN-Setup.exe را از Releases بگیر و اجرا کن؛ اجزای همراه را خودش استخراج می‌کند.
 2. III85III VPN.exe را اجرا کن؛ برنامه ابتدا قطع است.
 3. حساب موزیلای خودت را اضافه کن و تأیید ورود را شخصاً انجام بده. رمز گوگل را در برنامه وارد نکن.
 4. برنامه‌ها را انتخاب و ذخیره کن، سرور را انتخاب کن و وصل شو؛ اگر ویندوز اجازهٔ مسیریابی خواست، بررسی و تأیید کن.
@@ -38,7 +38,7 @@ III85III VPN یک کلاینت محلی برای حساب‌های واجد شر
 
 ۲۵ تست Node، ۴۴ بررسی هستهٔ دسکتاپ و ۸۹۱ بررسی چیدمان موفق شده‌اند؛ این‌ها جای تست اتصال واقعی را نمی‌گیرند. Android، iOS، macOS، Linux و انتشار در فروشگاه‌ها فعلاً برنامهٔ آینده‌اند.
 
-[راهنمای کامل و ساخت از سورس](../../README.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[راهنمای کامل و ساخت از سورس](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

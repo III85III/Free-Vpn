@@ -17,6 +17,13 @@ test('official session bearer authenticates email-code verification',async()=>{
   assert.equal((await client.verify('123456','email')).step,'done');
   assert.ok(request.url.endsWith('/session/verify_code'));assert.equal(request.options.headers.Authorization,'Bearer fxs_'+'ab'.repeat(32));
 });
+
+test('account refusals identify the failing stage and safe Mozilla errno without reflecting service data',async()=>{
+  for(const errno of [103,107,120,125,169]){
+    const client=new MozillaClient({request:async()=>new Response(JSON.stringify({errno,message:'private@example.com secret-token',email:'private@example.com'}),{status:400})});
+    await assert.rejects(client.signIn('user@example.com','test password'),e=>e.message.startsWith('Sign-in: ')&&e.message.includes('[Mozilla '+errno+']')&&!e.message.includes('private@example.com')&&!e.message.includes('secret-token'));
+  }
+});
 test('quota and entitlement failures are enforced',async()=>{
   for(const status of [401,403,429,451]){
     const client=new MozillaClient({request:async()=>new Response('{}',{status})});

@@ -5,6 +5,8 @@ test-results/
 research/
 public-staging/
 *.zip
+*.zip.sha256
+III85III-VPN-Setup.exe
 *.log
 *.dpapi
 *.token

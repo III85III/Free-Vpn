@@ -23,7 +23,7 @@ III85III VPN, uygun Mozilla hesapları için yerel bir istemcidir. Kişisel VPS 
 
 [⬇ Windows x64 · Releases](https://github.com/III85III/III85III-VPN/releases)
 
-1. Releases sayfasından Windows x64 ZIP dosyasını indirip tamamını çıkarın.
+1. Releases sayfasından III85III-VPN-Setup.exe dosyasını indirip çalıştırın; gerekli bileşenleri kendisi çıkarır.
 2. III85III VPN.exe dosyasını çalıştırın; bağlantı kapalı başlar.
 3. Kendi Mozilla hesabınızı ekleyip doğrulamayı kendiniz tamamlayın. Google şifrenizi uygulamaya girmeyin.
 4. Uygulamaları seçip kaydedin, konumu seçip bağlanın; gerekirse Windows yönlendirme iznini inceleyin.
@@ -36,7 +36,7 @@ Yalnızca 80, 443, 8080 ve 8443 web TCP portları desteklenir; seçilen uygulama
 
 25 Node testi, 44 masaüstü çekirdek kontrolü ve 891 yerleşim kontrolü geçti. Bunlar gerçek bağlantı testinin yerini tutmaz. Android, iOS, macOS, Linux ve mağazalar gelecek planlarıdır.
 
-[Tam kılavuz ve kaynaktan derleme](../../README.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[Tam kılavuz ve kaynaktan derleme](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

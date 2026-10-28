@@ -23,7 +23,7 @@ III85III VPN é um cliente local para contas Mozilla elegíveis. Você não prec
 
 [⬇ Windows x64 · Releases](https://github.com/III85III/III85III-VPN/releases)
 
-1. Baixe o ZIP Windows x64 em Releases e extraia a pasta inteira.
+1. Baixe III85III-VPN-Setup.exe em Releases e execute; os componentes necessários são extraídos automaticamente.
 2. Abra III85III VPN.exe; o aplicativo inicia desconectado.
 3. Adicione sua própria conta Mozilla e conclua a verificação pessoalmente. Não digite sua senha Google no aplicativo.
 4. Selecione e salve os aplicativos, escolha um destino e conecte. Revise a permissão de roteamento do Windows, se solicitada.
@@ -36,7 +36,7 @@ Apenas TCP web nas portas 80, 443, 8080 e 8443 é suportado; UDP dos aplicativos
 
 Passaram 25 testes Node, 44 verificações do núcleo e 891 de layout. Eles não substituem testes de conexão real. Android, iOS, macOS, Linux e lojas são planos futuros.
 
-[Guia completo e compilação](../../README.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[Guia completo e compilação](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

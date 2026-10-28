@@ -1,11 +1,17 @@
-# Validation status — 2.1.0-preview.1
+# Validation status — 2.1.0-preview.2
 
 The preview integrates the independent core with the accepted III85III
 desktop interface. It is a development preview, not a stable release.
 
+The owner reported HTTP 400 during sign-in in preview.1. Preview.2 defaults
+to English, identifies the failing account request and Mozilla errno without
+reflecting response details, and uses the current official Guardian host.
+Successful real sign-in remains unconfirmed. The single-file EXE installer
+contains the full runtime, source and required third-party licenses.
+
 ## Completed local checks
 
-- 25 Node protocol, account, adapter, recovery and real loopback HTTP/2 tests.
+- 26 Node protocol, account, adapter, recovery and real loopback HTTP/2 tests.
 - 44 desktop connection-state, authenticated API and configuration checks.
 - 891 desktop geometry, translation/theme, typography, sorting, first-run
   navigation and safe-diagnostic checks across several window sizes.

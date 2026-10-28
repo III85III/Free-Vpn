@@ -2,7 +2,7 @@
 // Independent protocol implementation from the official references in PROJECT.md.
 const crypto = require('node:crypto');
 const AUTH = 'https://api.accounts.firefox.com/v1';
-const GUARDIAN = 'https://vpn.mozilla.org';
+const GUARDIAN = 'https://vpn.mozilla.com';
 const CLIENT_ID = '5882386c6d801776'; // Published Mozilla public native-client id.
 const SCOPE = 'profile https://identity.mozilla.com/apps/vpn';
 
@@ -49,8 +49,9 @@ class MozillaClient {
         throw new ServiceError(code.replaceAll('_',' '), response.status, code);
       }
       const errno = Number(data.errno) || 0;
-      const safe = ({102:'Account not found.',103:'Incorrect Mozilla password.',125:'Mozilla requires additional sign-in verification.',127:'Verification code rejected.',160:'Two-step verification is required.'})[errno] || 'Mozilla account request was refused.';
-      throw new ServiceError(safe,response.status,'account',errno);
+      const safe = ({102:'Mozilla account not found.',103:'Incorrect Mozilla password. Use the Mozilla password, not your Google password.',104:'Confirm your Mozilla email first.',106:'The sign-in request format was rejected.',107:'A sign-in request parameter was rejected.',108:'A required sign-in parameter is missing.',114:'Too many attempts. Wait before trying again.',120:'Mozilla requires the original letter case of your email address.',125:'Mozilla blocked this sign-in for security reasons. Complete the normal Mozilla account checks in your browser.',126:'Mozilla requires an account reset.',127:'Verification code rejected.',138:'This Mozilla session still requires verification.',149:'Mozilla does not currently allow sign-in with this email.',160:'Two-step verification is required.',162:'Mozilla rejected the application client identifier.',166:'Mozilla rejected the client type.',169:'Mozilla requires a browser authorization flow for this client.'})[errno] || 'Mozilla account request was refused.';
+      const stage=({'/account/login':'Sign-in','/oauth/token':'Account authorization','/session/verify_code':'Email verification','/session/verify/totp':'Two-step verification'})[path]||'Account request';
+      throw new ServiceError(stage+': '+safe+' [Mozilla '+errno+']',response.status,'account',errno);
     }
     return { data, headers:response.headers };
   }

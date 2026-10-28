@@ -23,7 +23,7 @@ III85III VPN सेवा के लिए पात्र Mozilla खातो�
 
 [⬇ Windows x64 · Releases](https://github.com/III85III/III85III-VPN/releases)
 
-1. Releases से Windows x64 ZIP डाउनलोड करके पूरा फ़ोल्डर निकालें।
+1. Releases से III85III-VPN-Setup.exe डाउनलोड करके चलाएँ; ज़रूरी घटक अपने आप निकाले जाते हैं।
 2. III85III VPN.exe चलाएँ; शुरुआत में कनेक्शन बंद रहता है।
 3. अपना Mozilla खाता जोड़ें और सत्यापन स्वयं करें। ऐप में Google का पासवर्ड न डालें।
 4. ऐप चुनकर सहेजें, सर्वर चुनें और कनेक्ट करें। Windows रूटिंग अनुमति माँगे तो जाँचें।
@@ -36,7 +36,7 @@ III85III VPN सेवा के लिए पात्र Mozilla खातो�
 
 25 Node परीक्षण, 44 डेस्कटॉप कोर जाँच और 891 लेआउट जाँच सफल रहीं। ये वास्तविक कनेक्शन परीक्षण का विकल्प नहीं हैं। Android, iOS, macOS, Linux और ऐप स्टोर प्रकाशन भविष्य की योजनाएँ हैं।
 
-[पूरा गाइड और स्रोत से बिल्ड](../../README.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[पूरा गाइड और स्रोत से बिल्ड](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

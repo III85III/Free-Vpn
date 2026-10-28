@@ -23,7 +23,7 @@ III85III VPN 是面向符合服务资格的 Mozilla 账户的本地客户端。�
 
 [⬇ Windows x64 · Releases](https://github.com/III85III/III85III-VPN/releases)
 
-1. 从 Releases 下载 Windows x64 ZIP，并完整解压文件夹。
+1. 从 Releases 下载并运行 III85III-VPN-Setup.exe；安装程序会自动解压所需组件。
 2. 运行 III85III VPN.exe；程序启动时不自动连接。
 3. 添加您自己的 Mozilla 账户，并亲自完成验证。请勿在程序中输入 Google 密码。
 4. 选择并保存应用，选择服务器，然后连接；如出现 Windows 路由权限请求，请检查确认。
@@ -36,7 +36,7 @@ III85III VPN 是面向符合服务资格的 Mozilla 账户的本地客户端。�
 
 已通过 25 项 Node 测试、44 项桌面核心检查和 891 项布局检查。这些不能替代真实连接测试。Android、iOS、macOS、Linux 及应用商店发布均为未来计划。
 
-[完整指南与源码构建](../../README.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[完整指南与源码构建](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

@@ -23,7 +23,7 @@ III85III VPN — локальный клиент для учётных запи�
 
 [⬇ Windows x64 · Releases](https://github.com/III85III/III85III-VPN/releases)
 
-1. Скачайте Windows x64 ZIP из Releases и распакуйте папку целиком.
+1. Скачайте III85III-VPN-Setup.exe из Releases и запустите: нужные компоненты распакуются автоматически.
 2. Запустите III85III VPN.exe; приложение запускается без подключения.
 3. Добавьте собственный аккаунт Mozilla и самостоятельно пройдите проверку. Не вводите пароль Google в приложение.
 4. Выберите приложения, сохраните выбор, выберите сервер и подключитесь. При необходимости проверьте запрос Windows на маршрутизацию.
@@ -36,7 +36,7 @@ III85III VPN — локальный клиент для учётных запи�
 
 Пройдены 25 Node-тестов, 44 проверки ядра и 891 проверка компоновки. Это не замена проверке реального соединения. Android, iOS, macOS, Linux и магазины приложений — будущие планы.
 
-[Полное руководство и сборка](../../README.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[Полное руководство и сборка](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 
