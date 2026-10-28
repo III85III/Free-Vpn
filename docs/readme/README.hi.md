@@ -1,42 +1,18 @@
 <!-- language-selector:start -->
-[🇬🇧 English](../../README.md) · [🇮🇷 فارسی](README.fa.md) · [🇸🇦 العربية](README.ar.md) · [🇹🇷 Türkçe](README.tr.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇪🇸 Español](README.es.md) · [🇧🇷 Português](README.pt.md) · [🇷🇺 Русский](README.ru.md) · [🇨🇳 简体中文](README.zh.md) · [🇯🇵 日本語](README.ja.md) · **🇮🇳 हिन्दी**
+[🇬🇧 English](../../.github/README.md) · [🇮🇷 فارسی](README.fa.md) · [🇸🇦 العربية](README.ar.md) · [🇹🇷 Türkçe](README.tr.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇪🇸 Español](README.es.md) · [🇧🇷 Português](README.pt.md) · [🇷🇺 Русский](README.ru.md) · [🇨🇳 简体中文](README.zh.md) · [🇯🇵 日本語](README.ja.md) · **🇮🇳 हिन्दी**
 <!-- language-selector:end -->
-
-<p align="center"><img src="../../native/assets/brand/iii85iii-luxury.png" width="112" alt="III85III"></p>
 
 # III85III VPN
 
-**अपने Mozilla खाते के लिए मुफ़्त Windows क्लाइंट**
+III85III का Windows इंटरफ़ेस Arman के मूल Firefox VPN Client इंजन का उपयोग करता है। इंटरफ़ेस और इंस्टॉलर III85III नाम से हैं; इंजन बिना बदलाव, GPL लाइसेंस और लेखक के श्रेय सहित दिया जाता है।
 
-III85III VPN सेवा के लिए पात्र Mozilla खातों का स्थानीय क्लाइंट है। निजी VPS की ज़रूरत नहीं है; ट्रैफ़िक Mozilla सेवा के दूरस्थ बुनियादी ढाँचे से गुजरता है।
+अपने Mozilla खाते और Mozilla पासवर्ड से प्रवेश करें। कोड चाहिए तो अलग विंडो खुलेगी। निजी VPS नहीं चाहिए; पात्रता और कोटा Mozilla तय करता है।
 
-> **विकास पूर्वावलोकन** — असली Mozilla लॉगिन और चुने हुए ऐप के निकास मार्ग का व्यावहारिक सत्यापन अभी बाकी है। यह स्थिर संस्करण नहीं है। मुफ़्त ऐप का अर्थ असीमित डेटा या सेवा की मुफ़्त पात्रता की गारंटी नहीं है; पात्रता, क्षेत्र और कोटा Mozilla तय करता है।
+इस इंजन में चिह्नित ऐप VPN से बाहर रखे जाते हैं और सीधे जुड़ते हैं। केवल चुने ऐप को VPN पर भेजने वाला मोड इस संस्करण में नहीं है।
 
-## सुविधाएँ
+यह विकास पूर्वावलोकन है। पहले HTTP 406 पाने वाले उपयोगकर्ता का लॉगिन और वास्तविक कनेक्शन अभी जाँचना बाकी है।
 
-- केवल चुने हुए ऐप VPN निकास का उपयोग करते हैं; बाकी सीधे जुड़ते हैं।
-- कई खातों का मैन्युअल चयन, Windows DPAPI से सुरक्षित स्थानीय सत्र और हर खाते का अलग कोटा।
-- पसंदीदा और हाल के सर्वर, विलंब के अनुसार क्रम और अंतराल के साथ पुनः कनेक्शन; मैन्युअल डिस्कनेक्ट या खाता/कोटा त्रुटि पर प्रयास रुकते हैं।
-- सिस्टम ट्रे मेनू, फ़ारसी/अंग्रेज़ी इंटरफ़ेस, हल्की/गहरी थीम और खाता पहचान रहित निदान सारांश।
+[⬇ Windows Setup (.exe)](https://github.com/III85III/Free-Vpn/releases)
 
-## डाउनलोड और शुरुआत
-
-[⬇ Windows x64 · Releases](https://github.com/III85III/III85III-VPN/releases)
-
-1. Releases से III85III-VPN-Setup.exe डाउनलोड करके चलाएँ; ज़रूरी घटक अपने आप निकाले जाते हैं।
-2. III85III VPN.exe चलाएँ; शुरुआत में कनेक्शन बंद रहता है।
-3. अपना Mozilla खाता जोड़ें और सत्यापन स्वयं करें। ऐप में Google का पासवर्ड न डालें।
-4. ऐप चुनकर सहेजें, सर्वर चुनें और कनेक्ट करें। Windows रूटिंग अनुमति माँगे तो जाँचें।
-
-## सीमाएँ और गोपनीयता
-
-केवल 80, 443, 8080 और 8443 पोर्ट पर वेब TCP समर्थित है; चुने हुए ऐप का UDP अस्वीकार होता है। DNS, IPv6, वास्तविक निकास और विफलता व्यवहार की लाइव जाँच बाकी है। डाउनलोड में डेवलपर का खाता, ईमेल या सत्र नहीं है। खाता वॉल्ट में पासवर्ड नहीं लिखा जाता।
-
-## जाँच और भविष्य
-
-25 Node परीक्षण, 44 डेस्कटॉप कोर जाँच और 891 लेआउट जाँच सफल रहीं। ये वास्तविक कनेक्शन परीक्षण का विकल्प नहीं हैं। Android, iOS, macOS, Linux और ऐप स्टोर प्रकाशन भविष्य की योजनाएँ हैं।
-
-[पूरा गाइड और स्रोत से बिल्ड](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
-
-MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
+[Guide](../OVERVIEW.md) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [GPL / Credits](../../licenses/NOTICE.txt)
 

@@ -1,1 +1,0 @@
-{"name":"iii85iii-vpn","version":"2.1.0-preview.3","private":true,"description":"Free local Windows client for eligible Mozilla accounts; independent development preview","license":"MIT","scripts":{"test":"node --test test/*.test.cjs","start":"node src/control.cjs"},"engines":{"node":">=24"}}

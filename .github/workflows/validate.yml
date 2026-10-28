@@ -1,4 +1,4 @@
-name: Validate preview
+name: Validate
 on:
   push:
     branches: [main]
@@ -13,9 +13,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Protocol and desktop tests
+      - name: Desktop checks
         shell: pwsh
         run: .\tools\test.ps1

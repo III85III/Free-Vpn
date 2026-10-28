@@ -1,45 +1,18 @@
-# Validation status — 2.1.0-preview.3
+# Validation — restored original engine
 
-The preview integrates the independent core with the accepted III85III
-desktop interface. It is a development preview, not a stable release.
+The original engine components are checked against pinned SHA-256 digests and are identical to those in the working desktop 1.3.3 build. They have not been renamed internally, republished as newly authored binaries or rebuilt from the snapshot.
 
-The owner reports successful sign-in for their account, but another user
-still encounters HTTP 406 despite successful sign-in in Firefox. The
-in-app account flow is not generally validated. This update keeps
-the account implementation and separates the credentials and verification
-windows. The single-file EXE installer contains the full runtime, source
-and required third-party licenses.
+The interface and installer identify III85III as their publisher. The original engine's authorship, licenses and source snapshot remain included.
 
-## Completed local checks
+Desktop API/state regression checks and geometry checks exercise the interface, including the email/password-only first screen and separate email/TOTP verification window. These checks do not establish successful real sign-in or remote service compatibility.
 
-- 26 Node protocol, account, adapter, recovery and real loopback HTTP/2 tests.
-- 44 desktop connection-state, authenticated API and configuration checks.
-- 896 desktop geometry, translation/theme, typography, sorting, first-run
-  navigation and safe-diagnostic checks across several window sizes.
-- Generated selected-app configuration accepted by the actual sing-box binary.
-- Disconnected smoke: private local API authentication, process inventory,
-  app-choice persistence, account-required connection and real Windows
-  DPAPI roundtrip. No remote VPN connection or routing adapter was started.
-- Original third-party engine binaries and source archive are excluded from
-  the independent source/release allowlists. Runtime dependencies keep
-  their respective licenses.
-- Email, profiles, session tokens, private settings, runtime logs and internal
-  project notes are excluded from publication and downloadable packages.
+Completed: 44 desktop API/state checks and 507 geometry/verification-window checks passed. An isolated run of the actual original engine 1.0.4 passed startup, token-protected loopback API, empty-account state, app inventory and exclusion-rule persistence checks. It stayed disconnected; no real network tunnel was tested. The app binary reports III85III as product and company, version 2.2.0.0.
 
-These checks establish only the behaviors they exercise. A simulated
-service, a configuration check and geometry assertions are not substitutes
-for the following live tests.
+Required live checks:
+1. The previously affected user signs in and completes verification.
+2. A real remote connection succeeds within the account's normal entitlement and quota.
+3. Verify the original engine's app exclusions and connection/disconnection behavior.
 
-## Still required before stable release
+This release does not provide the experimental include-only routing, DPAPI account vault or independent Node/sing-box core. A universal resolution of HTTP 406 is not claimed.
 
-1. Manual login to an eligible Mozilla account and supported verification.
-2. A real, normally issued proxy pass and service-reported quota.
-3. End-to-end remote TLS through the actual proxy pass.
-4. Separate measurements of selected and unselected app egress, including
-   DNS behavior, IPv4/IPv6, network changes, failure recovery and shutdown.
-5. Owner review of the final interface on their Windows display/scaling.
-
-The preview does not claim full behavioral equivalence to another client,
-an audited kill switch, universal Firefox-account eligibility, unlimited
-quota, arbitrary-port/UDP support, or availability on other operating
-systems. Store distribution is future work.
+The upstream core's build metadata identifies commit 88c6f0b3f2795daa09226ec3f7ecea6a220e36db with vcs.modified=true. The corresponding public snapshot is included; exact source/build reproducibility remains unverified.

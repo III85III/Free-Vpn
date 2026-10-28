@@ -22,10 +22,10 @@ using System.Windows.Forms;
 
 [assembly: System.Reflection.AssemblyTitle("III85III VPN")]
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
-[assembly: System.Reflection.AssemblyDescription("Independent III85III selected-application VPN client")]
+[assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.1.0.3")]
-[assembly: System.Reflection.AssemblyFileVersion("2.1.0.3")]
+[assembly: System.Reflection.AssemblyVersion("2.2.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.2.0.0")]
 
 namespace III85III.Vpn {
     internal sealed class AppBypass {
@@ -54,7 +54,7 @@ namespace III85III.Vpn {
                 if (name == "" || !seen.Add(name)) continue;
                 selected.Add(new { name = name, path = rule.Path ?? "", udp_only = rule.UdpOnly });
             }
-            if (selected.Count > 100) throw new IOException("Select at most 100 applications.");
+            if (selected.Count > 200) throw new IOException("Select at most 200 bypass apps.");
             var tun = Json.Child(config, "tun");
             tun["programs"] = selected;
             config["tun"] = tun;
@@ -103,75 +103,116 @@ namespace III85III.Vpn {
     }
 
     internal sealed class Engine : IDisposable {
-        public readonly string DataDir, Root;
+        public readonly string DataDir;
+        public readonly string Root;
         public string Endpoint { get; private set; }
         public string Token { get; private set; }
         public string LastError = "";
-        Process process; readonly HttpClient http;
-        public Engine(string root,string dataDir) {
-            Root=root;DataDir=dataDir;
-            http=new HttpClient(new HttpClientHandler{UseProxy=false,AllowAutoRedirect=false});http.Timeout=TimeSpan.FromSeconds(160);
+        private Process process;
+        private readonly HttpClient http;
+
+        public Engine(string root, string dataDir) {
+            Root = root; DataDir = dataDir;
+            http = new HttpClient(new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false });
+            http.Timeout = TimeSpan.FromSeconds(160);
         }
-        internal Engine(string root,string dataDir,string endpoint,string token):this(root,dataDir){Endpoint=endpoint;Token=token;}
-        public static int FreePort(){var listener=new TcpListener(IPAddress.Loopback,0);listener.Start();int port=((IPEndPoint)listener.LocalEndpoint).Port;listener.Stop();return port;}
-        public static void PrivateDirectory(string path){
-            Directory.CreateDirectory(path);var sid=WindowsIdentity.GetCurrent().User;var security=new DirectorySecurity();
-            security.SetAccessRuleProtection(true,false);
-            security.AddAccessRule(new FileSystemAccessRule(sid,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));
-            security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid,null),FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));
+        internal Engine(string root, string dataDir, string endpoint, string token) : this(root, dataDir) { Endpoint = endpoint; Token = token; }
+
+        public static int FreePort() {
+            var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port; listener.Stop(); return port;
+        }
+        public static void PrivateDirectory(string path) {
+            Directory.CreateDirectory(path);
+            var sid = WindowsIdentity.GetCurrent().User;
+            var security = new DirectorySecurity();
+            security.SetAccessRuleProtection(true, false);
+            security.AddAccessRule(new FileSystemAccessRule(sid, FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+            security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), FileSystemRights.FullControl, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
             new DirectoryInfo(path).SetAccessControl(security);
         }
-        public void VerifyFiles(){
-            var manifest=Json.Decode(File.ReadAllText(Path.Combine(Root,"component-hashes.json")));
-            foreach(string relative in new[]{"runtime\\node.exe","runtime\\sing-box.exe","III85III Tools.exe","III85III Route Host.exe"}){
-                string file=Path.Combine(Root,relative);
-                if(!File.Exists(file))throw new IOException("Missing independent component: "+relative);
-                using(var hash=SHA256.Create())using(var stream=File.OpenRead(file)){
-                    string actual=BitConverter.ToString(hash.ComputeHash(stream)).Replace("-","").ToLowerInvariant();
-                    if(!String.Equals(actual,Json.Str(manifest,relative),StringComparison.OrdinalIgnoreCase))throw new IOException("Component integrity check failed: "+relative);
+        public void VerifyFiles() {
+            var manifest = Json.Decode(File.ReadAllText(Path.Combine(Root, "core", "manifest.json")));
+            foreach (var name in new[] { "firefox-vpn-core.exe", "firefox-vpn-tun.exe", "firefox-vpn-tun.exe.sig" }) {
+                var path = Path.Combine(Root, "core", name);
+                if (!File.Exists(path)) throw new IOException("Missing engine component: " + name);
+                using (var hash = SHA256.Create()) using (var stream = File.OpenRead(path)) {
+                    var actual = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+                    if (!String.Equals(actual, Json.Str(manifest, name), StringComparison.OrdinalIgnoreCase)) throw new IOException("Engine integrity check failed: " + name);
                 }
             }
         }
-        public async Task Start(){
-            VerifyFiles();PrivateDirectory(DataDir);
-            process=new Process{StartInfo=new ProcessStartInfo(Path.Combine(Root,"runtime","node.exe"),"\""+Path.Combine(Root,"src","control.cjs")+"\" --data-dir \""+DataDir+"\""){
-                UseShellExecute=false,CreateNoWindow=true,RedirectStandardInput=true,RedirectStandardOutput=true,RedirectStandardError=true,WorkingDirectory=Root}};
-            process.ErrorDataReceived+=delegate(object sender,DataReceivedEventArgs args){if(!String.IsNullOrWhiteSpace(args.Data))LastError="The independent engine reported a local startup error.";};
-            process.Start();process.BeginErrorReadLine();var hello=process.StandardOutput.ReadLineAsync();
-            if(await Task.WhenAny(hello,Task.Delay(12000))!=hello)throw new IOException("Independent engine startup timed out.");
-            string line=await hello;if(String.IsNullOrWhiteSpace(line))throw new IOException("Independent engine startup failed.");
-            var handshake=Json.Decode(line);int port=(int)Json.Num(handshake,"port");Token=Json.Str(handshake,"token");
-            if(port<1||port>65535||Token.Length!=64)throw new IOException("Invalid local engine handshake.");
-            Endpoint="http://127.0.0.1:"+port;
+        public async Task Start() {
+            VerifyFiles(); PrivateDirectory(DataDir);
+            string configPath = Path.Combine(DataDir, "config.json");
+            var cfg = File.Exists(configPath) ? Json.Decode(File.ReadAllText(configPath)) : new Dictionary<string, object>();
+            int port = FreePort();
+            var dashboard = Json.Child(cfg, "dashboard"); dashboard["listen"] = "127.0.0.1:" + port; dashboard["enabled"] = true; cfg["dashboard"] = dashboard;
+            var proxy = Json.Child(cfg, "proxy"); proxy["listen"] = "127.0.0.1:" + FreePort(); cfg["proxy"] = proxy;
+            if (!cfg.ContainsKey("system_proxy")) cfg["system_proxy"] = new { mode = "tun" };
+            if (!cfg.ContainsKey("routing")) cfg["routing"] = new { enabled = false };
+            File.WriteAllText(configPath, Json.Encode(cfg), new UTF8Encoding(false));
+            Endpoint = "http://127.0.0.1:" + port;
+            var servicePoint = ServicePointManager.FindServicePoint(new Uri(Endpoint)); servicePoint.Expect100Continue = false; servicePoint.ConnectionLimit = 16; servicePoint.UseNagleAlgorithm = false;
+            process = new Process();
+            process.StartInfo = new ProcessStartInfo(Path.Combine(Root, "core", "firefox-vpn-core.exe"), "-app -data-dir \"" + DataDir + "\"") {
+                UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardError = true, RedirectStandardOutput = true, WorkingDirectory = Root
+            };
+            process.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs args) { if (!String.IsNullOrEmpty(args.Data)) LastError = args.Data; };
+            process.OutputDataReceived += delegate { };
+            process.Start(); process.BeginErrorReadLine(); process.BeginOutputReadLine();
+            for (int attempt = 0; attempt < 80; attempt++) {
+                if (process.HasExited) throw new IOException("VPN engine stopped. " + LastError);
+                string tokenPath = Path.Combine(DataDir, "local-api.token");
+                if (File.Exists(tokenPath)) {
+                    Token = File.ReadAllText(tokenPath).Trim();
+                    try {
+                        await Api("GET", "/api/status", null, 1200);
+                        await Api("POST", "/api/session/link", null, 1200);
+                        if (Json.Str(dashboard, "username") == "") {
+                            var view = await Api("GET", "/api/settings"); var current = Json.Child(view, "config");
+                            var login = Json.Child(current, "dashboard"); login["username"] = "III85III-local"; current["dashboard"] = login;
+                            byte[] secret = new byte[32]; using (var rng = RandomNumberGenerator.Create()) rng.GetBytes(secret);
+                            await Api("PUT", "/api/settings", new { config = current, dashboard_password = Convert.ToBase64String(secret) });
+                            Array.Clear(secret, 0, secret.Length);
+                        }
+                        return;
+                    } catch (HttpRequestException e) { LastError = e.Message; } catch (TaskCanceledException) { LastError = "Local API timed out."; } catch (IOException e) { LastError = e.Message; }
+                }
+                await Task.Delay(150);
+            }
+            throw new IOException("The local engine did not become ready. " + LastError);
         }
-        public async Task<Dictionary<string,object>> Api(string method,string path,object body=null,int timeoutMs=150000){
-            if(Endpoint==null||String.IsNullOrEmpty(Token))throw new IOException("Local engine is not ready.");
-            Dictionary<string,object> result;
-            using(var request=new HttpRequestMessage(new HttpMethod(method),Endpoint+path)){
-                request.Headers.Add("X-III85III-Token",Token);request.Headers.Add("X-Local-Token",Token);
-                if(method!="GET")request.Content=new StringContent(Json.Encode(body??new{}),Encoding.UTF8,"application/json");
-                using(var cancel=new CancellationTokenSource(timeoutMs))using(var reply=await http.SendAsync(request,cancel.Token)){
-                    string text=await reply.Content.ReadAsStringAsync();result=String.IsNullOrWhiteSpace(text)?new Dictionary<string,object>():Json.Decode(text);
-                    if(!reply.IsSuccessStatusCode)throw new IOException(Json.Str(result,"error")+" (HTTP "+(int)reply.StatusCode+")");
+        public async Task<Dictionary<string, object>> Api(string method, string path, object body = null, int timeoutMs = 150000) {
+            if (Endpoint == null || String.IsNullOrEmpty(Token)) throw new IOException("Local engine is not ready.");
+            using (var request = new HttpRequestMessage(new HttpMethod(method), Endpoint + path)) {
+                request.Headers.Add("X-Local-Token", Token);
+                if (method != "GET") request.Content = new StringContent(Json.Encode(body ?? new { }), Encoding.UTF8, "application/json");
+                using (var cancel = new CancellationTokenSource(timeoutMs)) using (var reply = await http.SendAsync(request, cancel.Token)) {
+                    var text = await reply.Content.ReadAsStringAsync();
+                    var result = String.IsNullOrWhiteSpace(text) ? new Dictionary<string, object>() : Json.Decode(text);
+                    if (!reply.IsSuccessStatusCode) throw new IOException(Json.Str(result, "error") + " (HTTP " + (int)reply.StatusCode + ")");
+                    return result;
                 }
             }
-            bool denied=false;
-            if(path=="/api/power"&&Json.Bool(result,"elevation_required")){
-                try{Process.Start(new ProcessStartInfo(Path.Combine(Root,"III85III Route Host.exe"),"\""+Json.Str(result,"config")+"\" "+Json.Str(result,"parent")){UseShellExecute=true,Verb="runas"});}
-                catch{denied=true;}
-                if(denied){try{await Api("POST","/api/power",new{on=false});}catch{}throw new IOException("Windows routing approval was cancelled.");}
+        }
+        public async Task InstallTun() {
+            using (var installer = Process.Start(new ProcessStartInfo(Path.Combine(Root, "core", "firefox-vpn-tun.exe"), "install") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })) {
+                Task<string> output = installer.StandardOutput.ReadToEndAsync(), error = installer.StandardError.ReadToEndAsync();
+                await Task.Run(delegate { installer.WaitForExit(); });
+                await output; var detail = await error;
+                if (installer.ExitCode == 3) throw new IOException("Windows administrator prompt was cancelled.");
+                if (installer.ExitCode != 0) throw new IOException("TUN installation failed. " + detail);
             }
-            return result;
         }
-        public Task InstallTun(){return Task.FromResult(0);}
-        public async Task Stop(){
-            if(process==null||process.HasExited)return;
-            try{await Api("POST","/api/app/exit",null,3500);}catch{}
-            try{process.StandardInput.Close();}catch{}
-            await Task.Run(delegate{process.WaitForExit(12000);});
-            if(!process.HasExited)throw new IOException("The independent engine is still shutting down.");
+        public async Task Stop() {
+            if (process == null || process.HasExited) return;
+            try { await Api("POST", "/api/app/exit", null, 3500); } catch { }
+            try { process.StandardInput.Close(); } catch { }
+            await Task.Run(delegate { process.WaitForExit(12000); });
+            if (!process.HasExited) throw new IOException("The VPN engine is still shutting down. Please wait before restarting.");
         }
-        public void Dispose(){if(process!=null){try{process.StandardInput.Close();}catch{}process.Dispose();}http.Dispose();}
+        public void Dispose() { if (process != null) { try { process.StandardInput.Close(); } catch { } process.Dispose(); } http.Dispose(); }
     }
 
     internal static class NativeMethods {
@@ -182,34 +223,33 @@ namespace III85III.Vpn {
 
     internal static class Theme {
         // Luxury minimalist warm near-black & graphite palette
-        public static Color Bg = Color.FromArgb(26, 33, 43);
-        public static Color Sidebar = Color.FromArgb(30, 38, 49);
-        public static Color Surface = Color.FromArgb(36, 46, 58);
-        public static Color SurfaceHover = Color.FromArgb(45, 58, 70);
-        public static Color SurfaceActive = Color.FromArgb(53, 66, 78);
-        public static Color Border = Color.FromArgb(57, 69, 81);
-        public static Color BorderHover = Color.FromArgb(92, 109, 122);
-        public static Color TextPrimary = Color.FromArgb(247, 241, 231);
-        public static Color TextSecondary = Color.FromArgb(193, 204, 210);
-        public static Color TextSubtle = Color.FromArgb(165, 182, 191);
+        public static readonly Color Bg = Color.FromArgb(26, 33, 43);
+        public static readonly Color Sidebar = Color.FromArgb(30, 38, 49);
+        public static readonly Color Surface = Color.FromArgb(36, 46, 58);
+        public static readonly Color SurfaceHover = Color.FromArgb(45, 58, 70);
+        public static readonly Color SurfaceActive = Color.FromArgb(53, 66, 78);
+        public static readonly Color Border = Color.FromArgb(57, 69, 81);
+        public static readonly Color BorderHover = Color.FromArgb(92, 109, 122);
+        public static readonly Color TextPrimary = Color.FromArgb(247, 241, 231);
+        public static readonly Color TextSecondary = Color.FromArgb(193, 204, 210);
+        public static readonly Color TextSubtle = Color.FromArgb(165, 182, 191);
 
         // Refined muted steel blue accent (not neon)
-        public static Color Accent = Color.FromArgb(226, 191, 142);
-        public static Color AccentHover = Color.FromArgb(241, 210, 165);
-        public static Color AccentActive = Color.FromArgb(202, 166, 117);
-        public static Color AccentMuted = Color.FromArgb(59, 52, 44);
+        public static readonly Color Accent = Color.FromArgb(226, 191, 142);
+        public static readonly Color AccentHover = Color.FromArgb(241, 210, 165);
+        public static readonly Color AccentActive = Color.FromArgb(202, 166, 117);
+        public static readonly Color AccentMuted = Color.FromArgb(59, 52, 44);
 
         // True state colors
-        public static Color Success = Color.FromArgb(101, 180, 163);
-        public static Color SuccessMuted = Color.FromArgb(24, 52, 42);
-        public static Color Warning = Color.FromArgb(224, 164, 76); // Warm amber
-        public static Color WarningMuted = Color.FromArgb(52, 42, 24);
-        public static Color Danger = Color.FromArgb(224, 88, 88);   // Soft coral
-        public static Color DangerHover = Color.FromArgb(240, 108, 108);
+        public static readonly Color Success = Color.FromArgb(101, 180, 163);
+        public static readonly Color SuccessMuted = Color.FromArgb(24, 52, 42);
+        public static readonly Color Warning = Color.FromArgb(224, 164, 76); // Warm amber
+        public static readonly Color WarningMuted = Color.FromArgb(52, 42, 24);
+        public static readonly Color Danger = Color.FromArgb(224, 88, 88);   // Soft coral
+        public static readonly Color DangerHover = Color.FromArgb(240, 108, 108);
 
         static readonly PrivateFontCollection BundledFonts = new PrivateFontCollection();
-        static FontFamily bodyFamily, displayFamily, persianFamily;
-        public static bool Persian;
+        static FontFamily bodyFamily, displayFamily;
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] static extern int AddFontResourceEx(string path, uint flags, IntPtr reserved);
         static Theme() {
             string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "fonts");
@@ -220,17 +260,15 @@ namespace III85III.Vpn {
             foreach (var family in BundledFonts.Families) {
                 if (family.Name == "Lato") bodyFamily = family;
                 if (family.Name == "Lato Black") displayFamily = family;
-                if (family.Name == "Vazirmatn") persianFamily = family;
             }
         }
         public static Font Font(float size, FontStyle style = FontStyle.Regular) {
             float readable = Math.Max(9.5f, size + .75f);
-            if (Persian && persianFamily != null) return new Font(persianFamily, readable, style);
             if (bodyFamily != null) return new Font(bodyFamily, readable, style);
             return new Font("Candara", readable, style);
         }
         public static Font Display(float size) {
-            return !Persian && displayFamily != null ? new Font(displayFamily, size, FontStyle.Regular) : Font(size, FontStyle.Bold);
+            return displayFamily != null ? new Font(displayFamily, size, FontStyle.Regular) : Font(size, FontStyle.Bold);
         }
         public static Font Mono(float size, FontStyle style = FontStyle.Regular) {
             try { return new Font("Consolas", size, style); } catch { return new Font("Courier New", size, style); }
@@ -777,137 +815,8 @@ namespace III85III.Vpn {
         }
     }
 
-    internal sealed class SignInForm : Form {
-        readonly Engine engine;
-        readonly TextBox email = new TextBox(), password = new TextBox();
-        readonly Label note = new Label(), feedback = new Label();
-        readonly LuxuryButton submit = new LuxuryButton { Text = "Sign in", Variant = ButtonVariant.Primary }, cancel = new LuxuryButton { Text = "Cancel", Variant = ButtonVariant.Secondary };
-        readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer { Interval = 1200 };
-        string session = ""; bool polling, closing, finished;
 
-        public SignInForm(Engine engine) {
-            this.engine = engine;
-            AutoScaleMode = AutoScaleMode.None;
-            FormBorderStyle = FormBorderStyle.None;
-            StartPosition = FormStartPosition.CenterParent;
-            BackColor = Theme.Bg;
-            ForeColor = Theme.TextPrimary;
-            Size = new Size(480, Math.Min(460, Screen.PrimaryScreen.WorkingArea.Height - 32));
-            DoubleBuffered = true;
-            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
-
-            var titleBar = new LuxuryTitleBar(this, false);
-            Controls.Add(titleBar);
-
-            var panel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(28, 54, 28, 20), AutoScroll = true, AutoScrollMinSize = new Size(0, 414) };
-            Controls.Add(panel);
-            titleBar.BringToFront();
-
-                var title = new Label { Text = "Welcome to III85III", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(28, 56) };
-            panel.Controls.Add(title);
-
-            note.Text = "Use your Mozilla email and password. If a code is needed, we'll ask for it next.";
-            note.Font = Theme.Font(9f);
-            note.ForeColor = Theme.TextSecondary;
-            note.Size = new Size(420, 40);
-            note.Location = new Point(28, 96);
-            panel.Controls.Add(note);
-
-            int y = 148;
-            AddInputField(panel, "Email Address", email, ref y, false);
-            AddInputField(panel, "Password", password, ref y, true);
-
-            feedback.Font = Theme.Font(8.5f);
-            feedback.ForeColor = Theme.Accent;
-            feedback.Size = new Size(424, 38);
-            feedback.Location = new Point(28, y);
-            panel.Controls.Add(feedback);
-            y += 42;
-
-            submit.Size = new Size(130, 38); submit.Location = new Point(28, y);
-            cancel.Size = new Size(110, 38); cancel.Location = new Point(168, y);
-            panel.Controls.Add(submit); panel.Controls.Add(cancel);
-
-            submit.Click += async delegate { await Submit(); };
-            cancel.Click += delegate { Close(); };
-            AcceptButton = submit; CancelButton = cancel;
-
-            timer.Tick += async delegate {
-                if (polling || closing || session == "") return;
-                polling = true;
-                try { Apply(await engine.Api("GET", "/api/signin/" + session)); }
-                catch (Exception e) { feedback.Text = e.Message; }
-                finally { polling = false; }
-            };
-
-            FormClosing += async delegate (object sender, FormClosingEventArgs e) {
-                if (closing || finished || session == "") return;
-                e.Cancel = true; closing = true; timer.Stop();
-                try { await engine.Api("DELETE", "/api/signin/" + session, null, 3000); } catch { } Close();
-            };
-            FormClosed += delegate { timer.Stop(); timer.Dispose(); password.Clear(); };
-        }
-
-        private void AddInputField(Panel p, string labelText, TextBox tb, ref int y, bool isPassword) {
-            var lbl = new Label { Text = labelText, Font = Theme.Font(8.5f, FontStyle.Bold), ForeColor = Theme.TextSecondary, AutoSize = true, Location = new Point(28, y) };
-            p.Controls.Add(lbl);
-            y += 20;
-
-            var box = new Panel { Size = new Size(424, 36), Location = new Point(28, y), BackColor = Theme.Surface };
-            box.Paint += delegate (object s, PaintEventArgs e) {
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                var r = new Rectangle(0, 0, box.Width - 1, box.Height - 1);
-                using (var pen = new Pen(tb.Focused ? Theme.Accent : Theme.Border, 1f)) Theme.DrawRounded(e.Graphics, pen, r, 6);
-            };
-
-            tb.BorderStyle = BorderStyle.None;
-            tb.BackColor = Theme.Surface;
-            tb.ForeColor = Theme.TextPrimary;
-            tb.Font = Theme.Font(10f);
-            tb.UseSystemPasswordChar = isPassword;
-            tb.Location = new Point(10, 8);
-            tb.Size = new Size(404, 20);
-            tb.GotFocus += delegate { box.Invalidate(); };
-            tb.LostFocus += delegate { box.Invalidate(); };
-
-            box.Controls.Add(tb);
-            p.Controls.Add(box);
-            y += 46;
-        }
-
-        protected override CreateParams CreateParams {
-            get { var cp = base.CreateParams; cp.ClassStyle |= 0x00020000; return cp; }
-        }
-
-        async Task Submit() {
-            submit.Enabled = false;
-            try {
-                if (session == "") {
-                    if (email.Text.Trim() == "" || password.Text == "") throw new IOException("Enter your Mozilla email and password.");
-                    var reply = await engine.Api("POST", "/api/signin", new { email = email.Text.Trim(), password = password.Text }); password.Clear();
-                    session = Json.Str(reply, "id"); if (session == "") throw new IOException("Sign-in did not return a session.");
-                    email.Enabled = password.Enabled = false; timer.Start(); Apply(reply);
-                }
-            } catch (Exception e) { feedback.Text = e.Message; submit.Enabled = true; }
-        }
-
-        void Apply(Dictionary<string, object> state) {
-            string next = Json.Str(state, "step"); feedback.Text = Json.Str(state, "message") + "\n" + Json.Str(state, "error");
-            if (next == "done") { finished = true; timer.Stop(); DialogResult = DialogResult.OK; Close(); return; }
-            if (next == "failed" || next == "cancelled") { timer.Stop(); session = ""; email.Enabled = password.Enabled = true; submit.Text = "Try again"; submit.Enabled = true; return; }
-            bool input = next == "need_email_code" || next == "need_totp" || next == "need_unblock_code" || next == "need_captcha";
-            submit.Enabled = false; submit.Text = "Waiting for Mozilla…";
-            if (input) {
-                timer.Stop();
-                using (var verification = new VerificationForm(engine, session, state)) {
-                    if (verification.ShowDialog(this) == DialogResult.OK) { finished = true; DialogResult = DialogResult.OK; }
-                }
-                Close();
-            }
-        }
-    }
-
-    internal sealed partial class MainForm : Form {
+    internal sealed class MainForm : Form {
         readonly Engine engine;
         readonly LuxuryTitleBar titleBar;
         readonly Panel sidebar = new Panel();
@@ -1019,7 +928,6 @@ namespace III85III.Vpn {
 
             InitializeSidebar();
             InitializePages();
-            InitializeDesktopFeatures();
             resizeGrip.Paint += delegate(object sender, PaintEventArgs e) {
                 using (var pen = new Pen(Theme.TextSubtle)) { e.Graphics.DrawLine(pen, 5, 12, 12, 5); e.Graphics.DrawLine(pen, 9, 12, 12, 9); }
             };
@@ -1097,8 +1005,7 @@ namespace III85III.Vpn {
 
             diagTestBtn.Click += async delegate { await TestConnection(true); };
             diagPingBtn.Click += async delegate { await Run(async delegate { await engine.Api("POST", "/api/locations/ping", new { codes = new string[0] }); await LoadLocations(); }); };
-            copyLogsBtn.Text = "Copy safe report";
-            copyLogsBtn.Click += delegate { try { Clipboard.SetText(SafeDiagnostics.Build(lastStatus)); } catch { } };
+            copyLogsBtn.Click += delegate { try { Clipboard.SetText(logsBox.Text); } catch { } };
 
             timer.Tick += async delegate { await Poll(); };
 
@@ -1106,7 +1013,6 @@ namespace III85III.Vpn {
                 if (layoutOnly) return;
                 try {
                     LoadPreferences();
-                    ApplyDesktopAppearance();
                     UpdateEyeButtons();
                     await engine.Start();
                     ready = true;
@@ -1115,6 +1021,7 @@ namespace III85III.Vpn {
                     await RefreshAccounts();
                     try {
                         await LoadLocations();
+                        var _ = AutoPingLocations(true);
                     } catch { }
                 } catch (Exception e) {
                     dialSubtext.Text = "Engine error: " + e.Message;
@@ -1190,6 +1097,9 @@ namespace III85III.Vpn {
                 if (pages[i] != null) pages[i].Visible = (i == index);
             }
             ArrangeResponsive();
+            if (index == 1 && ready && (DateTime.UtcNow - lastAutoPing).TotalSeconds > 45) {
+                var _ = AutoPingLocations();
+            }
             if (index == 2 && ready && !splitLoaded) {
                 var _ = Run(LoadSplitApps);
             }
@@ -1393,7 +1303,7 @@ namespace III85III.Vpn {
             var title = new Label { Text = "Your apps, your choice", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
             p.Controls.Add(title);
 
-            var desc = new Label { Text = "Tick only the apps that should use VPN. All other apps stay direct.", Font = Theme.Font(10f), ForeColor = Theme.TextSecondary, AutoSize = true, Location = new Point(0, 26) };
+            var desc = new Label { Text = "Tick the apps you want to use without the VPN. Works in Whole computer mode.", Font = Theme.Font(10f), ForeColor = Theme.TextSecondary, AutoSize = true, Location = new Point(0, 26) };
             p.Controls.Add(desc);
 
             p.Controls.Add(splitSearch);
@@ -1443,7 +1353,7 @@ namespace III85III.Vpn {
 
             p.Controls.Add(splitList);
 
-            splitCountLabel.Text = "0 apps selected to use VPN.";
+            splitCountLabel.Text = "0 apps selected for direct bypass.";
             splitCountLabel.Font = Theme.Font(8.5f);
             splitCountLabel.ForeColor = Theme.TextSecondary;
             splitCountLabel.AutoSize = true;
@@ -1613,7 +1523,7 @@ namespace III85III.Vpn {
             var dashBtn = new LuxuryButton { Text = "Engine Dashboard", Width = 150 };
 
             openFolderBtn.Click += delegate { Process.Start(new ProcessStartInfo(engine.DataDir) { UseShellExecute = true }); };
-            docsBtn.Click += delegate { Process.Start(new ProcessStartInfo(Path.Combine(engine.Root, "START-HERE.html")) { UseShellExecute = true }); };
+            docsBtn.Click += delegate { Process.Start(new ProcessStartInfo(Path.Combine(engine.Root, "docs", "guide.html")) { UseShellExecute = true }); };
             dashBtn.Click += async delegate {
                 await Run(async delegate {
                     var r = await engine.Api("POST", "/api/session/link");
@@ -1627,7 +1537,7 @@ namespace III85III.Vpn {
             p.Controls.Add(btnRow);
 
             var legal = new Label {
-                Text = "III85III VPN 2.1 Preview · Independent local client\nNode.js, sing-box and fonts retain their licenses.",
+                Text = "III85III VPN · Windows desktop client\nComponent licenses and acknowledgements are included in the application folder.",
                 Font = Theme.Font(8f), ForeColor = Theme.TextSubtle, Location = new Point(0, 470), AutoSize = false, Name = "sourceNotice"
             };
             p.Controls.Add(legal);
@@ -1753,7 +1663,7 @@ namespace III85III.Vpn {
                 foreach (int pageIndex in new[] { 1, 2 }) {
                     var page = pages[pageIndex]; int width = Math.Max(100, page.ClientSize.Width - 10); int top = Header(page, width);
                     var searchBox = pageIndex == 1 ? locationSearch : splitSearch;
-                    Control[] buttons = pageIndex == 1 ? new Control[] { sortPingBtn, favoriteBtn, favoritesFilterBtn, pingBtn, applyLocationBtn } : new Control[] { splitBrowse, splitReload, splitSave };
+                    Control[] buttons = pageIndex == 1 ? new Control[] { sortPingBtn, antigravityFilterBtn, pingBtn, applyLocationBtn } : new Control[] { splitBrowse, splitReload, splitSave };
                     int bottom;
                     if (width < 740) {
                         searchBox.SetBounds(0, top, width, 38);
@@ -1776,7 +1686,7 @@ namespace III85III.Vpn {
 
                 var accountsPage = pages[3]; int aw = Math.Max(100, accountsPage.ClientSize.Width - 10);
                 int accountTop = Header(accountsPage, aw);
-                int accountButtonsBottom = PlaceButtons(new Control[] { loginBtn, selectAccountBtn, refreshQuotaBtn, removeAccountBtn, accountEyeBtn }, 0, accountTop, aw);
+                int accountButtonsBottom = PlaceButtons(new Control[] { loginBtn, refreshQuotaBtn, removeAccountBtn, accountEyeBtn }, 0, accountTop, aw);
                 int accountsTop = accountButtonsBottom + 14;
                 accountsList.SetBounds(0, accountsTop, aw, Math.Max(100, accountsPage.ClientSize.Height - accountsTop - 112));
                 accountsList.Columns[0].Width = Math.Max(140, accountsList.ClientSize.Width - 394);
@@ -1790,7 +1700,6 @@ namespace III85III.Vpn {
                 settings.AutoScrollMinSize = settings.AutoScroll ? new Size(0, 592) : Size.Empty;
                 int sw = Math.Max(100, settings.ClientSize.Width - 22);
                 foreach (var card in modeCards) card.Width = sw;
-                if (desktopPreferences != null) desktopPreferences.SetBounds(0, 126, sw, 160);
                 var trayRow = settings.Controls["trayPreference"]; trayRow.Width = sw; trayRow.Height = 60;
                 LabelBox(trayRow.Controls[1], 66, 9, Math.Max(1, sw - 80), 44);
                 var resources = settings.Controls["resourceButtons"]; resources.SetBounds(0, 428, sw, 84);
@@ -1812,7 +1721,6 @@ namespace III85III.Vpn {
             tray.Icon = Icon;
             tray.Text = "III85III VPN";
             tray.ContextMenuStrip = menu;
-            menu.Opening += delegate { RebuildDesktopTray(menu); };
             tray.Visible = true;
             tray.DoubleClick += delegate { Show(); WindowState = FormWindowState.Normal; Activate(); };
         }
@@ -1928,12 +1836,12 @@ namespace III85III.Vpn {
         }
 
         private async Task AutoPingLocations(bool force = false) {
-            if (!ready || closing) return;
+            if (!ready || busy || closing) return;
             if (!force && (DateTime.UtcNow - lastAutoPing).TotalSeconds < 45) return;
             lastAutoPing = DateTime.UtcNow;
             pingBtn.Text = "Pinging…";
             try {
-                await engine.Api("POST", "/api/locations/ping", new { codes = new string[0] }, 60000);
+                await engine.Api("POST", "/api/locations/ping", new { codes = new string[0] }, 20000);
                 await LoadLocations();
             } catch { }
             finally { pingBtn.Text = "Measure Latency"; }
@@ -1990,7 +1898,6 @@ namespace III85III.Vpn {
             polling = true;
             try {
                 lastStatus = await engine.Api("GET", "/api/status", null, 5000);
-                SynchronizeDesktopSettings();
                 var state = Json.Child(lastStatus, "state");
                 var tun = Json.Child(lastStatus, "tun");
                 var proxy = Json.Child(lastStatus, "proxy");
@@ -2044,7 +1951,6 @@ namespace III85III.Vpn {
                 }
 
                 if (!busy) SetActions(true);
-                TranslateDesktop();
                 if (!testing && !busy && warmup.ShouldTest(lastStatus, DateTime.UtcNow)) {
                     var _ = TestConnection(false);
                 }
@@ -2086,12 +1992,12 @@ namespace III85III.Vpn {
             var reply = await engine.Api("GET", "/api/locations", null, 15000);
             string selected = Json.Str(lastStatus, "selection");
             allLocations.Clear();
-            allLocations.Add(new ServerChoice("Recommended", "") { PingMs = 0 });
+            allLocations.Add(new ServerChoice("Recommended (Fastest)", "") { PingMs = 0 });
+            allLocations.Add(new ServerChoice("Lowest latency (scans)", "fastest") { PingMs = 0 });
 
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "", "fastest", "REC" };
             foreach (var l in Json.Rows(reply, "locations")) {
                 string code = Json.Str(l, "code");
-                if (code == "") { allLocations[0].PingMs = (int)Json.Num(l, "ping_ms"); continue; }
                 if (!seen.Add(code)) continue;
                 string name = Json.Str(l, "name");
                 if (name == "") name = code;
@@ -2118,7 +2024,6 @@ namespace III85III.Vpn {
             string selectedCode = selected == null ? null : selected.Code;
             var visible = new List<ServerChoice>();
             foreach (var sc in allLocations) {
-                if (showFavoritesOnly && !favoriteCodes.Contains(LocationCode(sc.Code))) continue;
                 if (antigravityFilterOnly && sc.Code != "" && !agSafe.Contains(sc.Code)) continue;
                 if (q == "" || sc.Name.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 || sc.Code.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0) visible.Add(sc);
             }
@@ -2157,7 +2062,7 @@ namespace III85III.Vpn {
         }
 
         private async Task LoadSplitApps() {
-            if (!Json.Bool(Json.Child(lastStatus, "tun"), "programs_supported")) throw new IOException("Application routing is unavailable on this system.");
+            if (!Json.Bool(Json.Child(lastStatus, "tun"), "programs_supported")) throw new IOException("App bypass is unavailable on this system.");
             if (!splitLoaded) {
                 var config = Json.Child(await engine.Api("GET", "/api/settings"), "config");
                 foreach (var pair in SplitRules.Read(config)) splitSelected[pair.Key] = pair.Value;
@@ -2189,14 +2094,14 @@ namespace III85III.Vpn {
                     bool check = splitSelected.TryGetValue(name, out selected);
                     var item = new ListViewItem(name) { Tag = rule, Checked = check };
                     item.SubItems.Add(rule.Path);
-                    item.SubItems.Add(check ? (Theme.Persian ? "وی‌پی‌ان" : "VPN") : (Theme.Persian ? "مستقیم" : "Direct"));
+                    item.SubItems.Add(check && selected.UdpOnly ? "UDP only" : check ? "Bypassing VPN" : "Using VPN");
                     splitList.Items.Add(item);
                 }
             } finally { splitList.EndUpdate(); splitRendering = false; }
         }
 
         private void UpdateSplitSummary() {
-            splitCountLabel.Text = splitSelected.Count + " applications selected to use VPN. All other apps stay direct.";
+            splitCountLabel.Text = splitSelected.Count + " applications selected to bypass VPN.";
         }
 
         private async Task SaveSplitApps() {
@@ -2204,12 +2109,12 @@ namespace III85III.Vpn {
             SplitRules.Apply(config, splitSelected.Values);
             await engine.Api("PUT", "/api/settings", new { config = config });
             var saved = SplitRules.Read(Json.Child(await engine.Api("GET", "/api/settings"), "config"));
-            if (saved.Count != splitSelected.Count) throw new IOException("Engine did not retain all application rules.");
-            splitCountLabel.Text = "Saved: " + saved.Count + " applications use VPN. All others stay direct.";
+            if (saved.Count != splitSelected.Count) throw new IOException("Engine did not retain all bypass rules.");
+            splitCountLabel.Text = "Saved: " + saved.Count + " applications bypass VPN.";
         }
 
         private void BrowseApp() {
-            using (var picker = new OpenFileDialog { Filter = "Applications (*.exe)|*.exe", CheckFileExists = true, Multiselect = true, Title = "Select applications to use VPN" }) {
+            using (var picker = new OpenFileDialog { Filter = "Applications (*.exe)|*.exe", CheckFileExists = true, Multiselect = true, Title = "Select applications to bypass VPN" }) {
                 if (picker.ShowDialog(this) != DialogResult.OK) return;
                 foreach (var path in picker.FileNames) {
                     string name = Path.GetFileName(path);
@@ -2238,8 +2143,7 @@ namespace III85III.Vpn {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             string root = AppDomain.CurrentDomain.BaseDirectory;
             bool smoke = Array.IndexOf(args, "--smoke-test") >= 0;
-            bool preview = Array.IndexOf(args, "--preview") >= 0;
-            string data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "III85III VPN Independent");
+            string data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "III85III VPN", "user-data");
             bool isolated = false;
             foreach (string arg in args) {
                 if (arg.StartsWith("--data-dir=", StringComparison.Ordinal)) {
@@ -2259,8 +2163,7 @@ namespace III85III.Vpn {
                 try {
                     using (var engine = new Engine(root, data)) {
                         if (smoke) { Smoke(engine).GetAwaiter().GetResult(); return 0; }
-                        var form = new MainForm(engine, preview);
-                        if (preview) form.ConfigurePreview(Array.IndexOf(args,"--language=fa")>=0,Array.IndexOf(args,"--theme=light")>=0);
+                        var form = new MainForm(engine);
                         if (isolated) form.Text += " · Preview";
                         Application.Run(form);
                         return 0;

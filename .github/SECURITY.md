@@ -1,7 +1,9 @@
-# Security reports
+# Security
 
-This is an experimental client, not a security-audited production VPN.
+This client is a development preview and has not received an independent security audit. It uses the original Firefox VPN Client engine by Arman.
 
-Please use GitHub's private vulnerability reporting where available. Do not publish session tokens, passwords, private vaults, account identifiers or raw authentication traffic in issues. A non-sensitive reproduction description and the app's safe diagnostic summary are preferred.
+Do not post passwords, encryption keys, account data, raw authentication logs or session tokens in public issues. Use GitHub private vulnerability reporting where available.
 
-The project cannot promise response times or complete protection. The current preview has no verified kill-switch guarantee. Selected-app UDP is rejected, while unsupported ports and remote quota/account failures are surfaced instead of granting access. Real process and DNS egress validation is still outstanding.
+The interface restricts access to the local account directory and authenticates its loopback API. Actual routing and remote service behavior still require live validation. No verified kill-switch guarantee is made.
+
+See [privacy information](../docs/PRIVACY.md) and [upstream engine information](https://github.com/armanlife/firefox-vpn-client).

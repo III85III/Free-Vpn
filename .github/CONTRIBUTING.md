@@ -1,7 +1,9 @@
 # Contributing
 
-Start with a focused issue or small pull request describing the concrete problem and expected behavior. Useful areas include real-network validation, accessibility, Persian translation, process routing, account-flow compatibility and reliability under network changes.
+Keep the Windows interface focused and clearly distinguish III85III interface code from the original upstream engine. Preserve all required source, license and attribution notices.
 
-Run `node --test test/*.test.cjs` and, on Windows, `tools/test.ps1`. Use synthetic accounts and local HTTP/2 fixtures; do not put a real account or token in tests. Normal remote-service eligibility and quotas must remain enforced. Do not add automatic account rotation after quota failure.
+Run tools/test.ps1 for desktop API, state and layout checks. Never include real credentials, session tokens or account files in tests, commits or issue reports.
 
-The project currently supports only a Windows development preview. Discuss platform work before claiming Android, iOS, macOS or Linux support. Keep the interface quiet and simple, preserve the III85III branding, and retain dependency licenses. New project contributions are under the repository's MIT license.
+Engine binaries are verified against third_party/engine/manifest.json and redistributed unchanged. Discuss engine changes separately; do not silently replace them with a new experimental implementation.
+
+Contributions follow the repository's GPL-3.0-only license.
