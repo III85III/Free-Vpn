@@ -4,18 +4,20 @@ The requested BAT bot launcher is **not implemented or enabled**. Setting a chil
 
 ## Local experiment
 
-`tools/test-bot-proxy.py` creates its own BAT and Python fixture in `.build/`. It never opens or runs a user's BAT, reads bot settings, signs in to Telegram or contacts an external host. Python runs in isolated mode without site packages. Two loopback HTTP servers identify the route actually used.
+`tools/test-bot-proxy.py` creates its own BAT and Python fixture in `.build/`. It never opens or runs a user's BAT, reads bot settings, signs in to Telegram or contacts an external host. Python runs in isolated mode without site packages. Loopback HTTP and TLS servers identify the route actually used.
 
-The experiment checks four cases:
+The HTTP experiment checks four cases:
 
 1. A proxy-aware standard-library HTTP request launched by BAT reaches the private proxy fixture.
 2. A raw TCP client launched by the same BAT with the same proxy variables reaches the direct fixture instead. This is the counterexample to treating environment variables as process isolation.
 3. An explicitly direct control request reaches the same local destination directly.
 4. The proxy-aware client reports a proxy error without silently falling back to the direct fixture.
 
+Four additional HTTPS cases check a CONNECT tunnel with destination certificate verification, a raw TLS client bypassing the proxy environment, an explicitly direct TLS control, and CONNECT rejection without direct fallback. The proxy fixture permits only its generated loopback destination. OpenSSL (on PATH or bundled with Git for Windows) generates a short-lived test certificate and key in the disposable fixture folder. These are development dependencies and temporary test material, not application credentials or packaged files; they are removed after the tests. TLS verification is not disabled.
+
 The parent process's proxy environment must remain unchanged in every case. No system proxy, route, adapter or core configuration is written.
 
-These are local HTTP/process-environment experiments. They do **not** validate HTTPS CONNECT, DNS, IPv6, arbitrary descendants, any real Telegram library or actual VPN egress. They do not establish the desired "all bot traffic proxied, everything else direct" guarantee.
+These eight local HTTP/HTTPS/process-environment experiments do **not** validate the owner's core CONNECT implementation, DNS, IPv6, arbitrary descendants, any real Telegram library or actual VPN egress. They do not establish the desired "all bot traffic proxied, everything else direct" guarantee.
 
 ## Requirements before enabling the feature
 
