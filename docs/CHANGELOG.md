@@ -2,6 +2,10 @@
 
 ## Frontend reliability
 
+- Treat closing the credentials window as cancellation even before its request returns; a late response cannot reopen or accept the closed window.
+- Cancel only that temporary sign-in session when its identifier arrives late, suppress duplicate submissions and keep error/retry handling on active windows.
+- Eleven loopback HTTP/window-lifecycle checks cover delayed success, delayed failure, duplicate submit, password clearing and cancellation.
+
 - Measure server latency only on an explicit click; opening the app or Locations no longer starts a background scan.
 - Fix the manual measurement button being blocked by the general action lock.
 - Keep connection controls available while latency is measured, prevent duplicate scans and report measurement failures.

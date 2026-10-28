@@ -10,6 +10,8 @@ Completed: 44 desktop API/state checks and 507 geometry/verification-window chec
 
 Twelve additional frontend latency regression checks pass against a real local HTTP fixture: the measurement button sends the request, repeated clicks do not queue extra scans, connection controls remain available, results appear in the list and errors allow a retry. These tests use synthetic data and do not exercise the owner's core or a real remote VPN connection.
 
+Eleven sign-in window lifecycle checks pass against a delayed local HTTP fixture. Closing the credentials window clears the password, late replies cannot reopen or accept it, a returned temporary session is cancelled, duplicate submissions are suppressed and active errors allow retry. These are frontend lifecycle checks; they do not establish real Mozilla authentication or resolve the reported remote HTTP 406.
+
 Required live checks:
 1. The previously affected user signs in and completes verification.
 2. A real remote connection succeeds within the account's normal entitlement and quota.

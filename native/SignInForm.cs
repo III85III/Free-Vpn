@@ -12,7 +12,7 @@ namespace III85III.Vpn {
         readonly Label note = new Label(), feedback = new Label();
         readonly LuxuryButton submit = new LuxuryButton { Text = "Sign in", Variant = ButtonVariant.Primary }, cancel = new LuxuryButton { Text = "Cancel", Variant = ButtonVariant.Secondary };
         readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer { Interval = 1200 };
-        string session = ""; bool polling, closing, finished;
+        string session = ""; bool polling, closing, finished, submitting;
 
         public SignInForm(Engine engine) {
             this.engine = engine;
@@ -65,16 +65,20 @@ namespace III85III.Vpn {
                 if (polling || closing || session == "") return;
                 polling = true;
                 try { Apply(await engine.Api("GET", "/api/signin/" + session)); }
-                catch (Exception e) { feedback.Text = e.Message; }
+                catch (Exception e) { if (!closing && !IsDisposed) feedback.Text = e.Message; }
                 finally { polling = false; }
             };
 
             FormClosing += async delegate (object sender, FormClosingEventArgs e) {
-                if (closing || finished || session == "") return;
-                e.Cancel = true; closing = true; timer.Stop();
-                try { await engine.Api("DELETE", "/api/signin/" + session, null, 3000); } catch { } Close();
+                if (closing || finished) return;
+                closing = true; timer.Stop();
+                if (session == "") return;
+                e.Cancel = true;
+                string cancelledSession = session; session = "";
+                await CancelSession(cancelledSession);
+                if (!IsDisposed) Close();
             };
-            FormClosed += delegate { timer.Stop(); timer.Dispose(); password.Clear(); };
+            FormClosed += delegate { closing = true; timer.Stop(); timer.Dispose(); password.Clear(); };
         }
 
         private void AddInputField(Panel p, string labelText, TextBox tb, ref int y, bool isPassword) {
@@ -109,18 +113,31 @@ namespace III85III.Vpn {
         }
 
         async Task Submit() {
+            if (submitting || closing || IsDisposed || session != "") return;
+            submitting = true;
             submit.Enabled = false;
             try {
-                if (session == "") {
-                    if (email.Text.Trim() == "" || password.Text == "") throw new IOException("Enter your Mozilla email and password.");
-                    var reply = await engine.Api("POST", "/api/signin", new { email = email.Text.Trim(), password = password.Text }); password.Clear();
-                    session = Json.Str(reply, "id"); if (session == "") throw new IOException("Sign-in did not return a session.");
-                    email.Enabled = password.Enabled = false; timer.Start(); Apply(reply);
+                if (email.Text.Trim() == "" || password.Text == "") throw new IOException("Enter your Mozilla email and password.");
+                var reply = await engine.Api("POST", "/api/signin", new { email = email.Text.Trim(), password = password.Text });
+                string returnedSession = Json.Str(reply, "id");
+                if (closing || IsDisposed) {
+                    await CancelSession(returnedSession);
+                    return;
                 }
-            } catch (Exception e) { feedback.Text = e.Message; submit.Enabled = true; }
+                password.Clear();
+                session = returnedSession; if (session == "") throw new IOException("Sign-in did not return a session.");
+                email.Enabled = password.Enabled = false; timer.Start(); Apply(reply);
+            } catch (Exception e) { if (!closing && !IsDisposed) { feedback.Text = e.Message; submit.Enabled = true; } }
+            finally { submitting = false; }
+        }
+
+        async Task CancelSession(string id) {
+            if (String.IsNullOrEmpty(id)) return;
+            try { await engine.Api("DELETE", "/api/signin/" + id, null, 3000); } catch { }
         }
 
         void Apply(Dictionary<string, object> state) {
+            if (closing || IsDisposed) return;
             string next = Json.Str(state, "step"); feedback.Text = Json.Str(state, "message") + "\n" + Json.Str(state, "error");
             if (next == "done") { finished = true; timer.Stop(); DialogResult = DialogResult.OK; Close(); return; }
             if (next == "failed" || next == "cancelled") { timer.Stop(); session = ""; email.Enabled = password.Enabled = true; submit.Text = "Try again"; submit.Enabled = true; return; }
