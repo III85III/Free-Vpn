@@ -22,9 +22,9 @@ internal static class Installer {
             });
             string exe=Path.Combine(root,"III85III VPN.exe");if(!File.Exists(exe))throw new IOException("Incomplete package.");
             CreateShortcut(exe,root);
-            if(MessageBox.Show("Installation complete. Open the preview now?\n\nLocation: "+root,"III85III VPN Setup",MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes)Process.Start(new ProcessStartInfo(exe){UseShellExecute=true,WorkingDirectory=root});
+            if(MessageBox.Show("Installation complete. Open III85III VPN now?\n\nLocation: "+root,"III85III VPN Setup",MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes)Process.Start(new ProcessStartInfo(exe){UseShellExecute=true,WorkingDirectory=root});
             return 0;
-        }catch(Exception){MessageBox.Show("Installation could not finish. Close any running copy of this preview and try again. Your saved accounts were not removed.","III85III VPN Setup",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
+        }catch(Exception){MessageBox.Show("Installation could not finish. Close any running copy of III85III VPN and try again. Your saved accounts were not removed.","III85III VPN Setup",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
     }
     static void CreateShortcut(string exe,string root){
         object shell=null,shortcut=null;

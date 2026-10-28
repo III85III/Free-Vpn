@@ -1,6 +1,6 @@
 ﻿# Security
 
-This client is a development preview and has not received an independent security audit. It uses the III85III VPN native engine.
+This client has not received an independent security audit. It uses the III85III VPN native engine.
 
 Do not post passwords, encryption keys, account data, raw authentication logs or session tokens in public issues. Use GitHub private vulnerability reporting where available.
 
