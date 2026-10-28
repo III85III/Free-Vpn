@@ -9,6 +9,7 @@ namespace III85III.Vpn {
     internal sealed class SignInForm : Form {
         readonly Engine engine;
         readonly TextBox email = new TextBox(), password = new TextBox();
+        readonly LuxuryButton passwordVisibility = new LuxuryButton { Text = "Show", Variant = ButtonVariant.Ghost, AccessibleName = "Show password" };
         readonly Label note = new Label(), feedback = new Label();
         readonly LuxuryButton submit = new LuxuryButton { Text = "Sign in", Variant = ButtonVariant.Primary }, cancel = new LuxuryButton { Text = "Cancel", Variant = ButtonVariant.Secondary };
         readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer { Interval = 1200 };
@@ -59,7 +60,9 @@ namespace III85III.Vpn {
 
             submit.Click += async delegate { await Submit(); };
             cancel.Click += delegate { Close(); };
+            passwordVisibility.Click += delegate { SetPasswordVisible(password.UseSystemPasswordChar); };
             AcceptButton = submit; CancelButton = cancel;
+            Shown += delegate { email.Focus(); };
 
             timer.Tick += async delegate {
                 if (polling || closing || session == "") return;
@@ -78,7 +81,7 @@ namespace III85III.Vpn {
                 await CancelSession(cancelledSession);
                 if (!IsDisposed) Close();
             };
-            FormClosed += delegate { closing = true; timer.Stop(); timer.Dispose(); password.Clear(); };
+            FormClosed += delegate { closing = true; timer.Stop(); timer.Dispose(); SetPasswordVisible(false); password.Clear(); };
         }
 
         private void AddInputField(Panel p, string labelText, TextBox tb, ref int y, bool isPassword) {
@@ -98,12 +101,22 @@ namespace III85III.Vpn {
             tb.ForeColor = Theme.TextPrimary;
             tb.Font = Theme.Font(10f);
             tb.UseSystemPasswordChar = isPassword;
+            tb.AccessibleName = isPassword ? "Mozilla password" : "Email address";
+            tb.AccessibleDescription = isPassword ? "The password for your Mozilla account." : "Your Mozilla account email address.";
+            tb.TabIndex = 0;
             tb.Location = new Point(10, 8);
             tb.Size = new Size(404, 20);
             tb.GotFocus += delegate { box.Invalidate(); };
             tb.LostFocus += delegate { box.Invalidate(); };
 
             box.Controls.Add(tb);
+            if (isPassword) {
+                tb.Width = box.Width - 92;
+                passwordVisibility.SetBounds(box.Width - 72, 3, 64, 30);
+                passwordVisibility.Font = Theme.Font(8.5f);
+                passwordVisibility.TabIndex = 1;
+                box.Controls.Add(passwordVisibility);
+            }
             p.Controls.Add(box);
             y += 46;
         }
@@ -112,9 +125,20 @@ namespace III85III.Vpn {
             get { var cp = base.CreateParams; cp.ClassStyle |= 0x00020000; return cp; }
         }
 
+        void SetPasswordVisible(bool visible) {
+            if (IsDisposed || password.IsDisposed || passwordVisibility.IsDisposed) return;
+            int start = password.SelectionStart, length = password.SelectionLength;
+            password.UseSystemPasswordChar = !visible;
+            password.Select(start, length);
+            passwordVisibility.Text = visible ? "Hide" : "Show";
+            passwordVisibility.AccessibleName = visible ? "Hide password" : "Show password";
+        }
+
         async Task Submit() {
             if (submitting || closing || IsDisposed || session != "") return;
             submitting = true;
+            SetPasswordVisible(false);
+            passwordVisibility.Enabled = false;
             submit.Enabled = false;
             try {
                 if (email.Text.Trim() == "" || password.Text == "") throw new IOException("Enter your Mozilla email and password.");
@@ -128,7 +152,10 @@ namespace III85III.Vpn {
                 session = returnedSession; if (session == "") throw new IOException("Sign-in did not return a session.");
                 email.Enabled = password.Enabled = false; timer.Start(); Apply(reply);
             } catch (Exception e) { if (!closing && !IsDisposed) { feedback.Text = e.Message; submit.Enabled = true; } }
-            finally { submitting = false; }
+            finally {
+                submitting = false;
+                if (!closing && !IsDisposed) passwordVisibility.Enabled = session == "" && password.Enabled;
+            }
         }
 
         async Task CancelSession(string id) {

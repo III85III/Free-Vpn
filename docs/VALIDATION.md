@@ -12,6 +12,8 @@ Twelve additional frontend latency regression checks pass against a real local H
 
 Eleven sign-in window lifecycle checks pass against a delayed local HTTP fixture. Closing the credentials window clears the password, late replies cannot reopen or accept it, a returned temporary session is cancelled, duplicate submissions are suppressed and active errors allow retry. These are frontend lifecycle checks; they do not establish real Mozilla authentication or resolve the reported remote HTTP 406.
 
+Ten additional credential-usability checks cover password reveal/masking, accessible input names, keyboard tab ordering, non-overlapping controls, preserved selection and masking during validation/submission. The combined credential/lifecycle suite now has 21 checks. Screen-reader operation and final display scaling still require manual review; no core authentication behavior was changed.
+
 Four Windows BAT/Python process-environment experiments pass using generated scripts and loopback HTTP servers only. They show both a proxy-aware request taking its configured proxy path and a raw socket bypassing those same environment settings. The parent environment is unchanged. This validates a limitation, not a completed Telegram-bots-only feature; see [bot routing status](bot-routing.md).
 
 Required live checks:

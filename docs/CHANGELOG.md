@@ -2,6 +2,9 @@
 
 ## Frontend reliability
 
+- Add a keyboard-reachable Show/Hide password control with descriptive accessibility names and preserved text selection.
+- Mask a revealed password immediately on submit, disable reveal while the request is pending and restore correction controls after failure.
+
 - Treat closing the credentials window as cancellation even before its request returns; a late response cannot reopen or accept the closed window.
 - Cancel only that temporary sign-in session when its identifier arrives late, suppress duplicate submissions and keep error/retry handling on active windows.
 - Eleven loopback HTTP/window-lifecycle checks cover delayed success, delayed failure, duplicate submit, password clearing and cancellation.

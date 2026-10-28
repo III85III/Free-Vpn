@@ -17,10 +17,25 @@ namespace III85III.Vpn {
         static void Pump(Func<bool> done){var watch=Stopwatch.StartNew();while(!done()){if(watch.ElapsedMilliseconds>7000)throw new Exception("Sign-in fixture timed out");Application.DoEvents();Thread.Sleep(5);}}
         static void Finish(Task task){Pump(()=>task.IsCompleted);task.GetAwaiter().GetResult();}
         static void Prepare(SignInForm form){var handle=form.Handle;((TextBox)Field(form,"email")).Text="synthetic@example.invalid";((TextBox)Field(form,"password")).Text="fixture-password";}
+        static void TogglePassword(SignInForm form){typeof(Button).GetMethod("OnClick",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(Field(form,"passwordVisibility"),new object[]{EventArgs.Empty});}
         [STAThread]static int Main(){try{Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);Run();Console.WriteLine("All "+checks+" sign-in lifecycle checks passed.");return 0;}catch(Exception error){Console.Error.WriteLine(error);return 1;}}
         static void Run(){
+            using(var engine=new Engine("unused","unused"))using(var form=new SignInForm(engine)){
+                Prepare(form);var password=(TextBox)Field(form,"password");var toggle=(Button)Field(form,"passwordVisibility");
+                Check(password.UseSystemPasswordChar&&toggle.Text=="Show","password starts masked with an explicit reveal action");
+                Check(password.AccessibleName=="Mozilla password"&&((TextBox)Field(form,"email")).AccessibleName=="Email address","credentials have descriptive accessibility names");
+                Check(toggle.TabStop&&toggle.TabIndex>password.TabIndex,"password visibility is reachable after the input in keyboard order");
+                Check(password.Right+8<=toggle.Left&&password.Parent==toggle.Parent,"visibility button cannot overlap typed password text");
+                password.Select(2,4);TogglePassword(form);
+                Check(!password.UseSystemPasswordChar&&toggle.Text=="Hide"&&toggle.AccessibleName=="Hide password","reveal action updates visible and accessible state");
+                Check(password.SelectionStart==2&&password.SelectionLength==4,"toggling visibility preserves the selected input");
+                TogglePassword(form);Check(password.UseSystemPasswordChar&&toggle.Text=="Show","password can be masked again without changing its value");
+                TogglePassword(form);((TextBox)Field(form,"email")).Clear();Finish(Submit(form));
+                Check(password.UseSystemPasswordChar&&toggle.Enabled,"even local validation masks the password and allows correction");form.Close();
+            }
             using(var fixture=new Fixture(false))using(var engine=new Engine("unused","unused",fixture.Endpoint,"fixture-local-token"))using(var form=new SignInForm(engine)){
-                Prepare(form);var request=Submit(form);Pump(()=>fixture.LoginReceived.IsSet);form.Close();
+                Prepare(form);TogglePassword(form);var request=Submit(form);Pump(()=>fixture.LoginReceived.IsSet);
+                Check(((TextBox)Field(form,"password")).UseSystemPasswordChar&&!((Button)Field(form,"passwordVisibility")).Enabled,"submitting masks a revealed password while its request is pending");form.Close();
                 Check(form.IsDisposed&&(bool)Field(form,"closing"),"cancelling before the login response marks the window closed");
                 Check(((TextBox)Field(form,"password")).Text=="","closing clears the password while the response is pending");
                 fixture.ReleaseLogin.Set();Finish(request);fixture.Finish();
@@ -43,6 +58,7 @@ namespace III85III.Vpn {
             using(var fixture=new Fixture(true))using(var engine=new Engine("unused","unused",fixture.Endpoint,"fixture-local-token"))using(var form=new SignInForm(engine)){
                 Prepare(form);fixture.ReleaseLogin.Set();Finish(Submit(form));fixture.Finish();
                 Check(((Button)Field(form,"submit")).Enabled&&!(bool)Field(form,"submitting"),"an active login can retry after a request failure");
+                Check(((Button)Field(form,"passwordVisibility")).Enabled,"request failure restores the visibility control for correction");
                 Check(((Label)Field(form,"feedback")).Text.Contains("Synthetic service unavailable"),"an active window reports its request failure");form.Close();
             }
         }
