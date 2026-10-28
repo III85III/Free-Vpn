@@ -38,7 +38,7 @@ III85III VPN یک کلاینت محلی برای حساب‌های واجد شر
 
 ۲۵ تست Node، ۴۴ بررسی هستهٔ دسکتاپ و ۸۹۱ بررسی چیدمان موفق شده‌اند؛ این‌ها جای تست اتصال واقعی را نمی‌گیرند. Android، iOS، macOS، Linux و انتشار در فروشگاه‌ها فعلاً برنامهٔ آینده‌اند.
 
-[راهنمای کامل و ساخت از سورس](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[راهنمای کامل و ساخت از سورس](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

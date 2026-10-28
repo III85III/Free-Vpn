@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs');const path=require('node:path');const os=require('node:os');const crypto=require('node:crypto');const {spawn}=require('node:child_process');const readline=require('node:readline');
-const root=path.resolve(__dirname,'..');const app=process.argv[2]?path.resolve(process.argv[2]):path.join(root,'dist','III85III VPN 2.1 Preview');const data=path.join(root,'test-results','empty-account-smoke');
+const root=path.resolve(__dirname,'..');const app=process.argv[2]?path.resolve(process.argv[2]):path.join(root,'dist','III85III VPN');const data=path.join(root,'test-results','empty-account-smoke');
 const controller=spawn(path.join(app,'runtime','node.exe'),[path.join(app,'src','control.cjs'),'--data-dir',data],{windowsHide:true,stdio:['pipe','pipe','pipe']});
 let stderr='';controller.stderr.on('data',b=>stderr+=b);
 async function main(){

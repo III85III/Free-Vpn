@@ -38,7 +38,7 @@ III85III VPN عميل محلي للحسابات المؤهلة لدى Mozilla. �
 
 نجح 25 اختبار Node و44 فحصاً لنواة سطح المكتب و891 فحص تخطيط. لا تعوض هذه اختبارات الاتصال الحقيقي. Android وiOS وmacOS وLinux ومتاجر التطبيقات خطط مستقبلية.
 
-[الدليل الكامل والبناء من المصدر](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[الدليل الكامل والبناء من المصدر](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

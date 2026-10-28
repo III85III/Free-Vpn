@@ -36,7 +36,7 @@ Yalnızca 80, 443, 8080 ve 8443 web TCP portları desteklenir; seçilen uygulama
 
 25 Node testi, 44 masaüstü çekirdek kontrolü ve 891 yerleşim kontrolü geçti. Bunlar gerçek bağlantı testinin yerini tutmaz. Android, iOS, macOS, Linux ve mağazalar gelecek planlarıdır.
 
-[Tam kılavuz ve kaynaktan derleme](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[Tam kılavuz ve kaynaktan derleme](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

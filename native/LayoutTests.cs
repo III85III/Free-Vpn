@@ -7,6 +7,7 @@ namespace III85III.Vpn {
         static int checks;
         static object Field(object owner,string name) { return owner.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(owner); }
         static void Check(bool value,string name) { checks++; if(!value) throw new Exception(name); }
+        static int TextBoxes(Control root){int count=root is TextBox?1:0;foreach(Control child in root.Controls)count+=TextBoxes(child);return count;}
         static void Arrange(MainForm form) { form.PerformLayout(); form.GetType().GetMethod("ArrangeResponsive",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(form,null); Application.DoEvents(); }
         [STAThread] static int Main(string[] args) { try { return Run(args); } catch(Exception error) { Console.Error.WriteLine(error); return 1; } }
         static int Run(string[] args) {
@@ -18,6 +19,16 @@ namespace III85III.Vpn {
             Check(!safe.Contains("private@example.invalid")&&!safe.Contains("never-export-this"),"safe report excludes identity, credentials and logs");
             using(var engine=new Engine(AppDomain.CurrentDomain.BaseDirectory,System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"layout-data")))
             using(var form=new MainForm(engine,true)) {
+                using(var login=new SignInForm(engine)){Check(TextBoxes(login)==2,"initial sign-in has only email and password");}
+                using(var verify=new VerificationForm(engine,"test",Json.Decode("{\"step\":\"need_email_code\"}"))){
+                    Check(TextBoxes(verify)==1,"separate verification window contains only one code input");
+                    var apply=verify.GetType().GetMethod("Apply",BindingFlags.NonPublic|BindingFlags.Instance);
+                    apply.Invoke(verify,new object[]{Json.Decode("{\"step\":\"need_email_code\"}")});
+                    Check(((Label)Field(verify,"heading")).Text=="Check your email","email verification explains where to find the code");
+                    apply.Invoke(verify,new object[]{Json.Decode("{\"step\":\"need_totp\"}")});
+                    Check(((Label)Field(verify,"heading")).Text=="Enter your security code","authenticator code is requested only when required");
+                    Check(!VerificationForm.NeedsCode("done")&&VerificationForm.NeedsCode("need_email_code"),"verification controls follow the service step");
+                }
                 form.Show();
                 foreach(var size in new[]{new Size(680,520),new Size(800,600),new Size(1040,760),new Size(1280,900)}) {
                     form.ClientSize=size;

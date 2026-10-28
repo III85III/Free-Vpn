@@ -36,7 +36,7 @@ Unterstützt wird Web-TCP auf Port 80, 443, 8080 und 8443; UDP ausgewählter App
 
 25 Node-Tests, 44 Desktop-Kernprüfungen und 891 Layoutprüfungen bestanden. Sie ersetzen keinen echten Verbindungstest. Android, iOS, macOS, Linux und App-Stores sind Zukunftspläne.
 
-[Vollständige Anleitung und Quellcode-Build](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[Vollständige Anleitung und Quellcode-Build](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

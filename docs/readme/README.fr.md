@@ -36,7 +36,7 @@ Seul le TCP web sur les ports 80, 443, 8080 et 8443 est pris en charge ; l’UDP
 
 25 tests Node, 44 contrôles du cœur de bureau et 891 contrôles de mise en page ont réussi. Ils ne remplacent pas un essai de connexion réel. Android, iOS, macOS, Linux et les boutiques sont des projets futurs.
 
-[Guide complet et compilation](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[Guide complet et compilation](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

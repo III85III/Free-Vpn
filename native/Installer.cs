@@ -9,13 +9,13 @@ using System.Windows.Forms;
 [assembly:AssemblyTitle("III85III VPN Setup")]
 [assembly:AssemblyCompany("III85III")]
 [assembly:AssemblyProduct("III85III VPN")]
-[assembly:AssemblyVersion("2.1.0.2")]
+[assembly:AssemblyVersion("2.1.0.3")]
 internal static class Installer {
     [STAThread]static int Main(){
         Application.EnableVisualStyles();
-        if(MessageBox.Show("Install the III85III VPN development preview for this Windows user?\n\nEnglish is the default language. Mozilla sign-in is still under investigation. Your account data is kept separately.\n\nThis package includes the required runtime and open-source licenses.","III85III VPN Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 0;
+        if(MessageBox.Show("Install III85III VPN for this Windows user?\n\nEnglish is the default language. Your account data is kept separately.\n\nThis development preview includes the required components and licenses.","III85III VPN Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 0;
         try{
-            string root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN Preview","2.1.0-preview.2");
+            string root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","III85III VPN");
             Directory.CreateDirectory(root);
             var security=new DirectorySecurity();var sid=WindowsIdentity.GetCurrent().User;security.SetAccessRuleProtection(true,false);security.AddAccessRule(new FileSystemAccessRule(sid,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));new DirectoryInfo(root).SetAccessControl(security);
             string prefix=Path.GetFullPath(root)+Path.DirectorySeparatorChar;

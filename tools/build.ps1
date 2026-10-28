@@ -1,7 +1,7 @@
 param([string]$OutputDirectory,[string]$DesktopSource)
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
-$out=if($OutputDirectory){[IO.Path]::GetFullPath($OutputDirectory)}else{Join-Path $root 'dist\III85III VPN 2.1 Preview'}
+$out=if($OutputDirectory){[IO.Path]::GetFullPath($OutputDirectory)}else{Join-Path $root 'dist\III85III VPN'}
 if(-not $DesktopSource -and (Test-Path -LiteralPath "$root\native\III85III.Vpn.cs")){$DesktopSource="$root\native\III85III.Vpn.cs"}
 New-Item -ItemType Directory -Path $out,"$out\runtime","$out\src","$out\licenses","$out\source\src","$out\source\native","$out\source\tools","$out\source\test" -Force | Out-Null
 $compiler='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
@@ -11,7 +11,7 @@ $refs=@('/reference:System.dll','/reference:System.Core.dll','/reference:System.
 foreach($target in @(@{name='III85III VPN';file='App.cs';kind='winexe'},@{name='III85III Tools';file='Tools.cs';kind='exe'},@{name='III85III Route Host';file='RouteHost.cs';kind='winexe'})){
     $inputs=@("$root\native\$($target.file)")
     if($target.file -eq 'App.cs'){
-        if($DesktopSource){$inputs=@($DesktopSource,(Join-Path (Split-Path -Parent $DesktopSource) 'DesktopFeatures.cs'))}
+        if($DesktopSource){$inputs=@($DesktopSource,(Join-Path (Split-Path -Parent $DesktopSource) 'DesktopFeatures.cs'),(Join-Path (Split-Path -Parent $DesktopSource) 'VerificationForm.cs'))}
         else{$inputs+="$root\native\Ui.cs"}
     }
     & $compiler /nologo /codepage:65001 /utf8output /platform:x64 /optimize+ "/target:$($target.kind)" "/out:$out\$($target.name).exe" "/win32icon:$iconFile" "/win32manifest:$root\native\app.manifest" @refs @inputs
@@ -42,14 +42,16 @@ if(Test-Path -LiteralPath "$root\docs"){Copy-Item -LiteralPath "$root\docs" -Des
 Get-ChildItem -LiteralPath "$root\tools" -File | Copy-Item -Destination "$out\source\tools" -Force
 Get-ChildItem -LiteralPath "$root\test" -File | Copy-Item -Destination "$out\source\test" -Force
 Get-ChildItem -LiteralPath "$root\src" -Filter '*.cjs' -File | Copy-Item -Destination "$out\source\src" -Force
-foreach($document in 'package.json','README.md','LICENSE','VALIDATION.md','ROADMAP.md','PRIVACY.md'){
+foreach($document in 'package.json','README.md','LICENSE'){
     if(Test-Path -LiteralPath "$root\$document"){Copy-Item -LiteralPath "$root\$document" -Destination "$out\source" -Force}
 }
 New-Item -ItemType Directory -Path "$out\validation" -Force | Out-Null
 Get-ChildItem -LiteralPath "$root\test-results" -Filter 'smoke.json' -File | Copy-Item -Destination "$out\validation" -Force
 Get-ChildItem -LiteralPath "$root\vendor\licenses" -File | Copy-Item -Destination "$out\licenses" -Force
-Copy-Item -LiteralPath "$root\START-HERE.txt","$root\THIRD-PARTY-NOTICES.txt" -Destination $out -Force
-foreach($document in 'START-HERE.html','README.md','LICENSE','PRIVACY.md','ROADMAP.md','VALIDATION.md'){
+Copy-Item -LiteralPath "$root\docs\guide.txt" -Destination "$out\START-HERE.txt" -Force
+Copy-Item -LiteralPath "$root\docs\guide.html" -Destination "$out\START-HERE.html" -Force
+Copy-Item -LiteralPath "$root\THIRD-PARTY-NOTICES.txt" -Destination $out -Force
+foreach($document in 'README.md','LICENSE'){
     if(Test-Path -LiteralPath "$root\$document"){Copy-Item -LiteralPath "$root\$document" -Destination $out -Force}
 }
 Copy-Item -LiteralPath "$root\vendor\router-provenance.json" -Destination "$out\licenses" -Force

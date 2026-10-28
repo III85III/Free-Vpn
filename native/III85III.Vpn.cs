@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("Independent III85III selected-application VPN client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.1.0.2")]
-[assembly: System.Reflection.AssemblyFileVersion("2.1.0.2")]
+[assembly: System.Reflection.AssemblyVersion("2.1.0.3")]
+[assembly: System.Reflection.AssemblyFileVersion("2.1.0.3")]
 
 namespace III85III.Vpn {
     internal sealed class AppBypass {
@@ -779,12 +779,11 @@ namespace III85III.Vpn {
 
     internal sealed class SignInForm : Form {
         readonly Engine engine;
-        readonly TextBox email = new TextBox(), password = new TextBox(), answer = new TextBox();
+        readonly TextBox email = new TextBox(), password = new TextBox();
         readonly Label note = new Label(), feedback = new Label();
-        readonly PictureBox captcha = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Visible = false };
         readonly LuxuryButton submit = new LuxuryButton { Text = "Sign in", Variant = ButtonVariant.Primary }, cancel = new LuxuryButton { Text = "Cancel", Variant = ButtonVariant.Secondary };
         readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer { Interval = 1200 };
-        string session = "", step = ""; bool polling, closing, finished;
+        string session = ""; bool polling, closing, finished;
 
         public SignInForm(Engine engine) {
             this.engine = engine;
@@ -793,21 +792,21 @@ namespace III85III.Vpn {
             StartPosition = FormStartPosition.CenterParent;
             BackColor = Theme.Bg;
             ForeColor = Theme.TextPrimary;
-            Size = new Size(480, Math.Min(620, Screen.PrimaryScreen.WorkingArea.Height - 32));
+            Size = new Size(480, Math.Min(460, Screen.PrimaryScreen.WorkingArea.Height - 32));
             DoubleBuffered = true;
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
             var titleBar = new LuxuryTitleBar(this, false);
             Controls.Add(titleBar);
 
-            var panel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(28, 54, 28, 20), AutoScroll = true, AutoScrollMinSize = new Size(0, 554) };
+            var panel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(28, 54, 28, 20), AutoScroll = true, AutoScrollMinSize = new Size(0, 414) };
             Controls.Add(panel);
             titleBar.BringToFront();
 
                 var title = new Label { Text = "Welcome to III85III", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(28, 56) };
             panel.Controls.Add(title);
 
-            note.Text = "Sign in with your Mozilla account. Credentials remain strictly on this computer.";
+            note.Text = "Use your Mozilla email and password. If a code is needed, we'll ask for it next.";
             note.Font = Theme.Font(9f);
             note.ForeColor = Theme.TextSecondary;
             note.Size = new Size(420, 40);
@@ -817,12 +816,6 @@ namespace III85III.Vpn {
             int y = 148;
             AddInputField(panel, "Email Address", email, ref y, false);
             AddInputField(panel, "Password", password, ref y, true);
-            AddInputField(panel, "Verification Code / CAPTCHA (if requested)", answer, ref y, false);
-            answer.Enabled = false;
-
-            captcha.Location = new Point(28, y); captcha.Size = new Size(424, 70);
-            panel.Controls.Add(captcha);
-            y += 76;
 
             feedback.Font = Theme.Font(8.5f);
             feedback.ForeColor = Theme.Accent;
@@ -837,6 +830,7 @@ namespace III85III.Vpn {
 
             submit.Click += async delegate { await Submit(); };
             cancel.Click += delegate { Close(); };
+            AcceptButton = submit; CancelButton = cancel;
 
             timer.Tick += async delegate {
                 if (polling || closing || session == "") return;
@@ -851,7 +845,7 @@ namespace III85III.Vpn {
                 e.Cancel = true; closing = true; timer.Stop();
                 try { await engine.Api("DELETE", "/api/signin/" + session, null, 3000); } catch { } Close();
             };
-            FormClosed += delegate { timer.Stop(); timer.Dispose(); if (captcha.Image != null) captcha.Image.Dispose(); password.Clear(); answer.Clear(); };
+            FormClosed += delegate { timer.Stop(); timer.Dispose(); password.Clear(); };
         }
 
         private void AddInputField(Panel p, string labelText, TextBox tb, ref int y, bool isPassword) {
@@ -893,28 +887,23 @@ namespace III85III.Vpn {
                     var reply = await engine.Api("POST", "/api/signin", new { email = email.Text.Trim(), password = password.Text }); password.Clear();
                     session = Json.Str(reply, "id"); if (session == "") throw new IOException("Sign-in did not return a session.");
                     email.Enabled = password.Enabled = false; timer.Start(); Apply(reply);
-                } else { Apply(await engine.Api("POST", "/api/signin/" + session, new { value = answer.Text.Trim() })); answer.Clear(); }
+                }
             } catch (Exception e) { feedback.Text = e.Message; submit.Enabled = true; }
         }
 
         void Apply(Dictionary<string, object> state) {
             string next = Json.Str(state, "step"); feedback.Text = Json.Str(state, "message") + "\n" + Json.Str(state, "error");
             if (next == "done") { finished = true; timer.Stop(); DialogResult = DialogResult.OK; Close(); return; }
-            if (next == "failed" || next == "cancelled") { timer.Stop(); session = ""; email.Enabled = password.Enabled = true; answer.Enabled = false; submit.Text = "Try again"; submit.Enabled = true; return; }
+            if (next == "failed" || next == "cancelled") { timer.Stop(); session = ""; email.Enabled = password.Enabled = true; submit.Text = "Try again"; submit.Enabled = true; return; }
             bool input = next == "need_email_code" || next == "need_totp" || next == "need_unblock_code" || next == "need_captcha";
-            answer.Enabled = input; submit.Enabled = input; submit.Text = input ? "Verify" : "Waiting for Mozilla…";
-            if (input && step != next) { answer.Clear(); answer.Focus(); }
-            step = next;
-            string encoded = Json.Str(state, "captcha");
-            if (next == "need_captcha" && encoded.StartsWith("data:image/", StringComparison.Ordinal) && encoded.IndexOf(',') > 0) {
-                try {
-                    var bytes = Convert.FromBase64String(encoded.Substring(encoded.IndexOf(',') + 1));
-                    using (var stream = new MemoryStream(bytes)) using (var img = Image.FromStream(stream)) {
-                        if (captcha.Image != null) captcha.Image.Dispose(); captcha.Image = new Bitmap(img);
-                    }
-                    captcha.Visible = true;
-                } catch { feedback.Text += "\nCould not display CAPTCHA. Cancel and retry."; }
-            } else captcha.Visible = false;
+            submit.Enabled = false; submit.Text = "Waiting for Mozilla…";
+            if (input) {
+                timer.Stop();
+                using (var verification = new VerificationForm(engine, session, state)) {
+                    if (verification.ShowDialog(this) == DialogResult.OK) { finished = true; DialogResult = DialogResult.OK; }
+                }
+                Close();
+            }
         }
     }
 

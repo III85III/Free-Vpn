@@ -36,7 +36,7 @@ III85III VPN は、サービスの利用条件を満たす Mozilla アカウン�
 
 Node テスト 25 件、デスクトップのコア確認 44 件、レイアウト確認 891 件に合格しました。実接続試験の代わりにはなりません。Android、iOS、macOS、Linux、ストア公開は将来の計画です。
 
-[詳細ガイドとソースからのビルド](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[詳細ガイドとソースからのビルド](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

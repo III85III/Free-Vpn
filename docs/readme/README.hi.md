@@ -36,7 +36,7 @@ III85III VPN सेवा के लिए पात्र Mozilla खातो�
 
 25 Node परीक्षण, 44 डेस्कटॉप कोर जाँच और 891 लेआउट जाँच सफल रहीं। ये वास्तविक कनेक्शन परीक्षण का विकल्प नहीं हैं। Android, iOS, macOS, Linux और ऐप स्टोर प्रकाशन भविष्य की योजनाएँ हैं।
 
-[पूरा गाइड और स्रोत से बिल्ड](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[पूरा गाइड और स्रोत से बिल्ड](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

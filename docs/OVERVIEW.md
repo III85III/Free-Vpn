@@ -58,11 +58,11 @@ The routing download comes from the official SagerNet release and its SHA-256 is
 
 ## Privacy and implementation
 
-The interface and independent local controller are written for III85III. Mozilla account and gateway behavior follow the [official Mozilla protocol references](../PROTOCOL.md). No executable or source archive from the previous third-party Firefox VPN Client is included in this repository or its independent preview.
+The interface and independent local controller are written for III85III. Mozilla account and gateway behavior follow the [official Mozilla protocol references](PROTOCOL.md). No executable or source archive from the previous third-party Firefox VPN Client is included in this repository or its independent preview.
 
 The controller binds only to authenticated `127.0.0.1`. Sessions are protected using Windows DPAPI and a user-private data directory. Passwords are used during sign-in and are not written to the account vault. There is no III85III VPS or analytics backend. Mozilla and the chosen service infrastructure still receive the requests needed to authenticate and transport traffic.
 
-See [PRIVACY.md](../PRIVACY.md), [VALIDATION.md](../VALIDATION.md) and [SECURITY.md](../SECURITY.md). Please report issues with **Copy safe report** rather than uploading account files or raw logs.
+See [PRIVACY.md](PRIVACY.md), [VALIDATION.md](VALIDATION.md) and [SECURITY.md](../.github/SECURITY.md). Please report issues with **Copy safe report** rather than uploading account files or raw logs.
 
 ## فارسی
 
@@ -72,6 +72,6 @@ III85III یک برنامهٔ محلی و رایگان برای ویندوز اس
 
 ## Roadmap and contribution
 
-Android, iOS, macOS, Linux, Google Play and App Store distribution are **future plans**, not currently available clients or approved listings. See [ROADMAP.md](../ROADMAP.md). Fixes, accessibility feedback, translations and reproducible bug reports are welcome. Please avoid posting credentials or personal information in public issues.
+Android, iOS, macOS, Linux, Google Play and App Store distribution are **future plans**, not currently available clients or approved listings. See [ROADMAP.md](ROADMAP.md). Fixes, accessibility feedback, translations and reproducible bug reports are welcome. Please avoid posting credentials or personal information in public issues.
 
 Project code: MIT. Node.js, sing-box, fonts and system dependencies retain their respective licenses; see [THIRD-PARTY-NOTICES.txt](../THIRD-PARTY-NOTICES.txt). This unofficial client is not affiliated with or endorsed by Mozilla. Mozilla and Firefox names and marks belong to their owners.

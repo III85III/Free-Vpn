@@ -36,7 +36,7 @@ III85III VPN — локальный клиент для учётных запи�
 
 Пройдены 25 Node-тестов, 44 проверки ядра и 891 проверка компоновки. Это не замена проверке реального соединения. Android, iOS, macOS, Linux и магазины приложений — будущие планы.
 
-[Полное руководство и сборка](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[Полное руководство и сборка](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

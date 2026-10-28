@@ -36,7 +36,7 @@ III85III VPN 是面向符合服务资格的 Mozilla 账户的本地客户端。�
 
 已通过 25 项 Node 测试、44 项桌面核心检查和 891 项布局检查。这些不能替代真实连接测试。Android、iOS、macOS、Linux 及应用商店发布均为未来计划。
 
-[完整指南与源码构建](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[完整指南与源码构建](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 

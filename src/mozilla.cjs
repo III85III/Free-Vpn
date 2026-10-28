@@ -179,7 +179,7 @@ class MozillaClient {
         162: 'Mozilla rejected the application client identifier.',
         166: 'Mozilla rejected the client type.',
         169: 'Mozilla requires a browser authorization flow for this client.'
-      })[errno] || (response.status === 406 ? 'Mozilla anti-bot check did not pass. Please verify your internet connection and try again.' : 'Mozilla account request was refused.');
+      })[errno] || (response.status === 406 ? 'Mozilla requires a browser security check that this app could not complete. Browser sign-in may work while in-app sign-in remains blocked. This is not a password error.' : 'Mozilla account request was refused.');
       const stage = ({'/account/login':'Sign-in','/oauth/token':'Account authorization','/session/verify_code':'Email verification','/session/verify/totp':'Two-step verification'})[path] || 'Account request';
       throw new ServiceError(stage + ': ' + safe + (errno ? ' [Mozilla ' + errno + ']' : ''), response.status, 'account', errno);
     }

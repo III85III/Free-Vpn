@@ -36,7 +36,7 @@ Solo se admite TCP web en los puertos 80, 443, 8080 y 8443; se rechaza UDP de la
 
 Pasaron 25 pruebas Node, 44 comprobaciones del núcleo y 891 de diseño. No sustituyen pruebas de conexión real. Android, iOS, macOS, Linux y las tiendas son planes futuros.
 
-[Guía completa y compilación](../OVERVIEW.md#build-from-source) · [Privacy](../../PRIVACY.md) · [Validation](../../VALIDATION.md) · [Roadmap](../../ROADMAP.md) · [Protocol](../../PROTOCOL.md)
+[Guía completa y compilación](../OVERVIEW.md#build-from-source) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [Roadmap](../ROADMAP.md) · [Protocol](../PROTOCOL.md)
 
 MIT · [LICENSE](../../LICENSE) · [Third-party licenses](../../THIRD-PARTY-NOTICES.txt)
 
