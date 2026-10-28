@@ -20,6 +20,8 @@ Fourteen polling checks use concurrent loopback HTTP fixtures: hidden diagnostic
 
 Thirty-three installer checks use generated ZIPs and disposable folders. Missing executables, mixed archive roots, traversal paths, duplicate filenames and file/directory conflicts leave the existing installation intact. The complete replacement is prepared before switching directories; an injected promotion failure verifies rollback. Successful replacement removes obsolete application files while separate fixture data remains unchanged. The installer compiles independently. These checks do not run an installed application, change the owner's core, validate a final release payload, or simulate power loss during the directory switch.
 
+Twenty-nine keyboard checks exercise the custom navigation, location picker, routing cards and tray toggle in a disposable window. Enter/Space activate on release, held keys do not repeat actions, focus loss or disabling cancels a pending activation, modified shortcuts are ignored, and accessible names, roles and selected/checked states are exposed. Focus indicators are drawn on these controls. This does not establish complete screen-reader compatibility; manual assistive-technology and display-scaling review remain necessary. No routing or authentication request is made by these isolated control tests.
+
 Required live checks:
 1. The previously affected user signs in and completes verification.
 2. A real remote connection succeeds within the account's normal entitlement and quota.

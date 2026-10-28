@@ -14,7 +14,7 @@ $sourceInfo=Get-Content -LiteralPath "$root\third_party\engine\source.json" -Raw
 if((Get-FileHash -LiteralPath "$engine\upstream-source.zip" -Algorithm SHA256).Hash.ToLowerInvariant() -ne $sourceInfo.archive_sha256){throw 'Unexpected upstream source archive.'}
 New-Item -ItemType Directory -Path $out,"$out\core","$out\licenses","$out\source\native","$out\source\tools","$out\source\third_party" -Force|Out-Null
 $compiler='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
-$refs=@('/reference:System.dll','/reference:System.Core.dll','/reference:System.Drawing.dll','/reference:System.Windows.Forms.dll','/reference:System.Net.Http.dll','/reference:System.Web.Extensions.dll')
+$refs=@('/reference:System.dll','/reference:System.Core.dll','/reference:System.Drawing.dll','/reference:System.Windows.Forms.dll','/reference:System.Net.Http.dll','/reference:System.Web.Extensions.dll','/reference:Accessibility.dll')
 & $compiler /nologo /codepage:65001 /utf8output /platform:x64 /target:winexe /optimize+ "/out:$out\III85III VPN.exe" "/win32icon:$root\native\assets\brand\iii85iii-luxury.ico" "/win32manifest:$root\native\app.manifest" @refs "$root\native\III85III.Vpn.cs" "$root\native\SignInForm.cs" "$root\native\VerificationForm.cs"
 if($LASTEXITCODE -ne 0){throw 'Application compilation failed.'}
 foreach($name in 'firefox-vpn-core.exe','firefox-vpn-tun.exe','firefox-vpn-tun.exe.sig'){Copy-Item -LiteralPath "$engine\$name" -Destination "$out\core"}

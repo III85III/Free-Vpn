@@ -483,7 +483,47 @@ namespace III85III.Vpn {
         }
     }
 
-    internal sealed class LocationCard : Control {
+    internal class KeyboardActionControl : Control {
+        Keys armedKey;
+        protected KeyboardActionControl() { SetStyle(ControlStyles.Selectable,true); TabStop=true; AccessibleRole=AccessibleRole.PushButton; }
+        protected override bool IsInputKey(Keys keyData) { return keyData==Keys.Space||keyData==Keys.Enter||base.IsInputKey(keyData); }
+        protected override void OnKeyDown(KeyEventArgs e) {
+            if(e.Modifiers==Keys.None&&(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter)){
+                if(Enabled&&Focused&&armedKey==Keys.None)armedKey=e.KeyCode;
+                e.Handled=true;
+            }
+            base.OnKeyDown(e);
+        }
+        protected override void OnKeyPress(KeyPressEventArgs e) {
+            if(e.KeyChar==' '||e.KeyChar=='\r')e.Handled=true;
+            base.OnKeyPress(e);
+        }
+        protected override void OnKeyUp(KeyEventArgs e) {
+            if(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter){
+                bool activate=armedKey==e.KeyCode&&e.Modifiers==Keys.None&&Enabled&&Focused;
+                armedKey=Keys.None;e.Handled=true;
+                if(activate)OnClick(EventArgs.Empty);
+            }
+            base.OnKeyUp(e);
+        }
+        protected override void OnGotFocus(EventArgs e) { Invalidate();base.OnGotFocus(e); }
+        protected override void OnLostFocus(EventArgs e) { armedKey=Keys.None;Invalidate();base.OnLostFocus(e); }
+        protected override void OnEnabledChanged(EventArgs e) { armedKey=Keys.None;base.OnEnabledChanged(e); }
+        protected void DrawKeyboardFocus(Graphics graphics) {
+            if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(graphics,new Rectangle(4,4,Math.Max(1,Width-8),Math.Max(1,Height-8)),Theme.Accent,Theme.Surface);
+        }
+        internal virtual AccessibleStates ActionState { get { return AccessibleStates.None; } }
+        protected override AccessibleObject CreateAccessibilityInstance() { return new ActionAccessibleObject(this); }
+        sealed class ActionAccessibleObject : ControlAccessibleObject {
+            readonly KeyboardActionControl owner;
+            public ActionAccessibleObject(KeyboardActionControl owner):base(owner){this.owner=owner;}
+            public override AccessibleStates State { get { return base.State|owner.ActionState; } }
+            public override string DefaultAction { get { return "Activate"; } }
+            public override void DoDefaultAction() { if(owner.Enabled&&!owner.IsDisposed)owner.OnClick(EventArgs.Empty); }
+        }
+    }
+
+    internal sealed class LocationCard : KeyboardActionControl {
         public string LocationName = "Recommended";
         public string Subtitle = "We'll choose a location for you";
         public string Latency = "— ms";
@@ -491,6 +531,7 @@ namespace III85III.Vpn {
         private bool isHovered, isPressed;
 
         public LocationCard() {
+            AccessibleName="Choose a VPN location";
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             Size = new Size(380, 58);
             Cursor = Cursors.Hand;
@@ -541,10 +582,12 @@ namespace III85III.Vpn {
                 var sf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
                 g.DrawString(Latency + "  ›", latFont, brush, new Rectangle(Width - 110, 0, 96, Height), sf);
             }
+            DrawKeyboardFocus(g);
         }
     }
 
-    internal sealed class LuxuryToggle : Control {
+    internal sealed class LuxuryToggle : KeyboardActionControl {
+        internal override AccessibleStates ActionState { get { return Checked?AccessibleStates.Checked:AccessibleStates.None; } }
         private bool isChecked;
         public bool Checked {
             get { return isChecked; }
@@ -553,6 +596,7 @@ namespace III85III.Vpn {
         public event EventHandler CheckedChanged;
 
         public LuxuryToggle() {
+            AccessibleRole=AccessibleRole.CheckButton;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             Size = new Size(42, 24);
             Cursor = Cursors.Hand;
@@ -575,10 +619,12 @@ namespace III85III.Vpn {
             int thumbX = Checked ? Width - thumbSize - 3 : 3;
             var thumbRect = new Rectangle(thumbX, 3, thumbSize, thumbSize);
             using (var brush = new SolidBrush(Checked ? Color.White : Theme.TextSecondary)) g.FillEllipse(brush, thumbRect);
+            DrawKeyboardFocus(g);
         }
     }
 
-    internal sealed class LuxuryNavButton : Control {
+    internal sealed class LuxuryNavButton : KeyboardActionControl {
+        internal override AccessibleStates ActionState { get { return Selected?AccessibleStates.Selected:AccessibleStates.None; } }
         public bool Compact;
         public string Title = "";
         public string IconText = "";
@@ -590,6 +636,7 @@ namespace III85III.Vpn {
         }
 
         public LuxuryNavButton(string title, string iconText) {
+            AccessibleName=title;AccessibleRole=AccessibleRole.PageTab;
             Title = title; IconText = iconText;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             Size = new Size(175, 38);
@@ -620,6 +667,7 @@ namespace III85III.Vpn {
                     TextRenderer.DrawText(g, Title, font, new Rectangle(4, 0, Width - 8, Height), fg,
                         TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
                 }
+                DrawKeyboardFocus(g);
                 return;
             }
             using (var iconFont = Theme.Font(10.5f, FontStyle.Regular)) using (var brush = new SolidBrush(isSelected ? Theme.Accent : fg)) {
@@ -631,6 +679,7 @@ namespace III85III.Vpn {
                 var sf = new StringFormat { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Center };
                 g.DrawString(Title, isSelected ? Theme.Font(9.5f, FontStyle.Bold) : Font, brush, new Rectangle(38, 0, Width - 42, Height), sf);
             }
+            DrawKeyboardFocus(g);
         }
     }
 
@@ -755,7 +804,8 @@ namespace III85III.Vpn {
         }
     }
 
-    internal sealed class LuxuryRadioCard : Control {
+    internal sealed class LuxuryRadioCard : KeyboardActionControl {
+        internal override AccessibleStates ActionState { get { return Checked?AccessibleStates.Checked:AccessibleStates.None; } }
         public string Title = "";
         public string Description = "";
         public int ModeValue;
@@ -768,6 +818,7 @@ namespace III85III.Vpn {
         public event EventHandler CheckedChanged;
 
         public LuxuryRadioCard(string title, string description, int modeValue) {
+            AccessibleName=title;AccessibleDescription=description;AccessibleRole=AccessibleRole.RadioButton;
             Title = title; Description = description; ModeValue = modeValue;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             Size = new Size(680, 56);
@@ -812,6 +863,7 @@ namespace III85III.Vpn {
                     g.DrawString(Description, font, brush, descRect, sf);
                 }
             }
+            DrawKeyboardFocus(g);
         }
     }
 
@@ -1081,7 +1133,7 @@ namespace III85III.Vpn {
             int y = 14;
             for (int i = 0; i < items.Length; i++) {
                 int pageIdx = i;
-                var btn = new LuxuryNavButton(items[i].Title, items[i].Icon) { Location = new Point(10, y) };
+                var btn = new LuxuryNavButton(items[i].Title, items[i].Icon) { Location = new Point(10, y), TabIndex=i };
                 if (i == 0) btn.Selected = true;
                 btn.Click += delegate { SwitchPage(pageIdx); };
                 sidebar.Controls.Add(btn);
@@ -1508,6 +1560,7 @@ namespace III85III.Vpn {
                 using (var pen = new Pen(Theme.Border, 1f)) Theme.DrawRounded(e.Graphics, pen, r, 8);
             };
             minimizeToggle.Location = new Point(14, 10);
+            minimizeToggle.AccessibleName="Keep running in the notification tray when closed";
             var trayLabel = new Label { Text = "Keep running in notification tray when window is closed", Font = Theme.Font(9.5f), ForeColor = Theme.TextPrimary, Location = new Point(66, 12), AutoSize = true };
             trayRow.Controls.Add(minimizeToggle); trayRow.Controls.Add(trayLabel);
             p.Controls.Add(trayRow);
