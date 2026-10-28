@@ -10,6 +10,8 @@ Completed: 44 desktop API/state checks and 507 geometry/verification-window chec
 
 Twelve additional frontend latency regression checks pass against a real local HTTP fixture: the measurement button sends the request, repeated clicks do not queue extra scans, connection controls remain available, results appear in the list and errors allow a retry. These tests use synthetic data and do not exercise the owner's core or a real remote VPN connection.
 
+Six additional latency checks cover the Help action sharing that same scan: it opens the location results page, disables both scan entry points, keeps connection controls available, resists re-enabling during polling, deduplicates cross-page requests and restores both controls after completion. The current source latency suite has 18 checks; the published 2.2.0 installer predates this source-only change.
+
 Eleven sign-in window lifecycle checks pass against a delayed local HTTP fixture. Closing the credentials window clears the password, late replies cannot reopen or accept it, a returned temporary session is cancelled, duplicate submissions are suppressed and active errors allow retry. These are frontend lifecycle checks; they do not establish real Mozilla authentication or resolve the reported remote HTTP 406.
 
 Ten additional credential-usability checks cover password reveal/masking, accessible input names, keyboard tab ordering, non-overlapping controls, preserved selection and masking during validation/submission. The combined credential/lifecycle suite now has 21 checks. Screen-reader operation and final display scaling still require manual review; no core authentication behavior was changed.

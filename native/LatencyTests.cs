@@ -47,6 +47,21 @@ namespace III85III.Vpn {
                 Check(((Button)Field(form,"pingBtn")).Enabled&&!((bool)Field(form,"pingScanBusy")),"failed measurement can be retried");
                 Check(fixture.Count==1,"failed measurement does not refresh locations or retry silently");
             }
+            using(var fixture=new Fixture(false))
+            using(var engine=new Engine("unused","unused",fixture.Endpoint,"synthetic-local-token"))
+            using(var form=new MainForm(engine,true)){
+                Set(form,"ready",true);Call(form,"SetActions",true);
+                var helpButton=(Button)Field(form,"diagPingBtn");
+                typeof(Control).GetMethod("OnClick",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(helpButton,new object[]{EventArgs.Empty});
+                Pump(()=>fixture.Received.IsSet);
+                Check((int)Field(form,"activePageIndex")==1,"Help measurement opens the location results page");
+                Check(!helpButton.Enabled&&!((Button)Field(form,"pingBtn")).Enabled,"both measurement entry points stay disabled during one scan");
+                Check(((Button)Field(form,"connectBtn")).Enabled&&!(bool)Field(form,"busy"),"Help measurement cannot lock connection controls");
+                Call(form,"SetActions",true);Check(!helpButton.Enabled,"status refresh cannot reenable Help measurement during scan");
+                Finish((Task)Call(form,"MeasureLocationLatency"));Check(fixture.Count==1,"location action cannot duplicate a Help scan");
+                fixture.Release.Set();Pump(()=>!(bool)Field(form,"pingScanBusy"));fixture.Finish();
+                Check(fixture.Count==2&&helpButton.Enabled&&((Button)Field(form,"pingBtn")).Enabled,"Help measurement refreshes results and restores both controls");
+            }
         }
         sealed class Fixture:IDisposable {
             readonly TcpListener listener=new TcpListener(IPAddress.Loopback,0);readonly Task worker;readonly bool fail;bool disposed;

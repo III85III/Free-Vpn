@@ -1059,7 +1059,7 @@ namespace III85III.Vpn {
             };
 
             diagTestBtn.Click += async delegate { await TestConnection(true); };
-            diagPingBtn.Click += async delegate { await Run(async delegate { await engine.Api("POST", "/api/locations/ping", new { codes = new string[0] }); await LoadLocations(); }); };
+            diagPingBtn.Click += async delegate { SwitchPage(1); await MeasureLocationLatency(); };
             copyLogsBtn.Click += delegate { try { Clipboard.SetText(logsBox.Text); } catch { } };
 
             timer.Tick += async delegate { await Poll(); };
@@ -1806,6 +1806,7 @@ namespace III85III.Vpn {
             removeAccountBtn.Enabled = enabled;
             applyLocationBtn.Enabled = enabled;
             pingBtn.Enabled = enabled && !pingScanBusy;
+            diagPingBtn.Enabled = enabled && !pingScanBusy;
             splitSave.Enabled = enabled;
             splitReload.Enabled = enabled;
             splitBrowse.Enabled = enabled;
@@ -1908,15 +1909,15 @@ namespace III85III.Vpn {
         private async Task MeasureLocationLatency() {
             if (!ready || busy || closing || pingScanBusy) return;
             pingScanBusy = true;
-            pingBtn.Enabled = false;
-            pingBtn.Text = "Pinging…";
+            pingBtn.Enabled = diagPingBtn.Enabled = false;
+            pingBtn.Text = diagPingBtn.Text = "Pinging…";
             try {
                 await engine.Api("POST", "/api/locations/ping", new { codes = new string[0] }, 60000);
                 if (!closing) await LoadLocations();
             } catch (Exception error) { if (!closing) dialSubtext.Text = error.Message; }
             finally {
                 pingScanBusy = false;
-                if (!closing) { pingBtn.Text = "Measure Latency"; pingBtn.Enabled = ready && !busy; }
+                if (!closing) { pingBtn.Text = diagPingBtn.Text = "Measure Latency"; pingBtn.Enabled = diagPingBtn.Enabled = ready && !busy; }
             }
         }
 
