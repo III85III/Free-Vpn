@@ -52,7 +52,10 @@ def tap(text):
         scrolling=next((n for n in tree.iter('node') if n.get('class')=='android.widget.HorizontalScrollView'),None)
         if scrolling is not None:
             x1,y1,x2,y2=map(int,re.findall(r'\d+',scrolling.get('bounds','')))
-            adb('shell','input','swipe',str(x2-20),str((y1+y2)//2),str(x1+20),str((y1+y2)//2),'300')
+            # Stay inside the control: Google's gesture navigation treats an
+            # edge-origin swipe as Back and backgrounds the root activity.
+            inset=(x2-x1)//4
+            adb('shell','input','swipe',str(x2-inset),str((y1+y2)//2),str(x1+inset),str((y1+y2)//2),'300')
     ET.ElementTree(tree).write(output/'ui-failure.xml')
     screenshot('ui-failure')
     raise RuntimeError('UI control unavailable: '+text)
