@@ -42,7 +42,7 @@ def tap(text):
     for attempt in range(5):
         tree=hierarchy()
         for node in tree.iter('node'):
-            if node.get('text') == text or node.get('content-desc') == text:
+            if node.get('text','').casefold() == text.casefold() or node.get('content-desc','').casefold() == text.casefold():
                 x1,y1,x2,y2 = map(int,re.findall(r'\d+',node.get('bounds','')))
                 if x2 > x1 and y2 > y1:
                     adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
