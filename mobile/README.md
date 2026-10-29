@@ -37,6 +37,8 @@ An unsigned IPA cannot be installed as an ordinary App Store/TestFlight applicat
 
 ## Validation limits
 
+The complete Android emulator and unsigned iOS workflow has passed for the current mobile code. See [validation details](VALIDATION.md) for the exact checks and remaining device/store work.
+
 The Apple packet adapter has synthetic packet/DNS/TCP relay tests. The Android application has connection-state unit tests and Android Lint. Successful compilation and these tests do not establish real Mozilla sign-in, quota display, device routing, network handover or background survival. Real-device tests remain required before store publication. No verified kill-switch or universal sign-in fix is claimed.
 
 References: [Android VPN development](https://developer.android.com/develop/connectivity/vpn), [Apple Packet Tunnel Provider](https://developer.apple.com/documentation/networkextension/nepackettunnelprovider), [Go mobile bindings](https://pkg.go.dev/golang.org/x/mobile/cmd/gomobile).
