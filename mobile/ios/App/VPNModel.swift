@@ -2,6 +2,16 @@ import Foundation
 import Combine
 import NetworkExtension
 
+private final class ProviderReply {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<[String: Any], Error>?
+    init(_ continuation: CheckedContinuation<[String: Any], Error>) { self.continuation = continuation }
+    func finish(_ result: Result<[String: Any], Error>) {
+        lock.lock(); let target = continuation; continuation = nil; lock.unlock()
+        target?.resume(with: result)
+    }
+}
+
 @MainActor final class VPNModel: ObservableObject {
     @Published var ready = false
     @Published var connected = false
@@ -36,15 +46,20 @@ import NetworkExtension
         if let session = manager?.connection as? NETunnelProviderSession, session.status == .connected {
             let data = try JSONSerialization.data(withJSONObject: ["method": method, "path": path, "body": body ?? [:]])
             return try await withCheckedThrowingContinuation { continuation in
+                let reply = ProviderReply(continuation)
+                let timeout: TimeInterval = path == "/api/locations/ping" || path.hasPrefix("/api/signin") ? 70 : path == "/api/test" ? 25 : 10
+                let deadline = DispatchWorkItem { reply.finish(.failure(EngineAccess.failure("The tunnel request timed out. You can disconnect from iOS Settings."))) }
+                DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: deadline)
                 do { try session.sendProviderMessage(data) { response in
-                    do { guard let response = response, let envelope = try JSONSerialization.jsonObject(with: response) as? [String: Any], let value = envelope["result"] as? [String: Any] else { throw EngineAccess.failure("The tunnel request could not finish.") }; continuation.resume(returning: value) } catch { continuation.resume(throwing: error) }
-                }} catch { continuation.resume(throwing: error) }
+                    deadline.cancel()
+                    do { guard let response = response, let envelope = try JSONSerialization.jsonObject(with: response) as? [String: Any], let value = envelope["result"] as? [String: Any] else { throw EngineAccess.failure("The tunnel request could not finish.") }; reply.finish(.success(value)) } catch { reply.finish(.failure(error)) }
+                }} catch { deadline.cancel(); reply.finish(.failure(error)) }
             }
         }
         guard !connected else { throw EngineAccess.failure("The connection is starting. Try again in a moment.") }
         return try await EngineAccess.background { try EngineAccess.request(method, path, body) }
     }
-    func poll() async { guard ready else { return }; do { status = try await request("GET", "/api/status"); warmConnection() } catch { if !working { message = "Status could not refresh. Check the connection in iOS Settings." } } }
+    func poll() async { guard ready else { return }; do { status = try await request("GET", "/api/status"); warmConnection() } catch { status = [:]; if !working { message = "Status could not refresh. Check the connection in iOS Settings." } } }
     func loadAccounts() async { do { accounts = try await request("GET", "/api/accounts")["accounts"] as? [[String: Any]] ?? [] } catch { message = error.localizedDescription } }
     func loadLocations() async { do { locations = try await request("GET", "/api/locations")["locations"] as? [[String: Any]] ?? [] } catch { message = error.localizedDescription } }
     func toggle() async {
