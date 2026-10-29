@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 arguments = argparse.ArgumentParser()
 arguments.add_argument('--apk', default='mobile/android/app/build/outputs/apk/debug/app-debug.apk')
 arguments.add_argument('--upgrade')
+arguments.add_argument('--probe',default='.build/android-qa/probe.apk')
 arguments.add_argument('--output', default='test-results/android')
 options = arguments.parse_args()
 output = Path(options.output)
@@ -133,18 +134,47 @@ try:
     screenshot('landscape')
     adb('shell','settings','put','system','user_rotation','0')
     adb('shell','settings','put','global','private_dns_mode','off')
+    adb('install','-r',options.probe)
     adb('shell','appops','set',package,'ACTIVATE_VPN','allow')
     adb('shell','am','start','-W','-n',package+'/.MainActivity','--ez','qa_screenshots','true','--ez','qa_tun','true')
     time.sleep(3)
-    dns=adb('shell','ping','-c','1','-W','1','iii85iii-smoke.test',required=False).decode(errors='replace')
-    if not re.search(r'198\.(?:18|19)\.\d+\.\d+',dns):
+    adb('logcat','-c')
+    adb('shell','am','start','-W','-n','io.github.iii85iii.vpn.probe/.ProbeActivity')
+    time.sleep(7)
+    dns=adb('logcat','-d','-s','III85IIIProbe:I','*:S',required=False).decode(errors='replace')
+    (output/'tunnel-probe.txt').write_text(dns)
+    if 'PASS native TUN DNS' not in dns:
+        screenshot('tunnel-failure')
+        (output/'vpn-service.txt').write_bytes(adb('shell','dumpsys','activity','services',package,required=False))
+        (output/'vpn-system.txt').write_bytes(adb('logcat','-d','-s','Vpn:I','VpnManagerService:I','ConnectivityService:I','AndroidRuntime:E','*:S',required=False)[-100000:])
         raise RuntimeError('Synthetic TUN DNS traffic did not reach the native VPN interface')
     (output/'tunnel.txt').write_text('PASS: real Android VPN interface/native TUN answered a synthetic DNS name with a fake address. No Mozilla account or upstream traffic used.\n')
     adb('shell','am','force-stop',package)
     if options.upgrade:
         adb('shell',f'run-as {package} sh -c "echo preserved > files/update-probe.txt"')
         adb('shell','am','force-stop',package)
-        adb('install','-r',options.upgrade)
+        transfer=subprocess.run(['adb','shell',f'run-as {package} sh -c "cat > cache/qa-upgrade.apk"'],input=Path(options.upgrade).read_bytes(),capture_output=True,timeout=60)
+        if transfer.returncode:raise RuntimeError('Could not stage the synthetic update')
+        adb('shell','appops','set',package,'REQUEST_INSTALL_PACKAGES','allow')
+        adb('shell','am','start','-W','-n',package+'/.MainActivity','--ez','qa_screenshots','true','--ez','qa_update','true')
+        time.sleep(2)
+        tap('Install update')
+        confirmed=False
+        for attempt in range(35):
+            for node in hierarchy().iter('node'):
+                if node.get('class')=='android.widget.Button' and node.get('text','').casefold() in ('update','install'):
+                    screenshot('update-confirmation')
+                    x1,y1,x2,y2=map(int,re.findall(r'\d+',node.get('bounds','')))
+                    adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));confirmed=True;break
+            if confirmed:break
+            time.sleep(.5)
+        if not confirmed:raise RuntimeError('Android did not present user confirmation for the in-app update')
+        for attempt in range(90):
+            details=adb('shell','dumpsys','package',package).decode(errors='replace')
+            if 'versionCode=23002 ' in details:break
+            time.sleep(1)
+        else:raise RuntimeError('The in-app PackageInstaller update did not complete')
+        (output/'in-app-update.txt').write_text('PASS: APK staged in private cache, same-package/signature verification, PackageInstaller session, Android user confirmation, higher-version installation. No production signing key in CI.\n')
         launch()
         if adb('exec-out','run-as',package,'cat','files/update-probe.txt').strip()!=b'preserved':
             raise RuntimeError('In-place update lost app-private data')
@@ -164,7 +194,7 @@ try:
             raise RuntimeError('Updated application did not restart its native API')
         if request('/api/accounts').get('accounts'):
             raise RuntimeError('Update introduced an unexpected account')
-    (output/'checks.txt').write_text('PASS: fresh native startup; authenticated API; missing-token rejection; empty accounts; disconnected state; two-step sign-in form; privacy page; rotation; in-place higher-version update. No real account or tunnel test.\n')
+    (output/'checks.txt').write_text('PASS: fresh native startup; authenticated API; missing-token rejection; empty accounts; disconnected state; two-step sign-in form; privacy page; rotation; synthetic native TUN DNS; in-app PackageInstaller higher-version update. No real Mozilla account/upstream test.\n')
     print('PASS Android native launch, local authenticated API, empty accounts, disconnected state, unauthenticated API rejection')
     adb('shell', 'am', 'force-stop', package)
 finally:

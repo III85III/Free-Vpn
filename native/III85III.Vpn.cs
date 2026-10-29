@@ -80,6 +80,8 @@ namespace III85III.Vpn {
             if(Json.Str(value,"system_proxy")=="tun" && Json.Str(tun,"state")=="error")return "Whole computer: "+Json.Str(tun,"message")+(Json.Str(tun,"code")==""?"":" ["+Json.Str(tun,"code")+"]");
             var state=Json.Child(value,"state");
             if(Json.Str(state,"phase")=="error" || Json.Str(state,"code")=="no_usable_account")return Json.Str(state,"message");
+            string wake=Json.Str(Json.Child(value,"proxy"),"wake_error");if(wake!="")return wake;
+            var test=Json.Child(value,"last_test");if(FreshTest(value)&&!Json.Bool(test,"ok")&&Json.Str(test,"error")!="")return "Connection check: "+Json.Str(test,"error");
             if(Json.Str(value,"connect_failure")!="")return "Connection could not be completed ("+Json.Str(value,"connect_failure")+"). Check your account and network, then try again.";
             return "";
         }
@@ -88,8 +90,11 @@ namespace III85III.Vpn {
             var state = Json.Child(value, "state"); var proxy = Json.Child(value, "proxy"); var test = Json.Child(value, "last_test"); var tun = Json.Child(value, "tun");
             if (Json.Str(state, "phase") != "running" || Json.Str(proxy, "wake_error") != "" || Json.Str(value, "connect_failure") != "" || Json.Get(value, "system_proxy_taken") != null) return false;
             if (Json.Str(value, "system_proxy") == "tun" && Json.Str(tun, "state") != "on") return false;
-            DateTimeOffset at, since, changed;
-            if (!Json.Bool(test, "ok") || !DateTimeOffset.TryParse(Json.Str(test, "at"), out at)) return false;
+            return Json.Bool(test,"ok")&&FreshTest(value);
+        }
+        public static bool FreshTest(Dictionary<string,object> value){
+            var state=Json.Child(value,"state");var test=Json.Child(value,"last_test");DateTimeOffset at,since,changed;
+            if(!DateTimeOffset.TryParse(Json.Str(test,"at"),out at))return false;
             if (DateTimeOffset.TryParse(Json.Str(state, "since"), out since) && at < since) return false;
             if (DateTimeOffset.TryParse(Json.Str(value, "network_changed_at"), out changed) && at < changed) return false;
             return true;
@@ -885,10 +890,11 @@ namespace III85III.Vpn {
 
     internal sealed class MainForm : Form {
         readonly Engine engine;
-        bool updating; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(20);
+        bool updating;LuxuryButton appUpdateButton; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(20);
         async Task CheckForUpdates(bool manual){
             if(updating||closing)return;updating=true;nextUpdateCheck=DateTime.UtcNow.AddHours(6);
-            try{await AppUpdates.Check(this,text=>{if(!closing)dialSubtext.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true});allowClose=true;Close();},manual);}finally{updating=false;}
+            if(appUpdateButton!=null)appUpdateButton.Text="Checking…";
+            try{await AppUpdates.Check(this,text=>{if(!closing&&appUpdateButton!=null)appUpdateButton.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true});allowClose=true;Close();},manual);}finally{updating=false;if(!closing&&appUpdateButton!=null)appUpdateButton.Text="Check for updates";}
         }
         readonly LuxuryTitleBar titleBar;
         readonly Panel sidebar = new Panel();
@@ -1079,7 +1085,8 @@ namespace III85III.Vpn {
 
             diagTestBtn.Click += async delegate { await TestConnection(true); };
             diagPingBtn.Click += async delegate { SwitchPage(1); await MeasureLocationLatency(); };
-            copyLogsBtn.Click += delegate { try { Clipboard.SetText(logsBox.Text); } catch { } };
+            copyLogsBtn.Text="Copy status";
+            copyLogsBtn.Click += delegate { try { Clipboard.SetText(Json.Encode(new{app_version=Application.ProductVersion,state=Json.Str(Json.Child(lastStatus,"state"),"phase"),state_code=Json.Str(Json.Child(lastStatus,"state"),"code"),mode=Json.Str(lastStatus,"system_proxy"),tun_state=Json.Str(Json.Child(lastStatus,"tun"),"state"),tun_code=Json.Str(Json.Child(lastStatus,"tun"),"code"),tun_installed=Json.Bool(Json.Child(lastStatus,"tun"),"installed"),accounts_total=Json.Num(Json.Child(lastStatus,"accounts"),"total"),connect_failure=Json.Str(lastStatus,"connect_failure")})); } catch { } };
 
             timer.Tick += async delegate { await Poll(); if(!closing&&Visible&&Form.ActiveForm==this&&DateTime.UtcNow>=nextUpdateCheck){var updateCheck=CheckForUpdates(false);} };
 
@@ -1610,7 +1617,7 @@ namespace III85III.Vpn {
             var openFolderBtn = new LuxuryButton { Text = "Open Data Folder", Width = 140 };
             var docsBtn = new LuxuryButton { Text = "User Guide", Width = 110 };
             var dashBtn = new LuxuryButton { Text = "Engine Dashboard", Width = 150 };
-            var updateBtn=new LuxuryButton{Text="Check for updates",Width=160};updateBtn.Click+=async delegate{await CheckForUpdates(true);};
+            var updateBtn=new LuxuryButton{Text="Check for updates",Width=160};appUpdateButton=updateBtn;updateBtn.Click+=async delegate{await CheckForUpdates(true);};
 
             openFolderBtn.Click += delegate { Process.Start(new ProcessStartInfo(engine.DataDir) { UseShellExecute = true }); };
             docsBtn.Click += delegate { Process.Start(new ProcessStartInfo(Path.Combine(engine.Root, "docs", "guide.html")) { UseShellExecute = true }); };

@@ -24,7 +24,9 @@ public final class UpdateActivity extends Activity {
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(100);root.addView(progress);
         action=new Button(this);action.setAllCaps(false);action.setText("Check for updates");action.setOnClickListener(v->{if(downloaded!=null)install();else if(available!=null)download();else check();});root.addView(action);
         TextView note=new TextView(this);note.setTextColor(0xff9fa7b4);note.setText("Updates come from the official III85III GitHub repository. Downloads are checked before Android asks you to install. Your local accounts stay on this device. The VPN disconnects while the app updates.");note.setPadding(0,pad,0,0);root.addView(note);setContentView(root);WindowLayout.apply(this,root);
-        check();
+        if(BuildConfig.DEBUG&&getIntent().getBooleanExtra("qa_update",false)){
+            action.setEnabled(false);status.setText("Preparing synthetic update test…");CoreRuntime.IO.execute(()->{try{File file=new File(getCacheDir(),"qa-upgrade.apk");PackageInfo candidate=getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(),0);if(candidate==null)throw new IOException("Missing test APK");Info info=new Info();info.code=Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode;info.version=candidate.versionName;info.size=file.length();info.hash=digest(file);verify(file,info);available=info;downloaded=file;runOnUiThread(()->{if(!isDestroyed()){status.setText("Synthetic update verified.");action.setText("Install update");action.setEnabled(true);}});}catch(Exception error){runOnUiThread(()->status.setText("Synthetic update rejected."));}});
+        }else check();
     }
     private void check(){if(busy)return;busy=true;action.setEnabled(false);status.setText("Checking for updates…");progress.setIndeterminate(true);
         CoreRuntime.IO.execute(()->{try{Info update=latest();runOnUiThread(()->{if(isDestroyed())return;available=update.code>BuildConfig.VERSION_CODE?update:null;status.setText(available==null?"You're using the latest version.":"III85III VPN "+update.version+" is available.");action.setText(available==null?"Check again":"Download update");finishWork();});}catch(Exception error){runOnUiThread(()->{if(!isDestroyed()){status.setText("Updates are unavailable right now. Check your connection and try again.");finishWork();}});}});
@@ -32,9 +34,11 @@ public final class UpdateActivity extends Activity {
     private void finishWork(){busy=false;progress.setIndeterminate(false);action.setEnabled(true);}
     static HttpURLConnection open(String address)throws Exception{
         URI uri=new URI(address);
+        Proxy route=Proxy.NO_PROXY;
+        try{if(mobile.Mobile.isOn()){String endpoint=mobile.Mobile.proxyAddress();URI local=new URI("http://"+endpoint);if("127.0.0.1".equals(local.getHost())&&local.getPort()>0)route=new Proxy(Proxy.Type.HTTP,new InetSocketAddress("127.0.0.1",local.getPort()));}}catch(Exception ignored){}
         for(int attempt=0;attempt<6;attempt++){
             if(!UpdatePolicy.trustedRedirect(uri))throw new IOException("Untrusted update host");
-            HttpURLConnection request=(HttpURLConnection)uri.toURL().openConnection(Proxy.NO_PROXY);request.setInstanceFollowRedirects(false);request.setConnectTimeout(15000);request.setReadTimeout(30000);request.setRequestProperty("User-Agent","III85III-VPN/"+BuildConfig.VERSION_NAME);
+            HttpURLConnection request=(HttpURLConnection)uri.toURL().openConnection(route);request.setInstanceFollowRedirects(false);request.setConnectTimeout(15000);request.setReadTimeout(30000);request.setRequestProperty("User-Agent","III85III-VPN/"+BuildConfig.VERSION_NAME);
             int code=request.getResponseCode();if(code>=300&&code<400){String target=request.getHeaderField("Location");request.disconnect();if(target==null)throw new IOException("Missing update location");uri=uri.resolve(target);continue;}
             if(code!=200){request.disconnect();throw new IOException("Update unavailable");}return request;
         }throw new IOException("Too many update redirects");

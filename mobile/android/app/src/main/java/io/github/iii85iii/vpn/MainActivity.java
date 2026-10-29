@@ -49,7 +49,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
-    private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null&&intent.getBooleanExtra("qa_tun",false))startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));}
+    private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null){if(intent.getBooleanExtra("qa_tun",false))startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));if(intent.getBooleanExtra("qa_update",false))startActivity(new Intent(this,UpdateActivity.class).putExtra("qa_update",true));}}
     @Override protected void onStart(){super.onStart();visible=true;if(ready)poll();}
     @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);super.onStop();}
     @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
@@ -127,6 +127,7 @@ public final class MainActivity extends Activity {
         JSONObject state=value.optJSONObject("state"),proxy=value.optJSONObject("proxy");String failure=value.optString("connect_failure");
         if(state!=null&&(state.optString("phase").equals("error")||state.optString("code").equals("no_usable_account")||state.optString("code").equals("no_accounts")))return state.optString("message","Your saved account is not available. Check Accounts for details.");
         if(proxy!=null&&!proxy.optString("wake_error").isEmpty())return proxy.optString("wake_error");
+        JSONObject test=value.optJSONObject("last_test");if(test!=null&&state!=null&&!test.optBoolean("ok")&&ConnectionTruth.fresh(test.optString("at"),state.optString("since"),value.optString("network_changed_at"))&&!test.optString("error").isEmpty())return "Connection check: "+test.optString("error");
         if(!failure.isEmpty())return "Connection could not complete ("+failure+"). Check your account and network, then retry.";
         return "";
     }

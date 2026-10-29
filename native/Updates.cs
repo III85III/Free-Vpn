@@ -17,6 +17,7 @@ namespace III85III.Vpn {
             var item=Json.Child(document,platform);System.Version parsed;Uri url;
             string version=Json.Str(item,"version"),address=Json.Str(item,"url"),hash=Json.Str(item,"sha256");
             if(!System.Version.TryParse(version,out parsed)||parsed.Revision>=0||!Uri.TryCreate(address,UriKind.Absolute,out url)||url.Scheme!="https"||url.Host!="github.com"||!url.AbsolutePath.StartsWith("/III85III/Free-Vpn/releases/download/",StringComparison.Ordinal)||!url.AbsolutePath.EndsWith("/III85III-VPN-Setup.exe",StringComparison.Ordinal)||url.Query!=""||url.UserInfo!="")throw new IOException("Invalid update download.");
+            if(!url.IsDefaultPort||url.Fragment!=""||url.AbsolutePath.Contains("%")||url.AbsolutePath.Contains(".."))throw new IOException("Invalid update location.");
             if(hash.Length!=64||!System.Text.RegularExpressions.Regex.IsMatch(hash,"\\A[0-9a-fA-F]{64}\\z"))throw new IOException("Invalid update checksum.");
             long size=(long)Json.Num(item,"size");if(size<1024||size>250L*1024*1024)throw new IOException("Invalid update size.");
             return new AppUpdate{Version=version,Url=address,Hash=hash,Size=size};
@@ -24,7 +25,7 @@ namespace III85III.Vpn {
     }
     internal static class AppUpdates {
         const string Feed="https://raw.githubusercontent.com/III85III/Free-Vpn/main/docs/updates.json";
-        static HttpClient Client(){var c=new HttpClient(new HttpClientHandler{UseProxy=false});c.Timeout=TimeSpan.FromMinutes(5);c.DefaultRequestHeaders.UserAgent.ParseAdd("III85III-VPN/"+Assembly.GetExecutingAssembly().GetName().Version);return c;}
+        static HttpClient Client(){var c=new HttpClient(new HttpClientHandler{UseProxy=true});c.Timeout=TimeSpan.FromMinutes(5);c.DefaultRequestHeaders.UserAgent.ParseAdd("III85III-VPN/"+Assembly.GetExecutingAssembly().GetName().Version);return c;}
         internal static async Task Check(Form owner,Action<string> report,Action<string> install,bool manual){
             try{
                 AppUpdate update;
@@ -43,6 +44,7 @@ namespace III85III.Vpn {
                 try{
                     using(var client=Client())using(var response=await client.GetAsync(update.Url,HttpCompletionOption.ResponseHeadersRead)){
                         response.EnsureSuccessStatusCode();if(response.Content.Headers.ContentLength.HasValue&&response.Content.Headers.ContentLength.Value!=update.Size)throw new IOException("The update size does not match.");
+                        var location=response.RequestMessage.RequestUri;if(location.Scheme!="https"||(location.Host!="github.com"&&!location.Host.EndsWith(".githubusercontent.com",StringComparison.Ordinal)))throw new IOException("Untrusted update destination.");
                         using(var source=await response.Content.ReadAsStreamAsync())using(var file=new FileStream(temporary,FileMode.CreateNew,FileAccess.Write,FileShare.None,65536,true)){
                             byte[] buffer=new byte[65536];long total=0;int count;while((count=await source.ReadAsync(buffer,0,buffer.Length))>0){total+=count;if(total>update.Size)throw new IOException("The update is larger than expected.");await file.WriteAsync(buffer,0,count);if(!owner.IsDisposed)report("Downloading update… "+(total*100/update.Size)+"%");}if(total!=update.Size)throw new IOException("The download was interrupted.");
                         }
@@ -52,7 +54,7 @@ namespace III85III.Vpn {
                     if(File.Exists(target))File.Delete(target);File.Move(temporary,target);
                     if(!owner.IsDisposed)install(target);
                 }finally{if(File.Exists(temporary))File.Delete(temporary);}
-            }catch(Exception){if(!owner.IsDisposed){if(manual)MessageBox.Show(owner,"The update could not be checked or downloaded. Check your connection and try again. Nothing was installed.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);report("Update unavailable. You can retry from Settings.");}}
+            }catch(Exception){if(!owner.IsDisposed&&manual){MessageBox.Show(owner,"The update could not be checked or downloaded. Check your connection and try again. Nothing was installed.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);report("Update unavailable");}}
         }
     }
 }

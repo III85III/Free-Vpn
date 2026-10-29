@@ -32,4 +32,5 @@ with zipfile.ZipFile(args.apk) as archive:
                 assert (virtual+memsz) % 16384 == 0, 'Native RELRO endpoint is not 16 KB aligned'
     assert b'qa_screenshots' not in archive.read('classes.dex'), 'Debug screenshot override present in release'
     assert b'qa_tun' not in archive.read('classes.dex'), 'Debug tunnel test entry point present in release'
+    assert b'qa_update' not in archive.read('classes.dex'), 'Debug update test entry point present in release'
 print('PASS: expected architectures; 16 KB native load/RELRO alignment; privacy and license assets; no known private files; no debug screenshot override.')
