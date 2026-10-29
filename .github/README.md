@@ -61,7 +61,7 @@ Latency measurements describe response time at the moment of testing; they are n
 
 **Is it free?** The application is free. Service eligibility, regional availability, quotas and renewal dates come from Mozilla. Installing this app does not create an unlimited entitlement or bypass those limits.
 
-**Does it work on Android, iOS, macOS or Linux?** This release is Windows x64. Other platforms and app-store publication are future plans; no mobile application is included.
+**Does it work on Android, iOS, macOS or Linux?** The published 2.2.0 installer is Windows x64. Native Android and iOS development projects are now in [mobile](../mobile/README.md), with separate build and validation status. They are not App Store/Google Play releases. macOS and Linux applications remain future plans.
 
 **Does it guarantee every application or protocol will work?** No. Service restrictions apply. Arbitrary UDP, a verified kill switch and enforced Telegram-bot-only routing are not promised by this release.
 

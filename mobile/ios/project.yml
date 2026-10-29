@@ -1,0 +1,69 @@
+name: III85III VPN
+options:
+  bundleIdPrefix: io.github.iii85iii
+  deploymentTarget:
+    iOS: '15.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.9'
+    MARKETING_VERSION: '2.2.0'
+    CURRENT_PROJECT_VERSION: '22000'
+    CODE_SIGNING_ALLOWED: NO
+    TARGETED_DEVICE_FAMILY: '1,2'
+targets:
+  III85IIIVPN:
+    type: application
+    platform: iOS
+    sources: [App, Shared, Assets.xcassets]
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: III85III VPN
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UIAppFonts: [Lato-Regular.ttf]
+    entitlements:
+      path: App/App.entitlements
+      properties:
+        com.apple.security.application-groups: [group.io.github.iii85iii.vpn]
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.iii85iii.vpn
+        SWIFT_OBJC_BRIDGING_HEADER: Shared/Engine-Bridging-Header.h
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - framework: Frameworks/III85IIICore.xcframework
+        embed: false
+      - target: PacketTunnel
+        embed: true
+  PacketTunnel:
+    type: app-extension
+    platform: iOS
+    sources: [Tunnel, Shared]
+    info:
+      path: Tunnel/Info.plist
+      properties:
+        CFBundleDisplayName: III85III VPN Tunnel
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
+    entitlements:
+      path: Tunnel/Tunnel.entitlements
+      properties:
+        com.apple.security.application-groups: [group.io.github.iii85iii.vpn]
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.iii85iii.vpn.tunnel
+        SWIFT_OBJC_BRIDGING_HEADER: Shared/Engine-Bridging-Header.h
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - framework: Frameworks/III85IIICore.xcframework
+        embed: false
+schemes:
+  III85III VPN:
+    build:
+      targets:
+        III85IIIVPN: all

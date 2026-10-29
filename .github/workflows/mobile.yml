@@ -1,0 +1,93 @@
+name: Mobile builds
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build
+        type: choice
+        options: [all, android, ios]
+        default: all
+permissions:
+  contents: read
+jobs:
+  android:
+    if: inputs.platform != 'ios'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: core/go.sum
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android native tools
+        run: |
+          yes | sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'ndk;27.2.12479018' >/dev/null || test -d "$ANDROID_HOME/ndk/27.2.12479018"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+      - name: Engine binding tools
+        run: |
+          go -C core install golang.org/x/mobile/cmd/gomobile
+          go -C core install golang.org/x/mobile/cmd/gobind
+          gomobile init
+      - name: Android engine
+        working-directory: core
+        run: |
+          mkdir -p ../mobile/android/app/libs
+          gomobile bind -target=android/arm64,android/amd64 -androidapi 26 -trimpath -ldflags='-s -w' -o ../mobile/android/app/libs/core.aar ./mobile
+      - name: APK and lint
+        run: |
+          chmod +x mobile/android/gradlew
+          mobile/android/gradlew -p mobile/android --no-daemon :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: III85III-VPN-Android-test
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+  ios:
+    if: inputs.platform != 'android'
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: mobile/apple-engine/go.sum
+      - name: Packet adapter tests
+        run: go -C mobile/apple-engine test -timeout=60s ./...
+      - name: Apple framework tools
+        run: |
+          go -C mobile/apple-engine install golang.org/x/mobile/cmd/gomobile
+          go -C mobile/apple-engine install golang.org/x/mobile/cmd/gobind
+          gomobile init
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+      - name: Apple engine framework
+        working-directory: mobile/apple-engine
+        run: |
+          mkdir -p ../ios/Frameworks
+          gomobile bind -target=ios,iossimulator -iosversion=15.0 -trimpath -ldflags='-s -w' -o ../ios/Frameworks/III85IIICore.xcframework .
+      - name: Generate Xcode project
+        working-directory: mobile/ios
+        run: xcodegen generate
+      - name: Unsigned simulator and device builds
+        working-directory: mobile/ios
+        run: |
+          xcodebuild -project 'III85III VPN.xcodeproj' -scheme 'III85III VPN' -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/ios-simulator" CODE_SIGNING_ALLOWED=NO build > "$RUNNER_TEMP/ios-simulator.log" 2>&1 || { tail -100 "$RUNNER_TEMP/ios-simulator.log"; exit 1; }
+          xcodebuild -project 'III85III VPN.xcodeproj' -scheme 'III85III VPN' -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/ios-device" CODE_SIGNING_ALLOWED=NO build > "$RUNNER_TEMP/ios-device.log" 2>&1 || { tail -100 "$RUNNER_TEMP/ios-device.log"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/ios-package/Payload" build
+          ditto "$RUNNER_TEMP/ios-device/Build/Products/Release-iphoneos/III85IIIVPN.app" "$RUNNER_TEMP/ios-package/Payload/III85III VPN.app"
+          cd "$RUNNER_TEMP/ios-package"
+          zip -qr "$GITHUB_WORKSPACE/mobile/ios/build/III85III-VPN-iOS-unsigned.ipa" Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: III85III-VPN-iOS-unsigned
+          path: mobile/ios/build/III85III-VPN-iOS-unsigned.ipa
+          retention-days: 14
