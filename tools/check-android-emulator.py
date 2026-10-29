@@ -107,7 +107,9 @@ try:
     if len(fields)!=2:
         raise RuntimeError('Initial sign-in must contain email and password only')
     screenshot('sign-in')
+    (output/'before-cancel.txt').write_bytes(adb('shell','dumpsys','activity','top'))
     tap('Cancel')
+    (output/'after-cancel.txt').write_bytes(adb('shell','dumpsys','activity','top'))
     tap('Settings')
     screenshot('settings')
     tap('Privacy and connection information')
@@ -149,4 +151,5 @@ try:
     adb('shell', 'am', 'force-stop', package)
 finally:
     (output/'crashes.txt').write_bytes(adb('logcat','-b','crash','-d',required=False))
+    (output/'navigation.txt').write_bytes(adb('logcat','-d','-s','ActivityTaskManager:I','ActivityManager:I','AndroidRuntime:E','libc:F','*:S',required=False)[-100000:])
     adb('forward', '--remove', f'tcp:{forwarded}', required=False)
