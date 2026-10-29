@@ -48,7 +48,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
-    private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null){if(intent.getBooleanExtra("qa_tun",false))startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));if(intent.getBooleanExtra("qa_update",false))startActivity(new Intent(this,UpdateActivity.class).putExtra("qa_update",true));}}
+    private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null){if(intent.getBooleanExtra("qa_tun",false)){Intent permission=VpnService.prepare(this);if(permission==null)startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));else startActivityForResult(permission,185);}if(intent.getBooleanExtra("qa_update",false))startActivity(new Intent(this,UpdateActivity.class).putExtra("qa_update",true));}}
     @Override protected void onStart(){super.onStart();visible=true;if(ready)poll();main.postDelayed(()->{if(!isDestroyed()&&visible)UpdateActivity.notifyAvailable(this);},1500);}
     @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);super.onStop();}
     @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
@@ -99,7 +99,7 @@ public final class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},86);
         Intent intent=new Intent(this,TunnelService.class);startForegroundService(intent);feedback.setText("Starting the VPN connection…");
     }
-    @Override protected void onActivityResult(int request,int result,Intent value){super.onActivityResult(request,result,value);if(request==85){if(result==RESULT_OK)startTunnel();else feedback.setText("VPN permission was not granted. Your connection is unchanged.");}}
+    @Override protected void onActivityResult(int request,int result,Intent value){super.onActivityResult(request,result,value);if(BuildConfig.DEBUG&&request==185&&result==RESULT_OK)startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));if(request==85){if(result==RESULT_OK)startTunnel();else feedback.setText("VPN permission was not granted. Your connection is unchanged.");}}
     private final Runnable pollAgain=this::poll;
     private void poll(){
         if(!visible||!ready||polling)return;polling=true;
@@ -156,6 +156,8 @@ public final class MainActivity extends Activity {
             for(int i=0;i<data.length();i++){JSONObject account=data.optJSONObject(i);String id=account.optString("id"),email=account.optString("email");JSONObject usage=account.optJSONObject("usage");String quota=usage==null?"Quota not checked":usage.optBoolean("unlimited")?"Unlimited":bytes(usage.optDouble("remaining_bytes",0))+" remaining";String reset=usage==null?"":usage.optString("reset_at");
                 rows.addView(label((hidden?"••••••••":email)+"\n"+account.optString("status")+" · "+quota+(reset.isEmpty()?"":"\nRenews: "+reset),15,TEXT));
                 rows.addView(button("Refresh balance",()->api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);})));
+                String reason=account.optString("reason_detail",account.optString("reason"));if(!reason.isEmpty())rows.addView(label(hidden&&!email.isEmpty()?reason.replace(email,"••••••••"):reason,14,MUTED));
+                rows.addView(button(account.optBoolean("enabled",true)?"Use this account":"Enable and use this account",()->api("POST","/api/accounts/"+id+"/enabled",object("enabled",true),7000,enabled->api("POST","/api/accounts/"+id+"/activate",new JSONObject(),7000,selected->{feedback.setText("Account selected. You can connect from VPN.");showPage(0);} ))));
                 rows.addView(button("Remove account",()->new AlertDialog.Builder(this).setTitle("Remove this account?").setMessage("This removes its stored session from this device.").setNegativeButton("Cancel",null).setPositiveButton("Remove",(d,w)->api("DELETE","/api/accounts/"+id,null,7000,r->{if(page==3)showPage(3);})).show()));
             }
         });

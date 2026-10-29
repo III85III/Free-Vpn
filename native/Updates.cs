@@ -40,7 +40,8 @@ namespace III85III.Vpn {
                 if(new Version(update.Version)<=Assembly.GetExecutingAssembly().GetName().Version){if(manual)MessageBox.Show(owner,"You're using the latest Windows version.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
                 if(MessageBox.Show(owner,"III85III VPN "+update.Version+" is available.\n\nDownload and open the installer? The VPN will disconnect during installation. Your local accounts will be kept.","Update available",MessageBoxButtons.YesNo,MessageBoxIcon.Information)!=DialogResult.Yes)return;
                 string directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN","updates");
-                if(new DriveInfo(Path.GetPathRoot(directory)).AvailableFreeSpace<update.Size*3+50L*1024*1024){MessageBox.Show(owner,"There isn't enough free disk space for this update. Free at least 150 MB on the Windows drive and try again. Nothing was installed.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+                long required=update.Size*3+50L*1024*1024;
+                if(new DriveInfo(Path.GetPathRoot(directory)).AvailableFreeSpace<required){MessageBox.Show(owner,"There isn't enough free disk space for this update. Free at least "+Math.Ceiling(required/(1024d*1024))+" MB on the Windows drive and try again. Nothing was installed.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
                 Engine.PrivateDirectory(directory);
                 string temporary=Path.Combine(directory,Guid.NewGuid().ToString("N")+".part"),target=Path.Combine(directory,"III85III-VPN-Setup-"+update.Version+".exe");
                 try{

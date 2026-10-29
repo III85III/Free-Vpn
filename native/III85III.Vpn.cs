@@ -890,7 +890,7 @@ namespace III85III.Vpn {
 
     internal sealed class MainForm : Form {
         readonly Engine engine;
-        bool updating;LuxuryButton appUpdateButton; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(20);
+        bool updating;string lastActionError="";LuxuryButton appUpdateButton; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(20);
         async Task CheckForUpdates(bool manual){
             if(updating||closing)return;updating=true;nextUpdateCheck=DateTime.UtcNow.AddHours(6);
             if(appUpdateButton!=null)appUpdateButton.Text="Checking…";
@@ -946,6 +946,7 @@ namespace III85III.Vpn {
         readonly ListView accountsList = new ListView();
         readonly LuxuryButton loginBtn = new LuxuryButton { Text = "Add an account", Variant = ButtonVariant.Primary };
         readonly LuxuryButton refreshQuotaBtn = new LuxuryButton { Text = "Check balance", Variant = ButtonVariant.Secondary };
+        readonly LuxuryButton useAccountBtn = new LuxuryButton { Text = "Use account", Variant = ButtonVariant.Secondary };
         readonly LuxuryButton removeAccountBtn = new LuxuryButton { Text = "Remove Account", Variant = ButtonVariant.Danger };
         readonly LuxuryButton accountEyeBtn = new LuxuryButton { Text = "Hide Email", Variant = ButtonVariant.Secondary, Width = 110 };
         bool hideEmail;
@@ -1065,6 +1066,10 @@ namespace III85III.Vpn {
                     await RefreshAccounts();
                 });
             };
+            useAccountBtn.Click+=async delegate{await Run(async delegate{
+                if(accountsList.SelectedItems.Count==0)throw new IOException("Select the account you want to use.");string id=Uri.EscapeDataString(Convert.ToString(accountsList.SelectedItems[0].Tag));
+                await engine.Api("POST","/api/accounts/"+id+"/enabled",new{enabled=true});await engine.Api("POST","/api/accounts/"+id+"/activate");await RefreshAccounts();
+            });};
             removeAccountBtn.Click += async delegate {
                 if (accountsList.SelectedItems.Count == 0) return;
                 if (MessageBox.Show(this, "Remove this Mozilla account and its stored credentials?", "Remove account", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
@@ -1506,6 +1511,7 @@ namespace III85III.Vpn {
             removeAccountBtn.Location = new Point(266, 58); removeAccountBtn.Size = new Size(130, 36);
             accountEyeBtn.Location = new Point(404, 58); accountEyeBtn.Size = new Size(110, 36);
             p.Controls.Add(loginBtn); p.Controls.Add(refreshQuotaBtn); p.Controls.Add(removeAccountBtn); p.Controls.Add(accountEyeBtn);
+            useAccountBtn.SetBounds(522,58,120,36);p.Controls.Add(useAccountBtn);accountsList.ShowItemToolTips=true;
 
             accountsList.View = View.Details;
             accountsList.FullRowSelect = true;
@@ -1783,7 +1789,7 @@ namespace III85III.Vpn {
 
                 var accountsPage = pages[3]; int aw = Math.Max(100, accountsPage.ClientSize.Width - 10);
                 int accountTop = Header(accountsPage, aw);
-                int accountButtonsBottom = PlaceButtons(new Control[] { loginBtn, refreshQuotaBtn, removeAccountBtn, accountEyeBtn }, 0, accountTop, aw);
+                int accountButtonsBottom = PlaceButtons(new Control[] { loginBtn, useAccountBtn, refreshQuotaBtn, removeAccountBtn, accountEyeBtn }, 0, accountTop, aw);
                 int accountsTop = accountButtonsBottom + 14;
                 accountsList.SetBounds(0, accountsTop, aw, Math.Max(100, accountsPage.ClientSize.Height - accountsTop - 112));
                 accountsList.Columns[0].Width = Math.Max(140, accountsList.ClientSize.Width - 394);
@@ -1830,6 +1836,7 @@ namespace III85III.Vpn {
             verifyBtn.Enabled = enabled && !testing;
             loginBtn.Enabled = enabled;
             refreshQuotaBtn.Enabled = enabled;
+            useAccountBtn.Enabled = enabled;
             removeAccountBtn.Enabled = enabled;
             applyLocationBtn.Enabled = enabled;
             pingBtn.Enabled = enabled && !pingScanBusy;
@@ -1841,9 +1848,9 @@ namespace III85III.Vpn {
 
         private async Task Run(Func<Task> action) {
             if (!ready || busy || closing) return;
-            busy = true; SetActions(false);
+            busy = true;lastActionError=""; SetActions(false);
             try { await action(); await Poll(); }
-            catch (Exception e) { dialSubtext.Text = e.Message; }
+            catch (Exception e) { lastActionError=e.Message;dialSubtext.Text = e.Message; }
             finally { busy = false; if (!closing) SetActions(ready); }
         }
 
@@ -2006,7 +2013,8 @@ namespace III85III.Vpn {
 
                 string phase = Json.Str(state, "phase");
                 bool connected = ConnectionState.Verified(lastStatus);
-                string failure=ConnectionState.Failure(lastStatus);
+                if(connected)lastActionError="";
+                string failure=lastActionError!=""?lastActionError:ConnectionState.Failure(lastStatus);
 
                 timer.Interval = phase == "running" && !connected ? 500 : 2000;
 
@@ -2095,7 +2103,8 @@ namespace III85III.Vpn {
             foreach (var a in Json.Rows(reply, "accounts")) {
                 var usage = Json.Child(a, "usage");
                 var item = new ListViewItem(MaskEmail(Json.Str(a, "email"))) { Tag = Json.Str(a, "id") };
-                item.SubItems.Add(Json.Str(a, "status"));
+                item.SubItems.Add(Json.Get(a,"enabled") is bool&&!Json.Bool(a,"enabled")?"Paused":Json.Str(a, "status"));
+                string reason=Json.Str(a,"reason_detail");if(reason=="")reason=Json.Str(a,"reason");string address=Json.Str(a,"email");if(hideEmail&&address!="")reason=reason.Replace(address,MaskEmail(address));item.ToolTipText=reason;
                 item.SubItems.Add(usage.Count == 0 ? "Unknown" : Json.Bool(usage, "unlimited") ? "Unlimited" : Theme.Bytes(Json.Num(usage, "remaining_bytes")));
                 DateTime reset;
                 item.SubItems.Add(DateTime.TryParse(Json.Str(usage, "reset_at"), out reset) ? reset.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "—");

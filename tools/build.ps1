@@ -67,4 +67,4 @@ if (Test-Path "$root\docs") { Copy-Item -LiteralPath "$root\docs" -Destination $
 if (Test-Path "$root\native") { Get-ChildItem -LiteralPath "$root\native" -File | Copy-Item -Destination "$out\source\native" }
 if (Test-Path "$root\tools") { Get-ChildItem -LiteralPath "$root\tools" -File | Copy-Item -Destination "$out\source\tools" }
 
-Write-Output "Built III85III VPN with newly customized III85III engine: $out"
+Write-Output "Built III85III VPN: $out"
