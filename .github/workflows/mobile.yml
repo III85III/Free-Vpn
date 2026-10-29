@@ -27,6 +27,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Android native tools
         run: |
           yes | sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'ndk;27.2.12479018' >/dev/null || test -d "$ANDROID_HOME/ndk/27.2.12479018"

@@ -25,6 +25,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: III85III VPN
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         UIUserInterfaceStyle: Dark
         UIAppFonts: [Lato-Regular.ttf]
@@ -51,6 +53,8 @@ targets:
       path: Tunnel/Info.plist
       properties:
         CFBundleDisplayName: III85III VPN Tunnel
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
