@@ -107,7 +107,7 @@ try:
     if len(fields)!=2:
         raise RuntimeError('Initial sign-in must contain email and password only')
     screenshot('sign-in')
-    adb('shell','input','keyevent','4')
+    tap('Cancel')
     tap('Settings')
     screenshot('settings')
     tap('Privacy and connection information')
@@ -115,7 +115,7 @@ try:
     if not any('Privacy' in node.get('text','') for node in hierarchy().iter('node')):
         raise RuntimeError('Privacy document was not visible')
     screenshot('privacy')
-    adb('shell','input','keyevent','4')
+    tap('Back to settings')
     adb('shell','settings','put','system','accelerometer_rotation','0')
     adb('shell','settings','put','system','user_rotation','1')
     time.sleep(1)
@@ -148,4 +148,5 @@ try:
     print('PASS Android native launch, local authenticated API, empty accounts, disconnected state, unauthenticated API rejection')
     adb('shell', 'am', 'force-stop', package)
 finally:
+    (output/'crashes.txt').write_bytes(adb('logcat','-b','crash','-d',required=False))
     adb('forward', '--remove', f'tcp:{forwarded}', required=False)

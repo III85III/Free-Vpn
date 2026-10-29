@@ -7,11 +7,16 @@ on:
         type: choice
         options: [all, android, ios]
         default: all
+      android_test_run:
+        description: Existing Android test artifact run (optional; device checks only)
+        type: string
+        default: ''
 permissions:
   contents: read
+  actions: read
 jobs:
   android:
-    if: inputs.platform != 'ios'
+    if: inputs.platform != 'ios' && inputs.android_test_run == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -73,7 +78,7 @@ jobs:
           path: mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 14
   android-device:
-    if: inputs.platform != 'ios'
+    if: always() && inputs.platform != 'ios' && (needs.android.result == 'success' || inputs.android_test_run != '')
     needs: android
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -96,6 +101,8 @@ jobs:
         with:
           name: III85III-VPN-Android-test
           path: .build/android-qa
+          run-id: ${{ inputs.android_test_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: Enable emulator acceleration
         run: |
           if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
