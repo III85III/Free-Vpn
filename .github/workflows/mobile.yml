@@ -41,7 +41,7 @@ jobs:
           CGO_LDFLAGS: '-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384'
         run: |
           mkdir -p ../mobile/android/app/libs
-          gomobile bind -target=android/arm64,android/amd64 -androidapi 26 -trimpath -ldflags='-s -w' -o ../mobile/android/app/libs/core.aar ./mobile
+          gomobile bind -target=android/arm64,android/amd64 -androidapi 26 -trimpath -ldflags='-s -w -X github.com/III85III/III85III-VPN/core/internal/version.Current=2.2.0' -o ../mobile/android/app/libs/core.aar ./mobile
       - name: Dependency notices
         env:
           GOOS: android
@@ -94,7 +94,7 @@ jobs:
         working-directory: mobile/apple-engine
         run: |
           mkdir -p ../ios/Frameworks
-          gomobile bind -target=ios,iossimulator -iosversion=15.0 -trimpath -ldflags='-s -w' -o ../ios/Frameworks/III85IIICore.xcframework .
+          gomobile bind -target=ios,iossimulator -iosversion=15.0 -trimpath -ldflags='-s -w -X github.com/III85III/III85III-VPN/core/internal/version.Current=2.2.0' -o ../ios/Frameworks/III85IIICore.xcframework .
       - name: Apple dependency notices
         run: python3 tools/mobile-licenses.py --module mobile/apple-engine --output mobile/ios/App/Licenses
       - name: Generate Xcode project
