@@ -1,4 +1,4 @@
-﻿param([string]$OutputDirectory)
+﻿param([string]$OutputDirectory,[string]$EngineDirectory)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $out = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $root '.build\app' }
@@ -6,6 +6,11 @@ if (Test-Path -LiteralPath $out) { throw 'Choose an empty output directory to pr
 
 New-Item -ItemType Directory -Path $out, "$out\core", "$out\licenses", "$out\source\native", "$out\source\tools", "$out\source\core" -Force | Out-Null
 
+if($EngineDirectory){
+    $engine=[IO.Path]::GetFullPath($EngineDirectory)
+    if(-not(Test-Path -LiteralPath (Join-Path $engine 'iii85iii-core.exe')) -or -not(Test-Path -LiteralPath (Join-Path $engine 'iii85iii-tun.exe'))){throw 'The validated engine folder is incomplete.'}
+    Get-ChildItem -LiteralPath $engine -File | Copy-Item -Destination "$out\core"
+}else{
 # 1. Compile III85III Go Core
 Push-Location "$root\core"
 try {
@@ -37,9 +42,10 @@ foreach ($dir in $candidateDirs) {
     }
 }
 
+}
 # Generate manifest.json for engine files
 $manifest = @{}
-foreach ($file in (Get-ChildItem -Path "$out\core" -File)) {
+foreach ($file in (Get-ChildItem -Path "$out\core" -File | Where-Object {$_.Name -ne 'manifest.json'})) {
     $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
     $manifest[$file.Name] = $hash
 }
@@ -50,7 +56,7 @@ Set-Content -LiteralPath "$out\core\manifest.json" -Value $manifestJson -Encodin
 Write-Output "Compiling C# UI..."
 $compiler = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 $refs = @('/reference:System.dll','/reference:System.Core.dll','/reference:System.Drawing.dll','/reference:System.Windows.Forms.dll','/reference:System.Net.Http.dll','/reference:System.Web.Extensions.dll','/reference:Accessibility.dll')
-& $compiler /nologo /codepage:65001 /utf8output /platform:x64 /target:winexe /optimize+ "/out:$out\III85III VPN.exe" "/win32icon:$root\native\assets\brand\iii85iii-luxury.ico" "/win32manifest:$root\native\app.manifest" @refs "$root\native\III85III.Vpn.cs" "$root\native\SignInForm.cs" "$root\native\VerificationForm.cs"
+& $compiler /nologo /codepage:65001 /utf8output /platform:x64 /target:winexe /optimize+ "/out:$out\III85III VPN.exe" "/win32icon:$root\native\assets\brand\iii85iii-luxury.ico" "/win32manifest:$root\native\app.manifest" @refs "$root\native\III85III.Vpn.cs" "$root\native\SignInForm.cs" "$root\native\VerificationForm.cs" "$root\native\Updates.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Application compilation failed.' }
 
 # 3. Copy Assets & Docs

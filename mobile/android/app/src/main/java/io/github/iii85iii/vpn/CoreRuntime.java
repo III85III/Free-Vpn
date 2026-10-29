@@ -10,6 +10,10 @@ import java.util.concurrent.*;
 import mobile.Mobile;
 
 final class CoreRuntime {
+    static final class ApiFailure extends IOException {
+        final int status;
+        ApiFailure(int status,String message){super(message+" (HTTP "+status+")");this.status=status;}
+    }
     static final ExecutorService IO = Executors.newFixedThreadPool(4);
     private static File data;
     private static int port;
@@ -56,7 +60,7 @@ final class CoreRuntime {
                 text=bytes.toString("UTF-8");
             }
             JSONObject result=text.isEmpty()?new JSONObject():new JSONObject(text);
-            if(status<200||status>=300)throw new IOException("Request failed (HTTP "+status+"). "+result.optString("error","Try again."));
+            if(status<200||status>=300)throw new ApiFailure(status,result.optString("error","The request could not finish. Try again."));
             return result;
         } finally {connection.disconnect();}
     }

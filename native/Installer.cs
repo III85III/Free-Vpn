@@ -9,10 +9,14 @@ using System.Windows.Forms;
 [assembly:AssemblyTitle("III85III VPN Setup")]
 [assembly:AssemblyCompany("III85III")]
 [assembly:AssemblyProduct("III85III VPN")]
-[assembly:AssemblyVersion("2.2.0.0")]
+[assembly:AssemblyVersion("2.2.1.0")]
 internal static class Installer {
     [STAThread]static int Main(){
         Application.EnableVisualStyles();
+        var arguments=Environment.GetCommandLineArgs();int previous;
+        if(arguments.Length==3&&arguments[1]=="-wait-pid"&&Int32.TryParse(arguments[2],out previous)){
+            try{using(var app=Process.GetProcessById(previous)){if(app.ProcessName=="III85III VPN"&&app.SessionId==Process.GetCurrentProcess().SessionId)app.WaitForExit(60000);}}catch(ArgumentException){}
+        }
         if(Process.GetProcessesByName("III85III VPN").Length>0){MessageBox.Show("Close III85III VPN from the notification tray before installing this update, then run Setup again. Your accounts will be kept.","III85III VPN Setup",MessageBoxButtons.OK,MessageBoxIcon.Information);return 1;}
         if(MessageBox.Show("Install III85III VPN for this Windows user?\n\nEnglish is the default language. Your account data is kept separately.\n\nThe package includes the required components and licenses.","III85III VPN Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 0;
         try{

@@ -26,12 +26,13 @@ public final class TunnelService extends VpnService {
     };
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final Runnable monitor=new Runnable(){public void run(){
-        if(active&&!Mobile.isOn()){error="The connection stopped. Open the app to check your account or network.";stopTunnel();}
+        if(active&&!Mobile.isOn()){CoreRuntime.IO.execute(()->{String reason="";try{reason=MainActivity.connectionProblem(CoreRuntime.request("GET","/api/status",null,3000));}catch(Exception ignored){}error=reason.isEmpty()?"The connection stopped. Check your account or network.":reason;stopTunnel();});}
         else if(active)handler.postDelayed(this,1500);
     }};
     @Override public int onStartCommand(Intent intent,int flags,int startId){
         if(intent!=null&&STOP.equals(intent.getAction())){stopTunnel();return START_NOT_STICKY;}
         if(stopping.get()||!lifecycle.start())return START_NOT_STICKY;
+        final boolean synthetic=BuildConfig.DEBUG&&intent!=null&&intent.getBooleanExtra("qa_tun",false);
         error="";showNotification();
         CoreRuntime.IO.execute(()->{
             try {
@@ -42,7 +43,7 @@ public final class TunnelService extends VpnService {
                     getSystemService(ConnectivityManager.class).registerNetworkCallback(new NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build(),networkListener);
                     observingNetwork=true;
                 }
-                Mobile.connect();
+                if(!synthetic)Mobile.connect();
                 Builder builder=new Builder().setSession("III85III VPN").setMtu(1500)
                     .addAddress("172.19.0.1",30).addRoute("0.0.0.0",0).addDnsServer("172.19.0.2")
                     .addAddress("fdfe:dcba:9876::1",126).addRoute("::",0);
@@ -59,8 +60,8 @@ public final class TunnelService extends VpnService {
                     if(stopping.get()||!lifecycle.activate()){Mobile.stopTun();Mobile.setOn(false);return;}
                     active=true;
                 }
-                handler.post(()->{if(active&&!stopping.get()){handler.post(monitor);showNotification();}});
-            } catch(Exception failure){error="Connection could not start. Check your account and try again.";stopTunnel();}
+                handler.post(()->{if(active&&!stopping.get()){if(synthetic)handler.postDelayed(()->stopTunnel(),20000);else handler.post(monitor);showNotification();}});
+            } catch(Exception failure){String detail=failure.getMessage();error="VPN could not start"+(detail==null?". Check your account and retry.":": "+detail.substring(0,Math.min(detail.length(),240)));stopTunnel();}
         });
         return START_NOT_STICKY;
     }

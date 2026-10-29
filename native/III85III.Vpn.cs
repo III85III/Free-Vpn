@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.2.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.2.0.0")]
+[assembly: System.Reflection.AssemblyVersion("2.2.1.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.2.1.0")]
 
 namespace III85III.Vpn {
     internal sealed class AppBypass {
@@ -74,6 +74,15 @@ namespace III85III.Vpn {
     }
 
     internal static class ConnectionState {
+        public static bool HasAccounts(Dictionary<string, object> value) { return Json.Num(Json.Child(value,"accounts"),"total")>0 || Json.Child(value,"active_account").Count>0; }
+        public static string Failure(Dictionary<string, object> value) {
+            var tun=Json.Child(value,"tun");
+            if(Json.Str(value,"system_proxy")=="tun" && Json.Str(tun,"state")=="error")return "Whole computer: "+Json.Str(tun,"message")+(Json.Str(tun,"code")==""?"":" ["+Json.Str(tun,"code")+"]");
+            var state=Json.Child(value,"state");
+            if(Json.Str(state,"phase")=="error" || Json.Str(state,"code")=="no_usable_account")return Json.Str(state,"message");
+            if(Json.Str(value,"connect_failure")!="")return "Connection could not be completed ("+Json.Str(value,"connect_failure")+"). Check your account and network, then try again.";
+            return "";
+        }
         public static string QuickCountry(string chosen) { return String.Equals(chosen, "fastest", StringComparison.OrdinalIgnoreCase) ? "" : chosen ?? ""; }
         public static bool Verified(Dictionary<string, object> value) {
             var state = Json.Child(value, "state"); var proxy = Json.Child(value, "proxy"); var test = Json.Child(value, "last_test"); var tun = Json.Child(value, "tun");
@@ -102,6 +111,10 @@ namespace III85III.Vpn {
         }
     }
 
+    internal sealed class ApiFailure : IOException {
+        internal readonly int Status;
+        internal ApiFailure(int status,string message):base(message+" (HTTP "+status+")"){Status=status;}
+    }
     internal sealed class Engine : IDisposable {
         public readonly string DataDir;
         public readonly string Root;
@@ -194,7 +207,7 @@ namespace III85III.Vpn {
                 using (var cancel = new CancellationTokenSource(timeoutMs)) using (var reply = await http.SendAsync(request, cancel.Token)) {
                     var text = await reply.Content.ReadAsStringAsync();
                     var result = String.IsNullOrWhiteSpace(text) ? new Dictionary<string, object>() : Json.Decode(text);
-                    if (!reply.IsSuccessStatusCode) throw new IOException(Json.Str(result, "error") + " (HTTP " + (int)reply.StatusCode + ")");
+                    if (!reply.IsSuccessStatusCode) throw new ApiFailure((int)reply.StatusCode,Json.Str(result, "error"));
                     return result;
                 }
             }
@@ -872,6 +885,11 @@ namespace III85III.Vpn {
 
     internal sealed class MainForm : Form {
         readonly Engine engine;
+        bool updating; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(20);
+        async Task CheckForUpdates(bool manual){
+            if(updating||closing)return;updating=true;nextUpdateCheck=DateTime.UtcNow.AddHours(6);
+            try{await AppUpdates.Check(this,text=>{if(!closing)dialSubtext.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true});allowClose=true;Close();},manual);}finally{updating=false;}
+        }
         readonly LuxuryTitleBar titleBar;
         readonly Panel sidebar = new Panel();
         readonly Panel contentArea = new Panel();
@@ -951,6 +969,7 @@ namespace III85III.Vpn {
 
         public MainForm(Engine engine, bool layoutOnly = false) {
             this.engine = engine;
+            if(layoutOnly)nextUpdateCheck=DateTime.MaxValue;
             Text = "III85III VPN";
             AutoScaleMode = AutoScaleMode.None;
             FormBorderStyle = FormBorderStyle.None;
@@ -1062,7 +1081,7 @@ namespace III85III.Vpn {
             diagPingBtn.Click += async delegate { SwitchPage(1); await MeasureLocationLatency(); };
             copyLogsBtn.Click += delegate { try { Clipboard.SetText(logsBox.Text); } catch { } };
 
-            timer.Tick += async delegate { await Poll(); };
+            timer.Tick += async delegate { await Poll(); if(!closing&&Visible&&Form.ActiveForm==this&&DateTime.UtcNow>=nextUpdateCheck){var updateCheck=CheckForUpdates(false);} };
 
             Shown += async delegate {
                 if (layoutOnly) return;
@@ -1591,6 +1610,7 @@ namespace III85III.Vpn {
             var openFolderBtn = new LuxuryButton { Text = "Open Data Folder", Width = 140 };
             var docsBtn = new LuxuryButton { Text = "User Guide", Width = 110 };
             var dashBtn = new LuxuryButton { Text = "Engine Dashboard", Width = 150 };
+            var updateBtn=new LuxuryButton{Text="Check for updates",Width=160};updateBtn.Click+=async delegate{await CheckForUpdates(true);};
 
             openFolderBtn.Click += delegate { Process.Start(new ProcessStartInfo(engine.DataDir) { UseShellExecute = true }); };
             docsBtn.Click += delegate { Process.Start(new ProcessStartInfo(Path.Combine(engine.Root, "docs", "guide.html")) { UseShellExecute = true }); };
@@ -1603,7 +1623,7 @@ namespace III85III.Vpn {
                 });
             };
 
-            btnRow.Controls.Add(openFolderBtn); btnRow.Controls.Add(docsBtn); btnRow.Controls.Add(dashBtn);
+            btnRow.Controls.Add(updateBtn);btnRow.Controls.Add(openFolderBtn); btnRow.Controls.Add(docsBtn); btnRow.Controls.Add(dashBtn);
             p.Controls.Add(btnRow);
 
             var legal = new Label {
@@ -1823,11 +1843,6 @@ namespace III85III.Vpn {
         private async Task ConnectFromHome() {
             if (!ready || busy || closing) return;
             string phase = Json.Str(Json.Child(lastStatus, "state"), "phase");
-            if ((phase == "off" || phase == "waiting") && Json.Child(lastStatus, "active_account").Count == 0) {
-                SwitchPage(3);
-                loginBtn.Focus();
-                return;
-            }
             await Run(TogglePower);
         }
 
@@ -1835,8 +1850,10 @@ namespace III85III.Vpn {
             if (Json.Str(Json.Child(lastStatus, "state"), "phase") != "off") {
                 await engine.Api("POST", "/api/power", new { on = false }); return;
             }
-            if (!Json.Rows(await engine.Api("GET", "/api/accounts"), "accounts").GetEnumerator().MoveNext())
+            if (!Json.Rows(await engine.Api("GET", "/api/accounts"), "accounts").GetEnumerator().MoveNext()) {
+                SwitchPage(3); loginBtn.Focus();
                 throw new IOException("Add your Mozilla account on the Account tab first.");
+            }
             string mode = pendingModeIndex == 0 ? "tun" : pendingModeIndex == 1 ? "set" : "clear";
             if (mode == "tun") {
                 if (!Json.Bool(lastStatus, "tun_supported")) throw new IOException("Whole-system TUN is unavailable on this computer.");
@@ -1902,7 +1919,7 @@ namespace III85III.Vpn {
             var acct = Json.Child(lastStatus, "active_account");
             var usage = Json.Child(acct, "usage");
             string email = Json.Str(acct, "email");
-            accountBadge.Text = acct.Count == 0 ? "Add an account to see your balance" :
+            accountBadge.Text = acct.Count == 0 ? (ConnectionState.HasAccounts(lastStatus)?"Account saved · connect to check your balance":"Add an account to see your balance") :
                 MaskEmail(email) + " · " + (Json.Bool(usage, "unlimited") ? "Unlimited" : Theme.Bytes(Json.Num(usage, "remaining_bytes")) + " remaining");
         }
 
@@ -1982,27 +1999,28 @@ namespace III85III.Vpn {
 
                 string phase = Json.Str(state, "phase");
                 bool connected = ConnectionState.Verified(lastStatus);
+                string failure=ConnectionState.Failure(lastStatus);
 
                 timer.Interval = phase == "running" && !connected ? 500 : 2000;
 
                 dial.State = phase == "off" ? DialState.Disconnected :
                              connected ? DialState.Connected :
-                             phase == "error" ? DialState.Error : DialState.Connecting;
+                             failure!="" ? DialState.Error : DialState.Connecting;
                 dial.Invalidate();
 
                 statusPill.State = dial.State;
                 statusPill.StatusText = phase == "off" ? "Not connected" :
                                         connected ? "Connected" :
                                         phase == "running" ? "Connecting" :
-                                        phase == "waiting" ? "Add an account" :
-                                        phase == "error" ? "Needs attention" : "Connecting";
+                                        failure!="" ? "Needs attention" :
+                                        phase == "waiting" ? "Waiting" : "Connecting";
                 statusPill.Invalidate();
 
-                bool needsAccount = acct.Count == 0 && (phase == "off" || phase == "waiting");
+                bool needsAccount = !ConnectionState.HasAccounts(lastStatus) && (phase == "off" || phase == "waiting");
                 dialAction.Text = needsAccount ? "Let's get you connected." : phase == "off" ? "Ready when you are." : connected ? "You're connected." : phase == "error" ? "Let's try that again." : "Getting you connected…";
                 connectBtn.Text = needsAccount ? "Get started" : phase == "off" ? "Connect" : connected ? "Disconnect" : phase == "error" ? "Reset connection" : "Cancel connection";
                 dialSubtext.Text = needsAccount ? "Add your Mozilla account to get started." :
-                    phase == "off" ? "Choose a location. Connect whenever you're ready." :
+                    failure!="" ? failure : phase == "off" ? "Choose a location. Connect whenever you're ready." :
                     connected ? "Your connection is ready. Make yourself at home." : Json.Str(state, "message");
 
                 // Update metrics

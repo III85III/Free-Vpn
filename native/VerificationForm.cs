@@ -12,9 +12,10 @@ namespace III85III.Vpn {
         readonly PictureBox challenge=new PictureBox{Visible=false,SizeMode=PictureBoxSizeMode.Zoom};
         readonly LuxuryButton verify=new LuxuryButton{Text="Verify",Variant=ButtonVariant.Primary};
         readonly System.Windows.Forms.Timer timer=new System.Windows.Forms.Timer{Interval=1500};
-        bool submitting,polling,closed; string step="";
+        bool submitting,polling,closed; string step="",promptStamp="",answeredStamp="";
         internal VerificationForm(Engine engine,string session,Dictionary<string,object> state){
             this.engine=engine;this.session=session;Text="Verify your Mozilla account";AutoScaleMode=AutoScaleMode.None;
+            promptStamp=Json.Str(state,"updated");
             FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterParent;ClientSize=new Size(460,400);BackColor=Theme.Bg;ForeColor=Theme.TextPrimary;
             try{Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath);}catch{}
             Controls.Add(new LuxuryTitleBar(this,false));
@@ -34,17 +35,20 @@ namespace III85III.Vpn {
         async Task Submit(){
             if(submitting||polling||closed)return;
             string value=code.Text.Trim();if(value.Length==0){feedback.Text="Enter your verification code.";code.Focus();return;}
-            submitting=true;verify.Enabled=false;code.Enabled=false;
-            try{var result=await engine.Api("POST","/api/signin/"+session,new{value=value});if(!closed){code.Clear();Apply(result);}}
+            submitting=true;answeredStamp=promptStamp;verify.Enabled=false;code.Enabled=false;
+            try{Dictionary<string,object> result=null;bool changed=false;try{result=await engine.Api("POST","/api/signin/"+session,new{value=value});}catch(ApiFailure failure){if(failure.Status!=409)throw;changed=true;}if(changed)result=await engine.Api("GET","/api/signin/"+session);if(!closed){code.Clear();Apply(result);}}
             catch(Exception e){if(!closed){feedback.Text=e.Message;code.SelectAll();}}
-            finally{submitting=false;if(!closed){verify.Enabled=NeedsCode(step);code.Enabled=NeedsCode(step);code.Focus();}}
+            finally{submitting=false;if(!closed){verify.Enabled=code.Enabled=NeedsCode(step)&&(answeredStamp==""||promptStamp!=answeredStamp);if(code.Enabled)code.Focus();}}
         }
         void Apply(Dictionary<string,object> state){
             if(closed)return;string next=Json.Str(state,"step");
             if(next=="done"){timer.Stop();DialogResult=DialogResult.OK;Close();return;}
             if(next=="failed"||next=="cancelled"){timer.Stop();DialogResult=DialogResult.Cancel;Close();return;}
+            promptStamp=Json.Str(state,"updated");
+            if(NeedsCode(next)&&answeredStamp!=""&&promptStamp==answeredStamp){verify.Enabled=code.Enabled=false;message.Text="Checking the code you submitted…";return;}
             if(step!=next){step=next;code.Clear();feedback.Text="";heading.Text=next=="need_totp"?"Enter your security code":"Check your email";message.Text=next=="need_totp"?"Enter the current code from your authenticator app.":"Enter the verification code Mozilla sent you. Your sign-in will continue here.";}
             verify.Enabled=code.Enabled=NeedsCode(next)&&!submitting;
+            string problem=Json.Str(state,"error");if(problem!="")feedback.Text=problem;
             string encoded=Json.Str(state,"captcha");
             if(next=="need_captcha"&&encoded.Length<1500000&&encoded.StartsWith("data:image/",StringComparison.Ordinal)&&encoded.IndexOf(',')>0&&challenge.Image==null){
                 try{using(var input=new MemoryStream(Convert.FromBase64String(encoded.Substring(encoded.IndexOf(',')+1))))using(var image=Image.FromStream(input))challenge.Image=new Bitmap(image);challenge.Visible=true;heading.Text="Confirm your sign-in";message.Text="Enter the characters shown below.";}catch{feedback.Text="Could not display the verification image. Cancel and try again.";}

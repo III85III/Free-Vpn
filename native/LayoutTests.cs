@@ -96,11 +96,8 @@ namespace III85III.Vpn {
                 Check(locations.Items.Count==1 && ((ServerChoice)locations.Items[0]).Code=="de","search remains compatible with ping sort");
                 ((LuxurySearchBox)Field(form,"locationSearch")).Input.Text="";
                 servers.Clear();filter.Invoke(form,null);
-                form.GetType().GetField("ready",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(form,true);
-                form.GetType().GetField("lastStatus",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(form,Json.Decode("{\"state\":{\"phase\":\"off\"}}"));
-                ((System.Threading.Tasks.Task)form.GetType().GetMethod("ConnectFromHome",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(form,null)).GetAwaiter().GetResult();
-                Check((int)Field(form,"activePageIndex")==3,"first-use action opens the account page without connecting");
-                form.GetType().GetField("ready",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(form,false);
+                Check(!ConnectionState.HasAccounts(Json.Decode("{\"accounts\":{\"total\":0}}")),"first-use display recognizes a known empty account store");
+                Check(ConnectionState.HasAccounts(Json.Decode("{\"accounts\":{\"total\":1}}")),"saved accounts do not require an active connection for the home display");
                 if(args.Length>0) { form.ClientSize=new Size(1040,760); form.GetType().GetMethod("SwitchPage",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(form,new object[]{0});Arrange(form);Application.Run(form); }
             }
             Console.WriteLine("PASS "+checks+" layout checks"); return 0;

@@ -48,7 +48,7 @@ def tap(text):
                     adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
                     time.sleep(.7)
                     return
-        # The six-page navigation scrolls horizontally on narrow phones.
+        # Keep gestures inside app controls, away from Android's back edges.
         scrolling=next((n for n in tree.iter('node') if n.get('class')=='android.widget.HorizontalScrollView'),None)
         if scrolling is not None:
             x1,y1,x2,y2=map(int,re.findall(r'\d+',scrolling.get('bounds','')))
@@ -56,6 +56,11 @@ def tap(text):
             # edge-origin swipe as Back and backgrounds the root activity.
             inset=(x2-x1)//4
             adb('shell','input','swipe',str(x2-inset),str((y1+y2)//2),str(x1+inset),str((y1+y2)//2),'300')
+        else:
+            scrolling=next((n for n in tree.iter('node') if n.get('class')=='android.widget.ScrollView' and n.get('package')==package),None)
+            if scrolling is not None:
+                x1,y1,x2,y2=map(int,re.findall(r'\d+',scrolling.get('bounds','')))
+                adb('shell','input','swipe',str((x1+x2)//2),str(y1+(y2-y1)*3//4),str((x1+x2)//2),str(y1+(y2-y1)//4),'300')
     ET.ElementTree(tree).write(output/'ui-failure.xml')
     screenshot('ui-failure')
     raise RuntimeError('UI control unavailable: '+text)
@@ -104,7 +109,8 @@ try:
         if error.code not in (401, 403):
             raise RuntimeError('Unexpected unauthenticated response') from None
     screenshot('home')
-    tap('Accounts')
+    tap('Settings')
+    tap('Mozilla accounts')
     tap('Add an account')
     fields=[node for node in hierarchy().iter('node') if node.get('class')=='android.widget.EditText']
     if len(fields)!=2:
@@ -126,6 +132,15 @@ try:
     time.sleep(1)
     screenshot('landscape')
     adb('shell','settings','put','system','user_rotation','0')
+    adb('shell','settings','put','global','private_dns_mode','off')
+    adb('shell','appops','set',package,'ACTIVATE_VPN','allow')
+    adb('shell','am','start','-W','-n',package+'/.MainActivity','--ez','qa_screenshots','true','--ez','qa_tun','true')
+    time.sleep(3)
+    dns=adb('shell','ping','-c','1','-W','1','iii85iii-smoke.test',required=False).decode(errors='replace')
+    if not re.search(r'198\.(?:18|19)\.\d+\.\d+',dns):
+        raise RuntimeError('Synthetic TUN DNS traffic did not reach the native VPN interface')
+    (output/'tunnel.txt').write_text('PASS: real Android VPN interface/native TUN answered a synthetic DNS name with a fake address. No Mozilla account or upstream traffic used.\n')
+    adb('shell','am','force-stop',package)
     if options.upgrade:
         adb('shell',f'run-as {package} sh -c "echo preserved > files/update-probe.txt"')
         adb('shell','am','force-stop',package)

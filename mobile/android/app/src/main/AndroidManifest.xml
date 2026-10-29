@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <queries><intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent></queries>
     <application android:label="III85III VPN" android:theme="@style/AppTheme"
         android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,6 +13,8 @@
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
         <activity android:name=".InformationActivity" android:exported="false" />
+        <activity android:name=".UpdateActivity" android:exported="false" />
+        <receiver android:name=".UpdateReceiver" android:exported="false" />
         <service android:name=".TunnelService" android:exported="false"
             android:permission="android.permission.BIND_VPN_SERVICE" android:foregroundServiceType="specialUse">
             <intent-filter><action android:name="android.net.VpnService" /></intent-filter>

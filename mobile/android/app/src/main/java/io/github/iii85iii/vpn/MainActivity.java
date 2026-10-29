@@ -21,7 +21,7 @@ public final class MainActivity extends Activity {
     private final Handler main=new Handler(Looper.getMainLooper());
     private LinearLayout content,nav;
     private TextView statusText,detailText,speedText,feedback;
-    private Button power;
+    private Button power,server;
     private int page;
     private boolean ready,visible,polling,pinging;
     private boolean warming;
@@ -38,15 +38,18 @@ public final class MainActivity extends Activity {
         try{body=Typeface.createFromAsset(getAssets(),"fonts/Lato-Regular.ttf");}catch(Exception ignored){}
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);root.setPadding(dp(18),dp(12),dp(18),0);
         TextView brand=label("III85III  /  VPN",21,GOLD);brand.setPadding(0,dp(10),0,dp(16));root.addView(brand);
-        HorizontalScrollView navigation=new HorizontalScrollView(this);navigation.setHorizontalScrollBarEnabled(false);
-        nav=new LinearLayout(this);navigation.addView(nav);root.addView(navigation);
+        nav=new LinearLayout(this);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(0,dp(24),0,dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        feedback=label("Starting your local engine…",13,MUTED);feedback.setPadding(0,dp(8),0,dp(10));root.addView(feedback);setContentView(root);
+        feedback=label("Starting your local engine…",13,MUTED);feedback.setPadding(0,dp(8),0,dp(10));root.addView(feedback);root.addView(nav);setContentView(root);
         WindowLayout.apply(this,root);
         showPage(state==null?0:state.getInt("page",0));
+        startTunnelCheck(getIntent());
+        main.postDelayed(()->{if(!isDestroyed()&&visible)UpdateActivity.notifyAvailable(this);},3000);
         CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible)poll();});}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
     }
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
+    private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null&&intent.getBooleanExtra("qa_tun",false))startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));}
     @Override protected void onStart(){super.onStart();visible=true;if(ready)poll();}
     @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);super.onStop();}
     @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
@@ -61,17 +64,17 @@ public final class MainActivity extends Activity {
     }
     private JSONObject object(String key,Object value){JSONObject obj=new JSONObject();try{obj.put(key,value);}catch(JSONException impossible){throw new IllegalStateException(impossible);}return obj;}
     private void showPage(int target){
-        page=target;nav.removeAllViews();String[] names={"Home","Locations","App rules","Accounts","Settings","Help"};
-        for(int i=0;i<names.length;i++){final int tab=i;Button item=button(names[i],()->showPage(tab));item.setTextColor(tab==page?BG:MUTED);item.setBackground(background(tab==page?GOLD:BG));LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-2,dp(48));params.setMargins(0,0,dp(6),0);item.setLayoutParams(params);nav.addView(item);}
+        page=target;nav.removeAllViews();String[] names={"VPN","Locations","Settings"};int[] tabs={0,1,4};
+        for(int i=0;i<names.length;i++){final int tab=tabs[i];boolean selected=tab==page||(tab==4&&page>=2);Button item=button(names[i],()->showPage(tab));item.setTextColor(selected?BG:MUTED);item.setBackground(background(selected?GOLD:BG));LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,dp(54),1);params.setMargins(0,dp(4),dp(4),dp(4));item.setLayoutParams(params);nav.addView(item);}
         content.removeAllViews();statusText=detailText=speedText=null;power=null;
         switch(page){case 0:home();break;case 1:locationPage();break;case 2:appRules();break;case 3:accounts();break;case 4:settings();break;default:help();}
     }
     private void home(){
-        heading("Make yourself at home.","Your account. Your connection.");
+        heading("Your VPN connection.","Choose a server and connect when you need it.");
         statusText=label("Ready when you are",28,GOLD);statusText.setGravity(Gravity.CENTER);statusText.setPadding(0,dp(34),0,dp(16));content.addView(statusText);
         detailText=label("Add your Mozilla account, choose a location and connect.",14,MUTED);detailText.setGravity(Gravity.CENTER);content.addView(detailText);
         power=button("Connect",this::toggleConnection);power.setTextColor(BG);power.setBackground(background(GOLD));content.addView(power);
-        content.addView(button("Choose a location",()->showPage(1)));
+        server=button("Server · Automatic",()->showPage(1));content.addView(server);
         speedText=label("↓ 0 B/s      ↑ 0 B/s",16,TEXT);speedText.setGravity(Gravity.CENTER);speedText.setPadding(0,dp(24),0,dp(20));content.addView(speedText);
         note("No personal VPS required. Mozilla account eligibility and normal service quota apply.");updateHome();
     }
@@ -110,14 +113,23 @@ public final class MainActivity extends Activity {
         JSONObject state=status.optJSONObject("state"),test=status.optJSONObject("last_test");
         String phase=state==null?"off":state.optString("phase","off");
         boolean verified=verified();
+        String selected=status.optString("selection_name");if(server!=null)server.setText("Server · "+(selected.isEmpty()?"Automatic":selected));
+        String problem=connectionProblem(status);
         VpnLifecycle.Phase transition=TunnelService.lifecycle.phase();
-        statusText.setText(verified?"You're connected.":TunnelService.active||transition==VpnLifecycle.Phase.STARTING?"Getting you connected…":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":"Ready when you are.");
-        detailText.setText(verified?"Your connection is ready.":TunnelService.error.isEmpty()?"Choose a location. Connect whenever you're ready.":TunnelService.error);
+        statusText.setText(verified?"Connected":!problem.isEmpty()?"Needs attention":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":TunnelService.active||transition==VpnLifecycle.Phase.STARTING?"Connecting…":"Disconnected");
+        detailText.setText(verified?"Your connection is ready.":!TunnelService.error.isEmpty()?TunnelService.error:!problem.isEmpty()?problem:"Choose a server. Connect whenever you're ready.");
         power.setText(transition==VpnLifecycle.Phase.STARTING?"Cancel connection":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":TunnelService.active?"Disconnect":"Connect");
         power.setEnabled(transition!=VpnLifecycle.Phase.STOPPING);
         try{String[] rate=Mobile.speed().split(",");speedText.setText("↓ "+bytes(Double.parseDouble(rate[0]))+"/s      ↑ "+bytes(Double.parseDouble(rate[1]))+"/s");}catch(Exception ignored){}
     }
     private String bytes(double amount){String[] unit={"B","KB","MB","GB"};int n=0;while(amount>=1000&&n<3){amount/=1000;n++;}return String.format(Locale.US,n==0?"%.0f %s":"%.1f %s",amount,unit[n]);}
+    static String connectionProblem(JSONObject value){
+        JSONObject state=value.optJSONObject("state"),proxy=value.optJSONObject("proxy");String failure=value.optString("connect_failure");
+        if(state!=null&&(state.optString("phase").equals("error")||state.optString("code").equals("no_usable_account")||state.optString("code").equals("no_accounts")))return state.optString("message","Your saved account is not available. Check Accounts for details.");
+        if(proxy!=null&&!proxy.optString("wake_error").isEmpty())return proxy.optString("wake_error");
+        if(!failure.isEmpty())return "Connection could not complete ("+failure+"). Check your account and network, then retry.";
+        return "";
+    }
     private void locationPage(){
         heading("Somewhere that suits you.","Measure response time, then choose your location.");
         EditText search=new EditText(this);search.setSingleLine(true);search.setHint("Search country or code");search.setTextColor(TEXT);search.setHintTextColor(MUTED);content.addView(search);
@@ -161,9 +173,12 @@ public final class MainActivity extends Activity {
     }
     private void settings(){
         heading("Make it yours.","III85III VPN "+BuildConfig.VERSION_NAME);
+        content.addView(button("Mozilla accounts",()->showPage(3)));
+        content.addView(button("Split tunneling · direct apps",()->showPage(2)));
+        content.addView(button("Connection help",()->showPage(5)));
         content.addView(button("Privacy and connection information",()->openDocument("privacy")));
         content.addView(button("Open-source licenses",()->openDocument("licenses")));
-        content.addView(button("Updates on GitHub",()->startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://github.com/III85III/Free-Vpn/releases/tag/android-v2.3.0")))));
+        content.addView(button("App updates",()->startActivity(new Intent(this,UpdateActivity.class))));
         note("Selected excluded apps connect directly. Your choices apply when you reconnect.");
         note("Account sessions stay in this app's private storage. Screenshots are blocked in the distributed app and account backups are disabled.");
         note("Disconnect from the app, its notification or Android VPN settings. Manual disconnect is respected; the app does not automatically reconnect afterwards.");
@@ -172,7 +187,7 @@ public final class MainActivity extends Activity {
     private void help(){heading("A little connection help.","Check your account, network and selected location.");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Measure server latency",()->showPage(1)));note("Connection problems: check that the same account can sign in to Mozilla in a browser. Account-specific errors or service challenges are not guaranteed to be resolved by this app.");note("Telegram-bot-only routing and arbitrary UDP are not provided. App rules are exclusions, not a promise that only selected apps use the VPN.");note("This Android build needs real-device login, tunnel and network-handover testing before store publication.");}
 
     private final class SignInFlow {
-        boolean closed,pending;String session="";AlertDialog dialog;EditText password;
+        boolean closed,pending;String session="",promptStamp="",answeredStamp="";AlertDialog dialog;EditText password;
         final Runnable pollFlow=()->fetch();
         SignInFlow(){
             LinearLayout fields=new LinearLayout(MainActivity.this);fields.setPadding(dp(24),dp(8),dp(24),dp(8));fields.setOrientation(LinearLayout.VERTICAL);
@@ -187,14 +202,32 @@ public final class MainActivity extends Activity {
         void verification(){dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Checking your sign-in").setMessage("Waiting for Mozilla…").setNegativeButton("Cancel",(d,w)->cancel()).create();dialog.setOnCancelListener(d->cancel());dialog.show();}
         void apply(JSONObject state){
             if(closed)return;String step=state.optString("step");
+            if(step.startsWith("need_")&&!answeredStamp.isEmpty()&&answeredStamp.equals(state.optString("updated"))){dialog.dismiss();verification();main.removeCallbacks(pollFlow);main.postDelayed(pollFlow,400);return;}
             if(step.equals("done")){closed=true;main.removeCallbacks(pollFlow);dialog.dismiss();feedback.setText("Account added.");if(page==3)showPage(3);return;}
             if(step.equals("error")||step.equals("failed")||step.equals("cancelled")){feedback.setText(state.optString("error",state.optString("message","Sign-in could not finish.")));cancel();return;}
             boolean code=step.equals("need_email_code")||step.equals("need_totp")||step.equals("need_unblock_code")||step.equals("need_captcha");
             if(code){
+                promptStamp=state.optString("updated");
                 dialog.dismiss();LinearLayout fields=new LinearLayout(MainActivity.this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(8),dp(24),dp(8));
                 String captcha=state.optString("captcha");if(step.equals("need_captcha")&&captcha.startsWith("data:image/")&&captcha.length()<1500000){try{byte[] image=android.util.Base64.decode(captcha.substring(captcha.indexOf(',')+1),android.util.Base64.DEFAULT);ImageView view=new ImageView(MainActivity.this);view.setImageBitmap(android.graphics.BitmapFactory.decodeByteArray(image,0,image.length));fields.addView(view);}catch(Exception ignored){}}
                 EditText input=new EditText(MainActivity.this);input.setSingleLine(true);input.setHint(step.equals("need_captcha")?"Verification characters":"Verification code");fields.addView(input);
-                dialog=new AlertDialog.Builder(MainActivity.this).setTitle(step.equals("need_totp")?"Enter your security code":step.equals("need_captcha")?"Confirm your sign-in":"Check your email").setMessage(state.optString("message","Enter the code requested by Mozilla.")).setView(fields).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Verify",null).create();dialog.setOnCancelListener(d->cancel());dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{if(pending||input.length()==0)return;pending=true;dialog.getButton(-1).setEnabled(false);String value=input.getText().toString();input.getText().clear();CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("POST","/api/signin/"+session,object("value",value),30000);main.post(()->{pending=false;apply(reply);});}catch(Exception error){main.post(()->{pending=false;if(!closed){feedback.setText(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}});}));dialog.show();
+                String instruction=state.optString("message","Enter the code requested by Mozilla.");
+                if(!state.optString("error").isEmpty())instruction+="\n\n"+state.optString("error");
+                dialog=new AlertDialog.Builder(MainActivity.this).setTitle(step.equals("need_totp")?"Enter your security code":step.equals("need_captcha")?"Confirm your sign-in":"Check your email").setMessage(instruction).setView(fields).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Verify",null).create();
+                dialog.setOnCancelListener(d->cancel());
+                dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
+                    if(pending||input.length()==0)return;
+                    pending=true;answeredStamp=promptStamp;dialog.getButton(-1).setEnabled(false);
+                    String value=input.getText().toString().trim();input.getText().clear();
+                    CoreRuntime.IO.execute(()->{
+                        try{
+                            JSONObject reply;
+                            try{reply=CoreRuntime.request("POST","/api/signin/"+session,object("value",value),30000);}
+                            catch(CoreRuntime.ApiFailure conflict){if(conflict.status!=409)throw conflict;reply=CoreRuntime.request("GET","/api/signin/"+session,null,5000);}
+                            JSONObject current=reply;main.post(()->{pending=false;if(!closed)apply(current);});
+                        }catch(Exception error){main.post(()->{pending=false;if(!closed){answeredStamp="";feedback.setText(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}
+                    });
+                }));dialog.show();
             }else{dialog.setMessage(state.optString("message","Waiting for Mozilla…"));main.removeCallbacks(pollFlow);main.postDelayed(pollFlow,1500);}
         }
         void fetch(){if(closed||pending)return;pending=true;CoreRuntime.IO.execute(()->{try{JSONObject state=CoreRuntime.request("GET","/api/signin/"+session,null,5000);main.post(()->{pending=false;apply(state);});}catch(Exception error){main.post(()->{pending=false;if(!closed){feedback.setText("Sign-in status could not refresh. You can cancel and retry.");main.postDelayed(pollFlow,2500);}});}});}

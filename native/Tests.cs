@@ -15,6 +15,10 @@ namespace III85III.Vpn {
         }
         static int Main(){try{Run().GetAwaiter().GetResult();Console.WriteLine("All "+checks+" checks passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
         static async Task Run(){
+            Check(ConnectionState.HasAccounts(Json.Decode("{\"state\":{\"phase\":\"off\"},\"accounts\":{\"total\":1}}")),"stored account exists before any account becomes active");
+            Check(!ConnectionState.HasAccounts(Json.Decode("{\"accounts\":{\"total\":0}}")),"an empty account store still requires sign-in");
+            Check(ConnectionState.Failure(Json.Decode("{\"system_proxy\":\"tun\",\"state\":{\"phase\":\"running\"},\"tun\":{\"state\":\"error\",\"message\":\"Service could not start\",\"code\":\"service_failed\"}}" )).Contains("Service could not start"),"a working proxy cannot conceal a failed whole-computer tunnel");
+            Check(ConnectionState.Failure(Json.Decode("{\"state\":{\"phase\":\"waiting\",\"code\":\"no_usable_account\",\"message\":\"Account needs sign-in\"}}"))=="Account needs sign-in","an unusable saved account is distinguished from no account");
             Check(ConnectionState.Verified(State()),"fresh successful test + TUN on is connected");
             Check(!ConnectionState.Verified(State("off")),"off is disconnected despite previous successful test");
             Check(!ConnectionState.Verified(State("running","error")),"failed TUN never displays connected");
