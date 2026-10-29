@@ -1,4 +1,4 @@
-﻿<!-- language-selector:start -->
+<!-- language-selector:start -->
 [🇬🇧 English](../../.github/README.md) · **🇮🇷 فارسی** · [🇸🇦 العربية](README.ar.md) · [🇹🇷 Türkçe](README.tr.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇪🇸 Español](README.es.md) · [🇧🇷 Português](README.pt.md) · [🇷🇺 Русский](README.ru.md) · [🇨🇳 简体中文](README.zh.md) · [🇯🇵 日本語](README.ja.md) · [🇮🇳 हिन्दी](README.hi.md)
 <!-- language-selector:end -->
 
@@ -14,7 +14,7 @@
 
 ## شروع استفاده
 
-[نصب‌کنندهٔ Windows](https://github.com/III85III/Free-Vpn/releases/download/v2.3.1/III85III-VPN-Setup.exe) · [دانلود APK اندروید](https://github.com/III85III/Free-Vpn/releases/download/v2.3.1/III85III-VPN.apk)
+[نصب‌کنندهٔ Windows](https://github.com/III85III/Free-Vpn/releases/download/v2.3.2/III85III-VPN-Setup.exe) · [دانلود APK اندروید](https://github.com/III85III/Free-Vpn/releases/download/v2.3.2/III85III-VPN.apk)
 
 در Android 8 به بالا، APK را نصب کن، از Settings → Mozilla accounts حساب خودت را اضافه کن و سپس مجوز VPN را تأیید کن. برنامه‌های انتخاب‌شده در بخش Split tunneling مستقیم وصل می‌شوند. برای حفظ داده‌ها، نسخهٔ جدید را روی نسخهٔ قبلی نصب کن. [نتیجهٔ تست‌ها و محدودیت‌های موبایل](../../mobile/VALIDATION.md) را ببین؛ اتصال واقعی به موزیلا هنوز به آزمون مستقل نیاز دارد.
 

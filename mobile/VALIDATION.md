@@ -1,5 +1,14 @@
 # Mobile build validation
 
+## Current Android release: 2.3.2
+
+Android 2.3.2 (code 23002) passed build, lint, unit tests and fresh Android 8/14/16 emulator checks in [run 40974953443](https://github.com/III85III/Free-Vpn/actions/runs/40974953443). This includes synthetic native TUN DNS and a user-confirmed in-app PackageInstaller update. Its UI uses shorter labels, pinned automatic server choices, immediate account-check feedback and themed error details. Production signing identity is unchanged; real-phone Mozilla sign-in, egress and background/handover remain unverified.
+
+APK SHA-256: 26c7e29aeeb6a5dacb5dae73cd8ad622aaa15baf8e92381a9724db24cbdb0d1e.
+
+## Previous release: 2.3.1
+
+
 Android 2.3.1 at functional commit `f2482ba` passed the [complete Android build, lint and device workflow](https://github.com/III85III/Free-Vpn/actions/runs/40945840604). It uses fresh Android 8, 14 and 16 Google APIs emulators. The separate iOS 2.2.0 project passed the [earlier complete mobile workflow](https://github.com/III85III/Free-Vpn/actions/runs/40885073220). These results do not establish store approval or real-phone Mozilla account/egress behavior.
 
 | Platform | Completed checks | Still requires a real device |

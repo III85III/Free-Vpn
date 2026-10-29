@@ -1,5 +1,13 @@
 # Validation
 
+## Windows 2.2.2 and Android 2.3.2
+
+Windows passed the native API/state, connection, layout, ping, sign-in, verification, update-policy, polling, keyboard and installer suites. The connection fixture holds the API reply and verifies that the button already shows Connecting. Installer checks verify that SYSTEM receives read/execute access without write access. A failed ping opens a themed app notice. Automatic server choices remain pinned during sorting and search.
+
+A user-authorized test on the owner's Windows installation reproduced and corrected the missing SYSTEM access permission. Whole computer reached TUN `on`; the engine connection test passed. A separate fresh HTTPS client with Windows proxy use disabled reported a different egress address in TUN mode than before connection. Only result booleans were retained; IP addresses and account data were not recorded. The original proxy mode was restored. This checks one machine, account and TCP path; it is not a universal network, UDP, leak-prevention or kill-switch guarantee. No Go/backend code was changed.
+
+Android 2.3.2 passed build, lint, unit tests (including the new pinned-server ordering checks) and [Android 8/14/16 emulator validation](https://github.com/III85III/Free-Vpn/actions/runs/40974953443). The emulator checks cover fresh local API authentication, sign-in form/cancel, privacy, rotation, synthetic native TUN DNS and an actual user-confirmed in-app update. Real-phone Mozilla sign-in, egress and background/handover remain unverified.
+
 ## Windows 2.2.1 and Android 2.3.1
 
 Windows passed 48 API/state checks, a saved-account home-button integration fixture, 528 layout checks, 18 latency checks, 21 sign-in lifecycle checks, five verification-conflict/stale-prompt checks, six update-metadata checks, 14 polling checks, 29 keyboard checks and 33 installer-recovery checks. Run `tools/test.ps1` to reproduce the native suites.

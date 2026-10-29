@@ -39,7 +39,8 @@ namespace III85III.Vpn {
                 }
                 if(owner.IsDisposed||(!manual&&Form.ActiveForm!=owner))return;
                 if(new Version(update.Version)<=Assembly.GetExecutingAssembly().GetName().Version){if(manual)Notice(owner,"You're up to date","You're using the latest Windows version.");return;}
-                if(MessageBox.Show(owner,"III85III VPN "+update.Version+" is available.\n\nDownload and open the installer? The VPN will disconnect during installation. Your local accounts will be kept.","Update available",MessageBoxButtons.YesNo,MessageBoxIcon.Information)!=DialogResult.Yes)return;
+                var window=owner as MainForm;
+                if(window==null || !window.ConfirmAction("Update available","Version "+update.Version+" is ready. VPN disconnects during installation. Your accounts stay saved.","Update"))return;
                 string directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN","updates");
                 long required=update.Size*3+50L*1024*1024;
                 if(new DriveInfo(Path.GetPathRoot(directory)).AvailableFreeSpace<required){Notice(owner,"A little more space is needed","Free at least "+Math.Ceiling(required/(1024d*1024))+" MB on the Windows drive and try again. Nothing was installed.");return;}

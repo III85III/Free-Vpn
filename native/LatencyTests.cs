@@ -42,8 +42,12 @@ namespace III85III.Vpn {
             using(var engine=new Engine("unused","unused",fixture.Endpoint,"synthetic-local-token"))
             using(var form=new MainForm(engine,true)){
                 Set(form,"ready",true);Call(form,"SetActions",true);fixture.Release.Set();
-                Finish((Task)Call(form,"MeasureLocationLatency"));fixture.Finish();
-                Check(((Label)Field(form,"dialSubtext")).Text.Contains("Latency fixture unavailable"),"failed measurement reports the engine error");
+                bool noticeSeen=false;
+                using(var timer=new System.Windows.Forms.Timer{Interval=50}){
+                    timer.Tick+=delegate{foreach(Form notice in Application.OpenForms)if(notice!=form){noticeSeen=true;notice.DialogResult=DialogResult.OK;break;}};timer.Start();
+                    Finish((Task)Call(form,"MeasureLocationLatency"));fixture.Finish();
+                }
+                Check(noticeSeen,"failed ping test opens an in-app notice instead of exposing a raw error on Home");
                 Check(((Button)Field(form,"pingBtn")).Enabled&&!((bool)Field(form,"pingScanBusy")),"failed measurement can be retried");
                 Check(fixture.Count==1,"failed measurement does not refresh locations or retry silently");
             }

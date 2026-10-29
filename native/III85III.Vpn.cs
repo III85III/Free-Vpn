@@ -553,7 +553,7 @@ namespace III85III.Vpn {
 
     internal sealed class LocationCard : KeyboardActionControl {
         public string LocationName = "Recommended";
-        public string Subtitle = "We'll choose a location for you";
+        public string Subtitle = "Automatic server";
         public string Latency = "— ms";
         public string CountryCode = "";
         private bool isHovered, isPressed;
@@ -1079,7 +1079,7 @@ namespace III85III.Vpn {
             });};
             removeAccountBtn.Click += async delegate {
                 if (accountsList.SelectedItems.Count == 0) return;
-                if (MessageBox.Show(this, "Remove this Mozilla account and its stored credentials?", "Remove account", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                if (!ConfirmAction("Remove account?","This removes the saved session from this device.","Remove")) return;
                 await Run(async delegate {
                     string id = Convert.ToString(accountsList.SelectedItems[0].Tag);
                     await engine.Api("DELETE", "/api/accounts/" + Uri.EscapeDataString(id));
@@ -1116,7 +1116,7 @@ namespace III85III.Vpn {
                         await LoadLocations();
                     } catch { }
                 } catch (Exception e) {
-                    dialSubtext.Text = "Engine error: " + e.Message;
+                    ShowFailure(e.Message);
                     logsBox.Text = e.Message;
                 }
             };
@@ -1298,7 +1298,7 @@ namespace III85III.Vpn {
 
             p.Controls.Add(metricsPanel);
 
-            noticeLabel.Text = "Account saved on this device.";
+            noticeLabel.Text = "Accounts stay on this device.";
             noticeLabel.Font = Theme.Font(9f);
             noticeLabel.ForeColor = Theme.TextSubtle;
             noticeLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -1856,12 +1856,14 @@ namespace III85III.Vpn {
             splitBrowse.Enabled = enabled;
         }
 
-        private bool ConfirmRepair() {
-            using(var dialog=new Form{Text="III85III VPN",BackColor=Theme.Bg,ForeColor=Theme.TextPrimary,ClientSize=new Size(480,200),StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false,ShowInTaskbar=false}){
-                dialog.Controls.Add(new Label{Text="Repair your VPN service",Font=Theme.Font(17f,FontStyle.Bold),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(24,20,432,36)});
-                dialog.Controls.Add(new Label{Text="This disconnects the VPN and asks for Windows administrator approval. Your accounts stay saved.",Font=Theme.Font(11f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(24,68,432,62)});
+        private bool ConfirmRepair() {return ConfirmAction("Repair VPN service","This disconnects VPN and asks for Windows administrator approval. Your accounts stay saved.","Repair");}
+        internal bool ConfirmAction(string title,string message,string action) {
+            using(var dialog=new Form{Text="III85III VPN",BackColor=Theme.Bg,ForeColor=Theme.TextPrimary,ClientSize=new Size(480,200),StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.None,MaximizeBox=false,MinimizeBox=false,ShowInTaskbar=false}){
+                dialog.Paint+=delegate(object sender,PaintEventArgs e){using(var pen=new Pen(Theme.Border))e.Graphics.DrawRectangle(pen,0,0,dialog.ClientSize.Width-1,dialog.ClientSize.Height-1);};
+                dialog.Controls.Add(new Label{Text=title,Font=Theme.Font(17f,FontStyle.Bold),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(24,20,432,36)});
+                dialog.Controls.Add(new Label{Text=message,Font=Theme.Font(11f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(24,68,432,62)});
                 var cancel=new LuxuryButton{Text="Cancel",Variant=ButtonVariant.Ghost,DialogResult=DialogResult.Cancel,Bounds=new Rectangle(224,144,100,36)};
-                var repair=new LuxuryButton{Text="Repair",DialogResult=DialogResult.OK,Bounds=new Rectangle(336,144,120,36)};
+                var repair=new LuxuryButton{Text=action,DialogResult=DialogResult.OK,Bounds=new Rectangle(336,144,120,36)};
                 dialog.Controls.Add(cancel);dialog.Controls.Add(repair);dialog.AcceptButton=repair;dialog.CancelButton=cancel;return dialog.ShowDialog(this)==DialogResult.OK;
             }
         }
@@ -1880,11 +1882,13 @@ namespace III85III.Vpn {
             ShowNotice("Connection problem",FriendlyFailure(detail),detail,true);
         }
         internal void ShowNotice(string title,string message,string detail,bool repair) {
-            using(var dialog=new Form {Text="III85III VPN",StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false,ShowInTaskbar=false,BackColor=Theme.Bg,ForeColor=Theme.TextPrimary,ClientSize=new Size(520,220),AutoScaleMode=AutoScaleMode.Dpi}) {
+            using(var dialog=new Form {Text="III85III VPN",StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.None,MaximizeBox=false,MinimizeBox=false,ShowInTaskbar=false,BackColor=Theme.Bg,ForeColor=Theme.TextPrimary,ClientSize=new Size(520,220),AutoScaleMode=AutoScaleMode.Dpi}) {
+                dialog.Paint+=delegate(object sender,PaintEventArgs e){using(var pen=new Pen(Theme.Border))e.Graphics.DrawRectangle(pen,0,0,dialog.ClientSize.Width-1,dialog.ClientSize.Height-1);};
                 var heading=new Label{Text=title,Font=Theme.Font(18f,FontStyle.Bold),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(24,22,472,38)};
                 var summary=new Label{Text=message,Font=Theme.Font(11f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(24,70,472,66)};
                 var details=new TextBox{Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,Text=detail,BackColor=Theme.Surface,ForeColor=Theme.TextSecondary,BorderStyle=BorderStyle.FixedSingle,Bounds=new Rectangle(24,208,472,120),Visible=false};
                 var expand=new LuxuryButton{Text="Technical details",Variant=ButtonVariant.Ghost,Bounds=new Rectangle(24,155,152,38)};
+                expand.Visible=!String.IsNullOrEmpty(detail);
                 expand.Click+=delegate{details.Visible=!details.Visible;dialog.ClientSize=new Size(520,details.Visible?352:220);expand.Text=details.Visible?"Hide details":"Technical details";};
                 var close=new LuxuryButton{Text="Got it",Bounds=new Rectangle(382,155,114,38),DialogResult=DialogResult.OK};
                 dialog.Controls.AddRange(new Control[]{heading,summary,details,expand,close});dialog.AcceptButton=close;dialog.CancelButton=close;
@@ -1997,7 +2001,7 @@ namespace III85III.Vpn {
             try {
                 await engine.Api("POST", "/api/locations/ping", new { codes = new string[0] }, 60000);
                 if (!closing) await LoadLocations();
-            } catch (Exception error) { if (!closing) dialSubtext.Text = error.Message; }
+            } catch (Exception error) { if (!closing) ShowNotice("Ping test failed","Try again or choose another server.",error.Message,false); }
             finally {
                 pingScanBusy = false;
                 if (!closing) { pingBtn.Text = diagPingBtn.Text = "Test ping"; pingBtn.Enabled = diagPingBtn.Enabled = ready && !busy; }
@@ -2013,22 +2017,10 @@ namespace III85III.Vpn {
                     break;
                 }
             }
-            if (targetChoice == null) {
-                string[] candidates = new [] { "de", "nl", "us", "fr" };
-                foreach (var c in candidates) {
-                    foreach (var sc in allLocations) {
-                        if (sc.Code.Equals(c, StringComparison.OrdinalIgnoreCase)) {
-                            targetChoice = sc;
-                            targetCode = c;
-                            break;
-                        }
-                    }
-                    if (targetChoice != null) break;
-                }
-            }
+            if (targetChoice == null) throw new IOException("United Kingdom is unavailable. Choose another server.");
 
             await engine.Api("POST", "/api/location", new { country = targetCode });
-            selectedLocationCard.LocationName = targetChoice != null ? targetChoice.Name + "" : "United Kingdom";
+            selectedLocationCard.LocationName = targetChoice.Name;
             selectedLocationCard.CountryCode = targetCode;
             selectedLocationCard.Latency = (targetChoice != null && targetChoice.PingMs > 0) ? targetChoice.PingMs + " ms" : "— ms";
             selectedLocationCard.Invalidate();

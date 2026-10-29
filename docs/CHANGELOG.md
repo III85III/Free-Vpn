@@ -1,5 +1,14 @@
 # Changelog
 
+## Windows 2.2.2 / Android 2.3.2
+
+- Fix Windows Whole computer startup when the service cannot read the installed engine. New installations grant SYSTEM read/execute access; the app also repairs this program-folder permission before starting TUN. Account storage is separate.
+- Show connection-button feedback immediately, refresh transitions sooner and remove a fixed delay from server switching.
+- Keep Recommended, Fastest and automatic server choices above countries, including during ping sorting and search.
+- Use shorter labels such as Test ping and remove repeated copy from the main screens.
+- Show Windows errors and confirmations in themed app dialogs with optional technical details. Android errors use a short summary with expandable details.
+- Keep the existing backend, Android signing identity and in-app update path.
+
 ## Windows 2.2.1 / Android 2.3.1
 
 - Add platform-specific GitHub update checks, update prompts, verified downloads and user-confirmed installation from the app. No personal VPS is required.
