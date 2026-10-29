@@ -1,0 +1,46 @@
+[
+  {
+    "module": "github.com/google/btree",
+    "version": "v1.1.3"
+  },
+  {
+    "module": "github.com/quic-go/qpack",
+    "version": "v0.6.0"
+  },
+  {
+    "module": "github.com/quic-go/quic-go",
+    "version": "v0.59.0"
+  },
+  {
+    "module": "github.com/sagernet/gvisor",
+    "version": "v0.0.0-20260727.0-sing-box-mod.1"
+  },
+  {
+    "module": "golang.org/x/crypto",
+    "version": "v0.57.0"
+  },
+  {
+    "module": "golang.org/x/exp",
+    "version": "v0.0.0-20250711185948-6ae5c78190dc"
+  },
+  {
+    "module": "golang.org/x/mobile",
+    "version": "v0.0.0-20260908204917-8b95e45f8d3e"
+  },
+  {
+    "module": "golang.org/x/net",
+    "version": "v0.59.0"
+  },
+  {
+    "module": "golang.org/x/sys",
+    "version": "v0.48.0"
+  },
+  {
+    "module": "golang.org/x/text",
+    "version": "v0.42.0"
+  },
+  {
+    "module": "golang.org/x/time",
+    "version": "v0.15.0"
+  }
+]

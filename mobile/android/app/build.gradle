@@ -11,6 +11,7 @@ android {
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     buildTypes { release { minifyEnabled false } }
+    packaging { jniLibs { useLegacyPackaging true } }
 }
 dependencies {
     implementation files('libs/core.aar')

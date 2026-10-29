@@ -37,18 +37,39 @@ jobs:
           gomobile init
       - name: Android engine
         working-directory: core
+        env:
+          CGO_LDFLAGS: '-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384'
         run: |
           mkdir -p ../mobile/android/app/libs
           gomobile bind -target=android/arm64,android/amd64 -androidapi 26 -trimpath -ldflags='-s -w' -o ../mobile/android/app/libs/core.aar ./mobile
+      - name: Dependency notices
+        env:
+          GOOS: android
+          GOARCH: arm64
+          CGO_ENABLED: '1'
+        run: python3 tools/mobile-licenses.py --module core/mobile --output mobile/android/app/src/main/assets/licenses
       - name: APK and lint
         run: |
           chmod +x mobile/android/gradlew
           mobile/android/gradlew -p mobile/android --no-daemon :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
       - uses: actions/upload-artifact@v4
+        if: inputs.platform != 'ios'
         with:
           name: III85III-VPN-Android-test
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
+      - name: Enable emulator acceleration
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Native emulator startup check
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data
+          script: python3 tools/check-android-emulator.py
   ios:
     if: inputs.platform != 'android'
     runs-on: macos-15
@@ -74,6 +95,8 @@ jobs:
         run: |
           mkdir -p ../ios/Frameworks
           gomobile bind -target=ios,iossimulator -iosversion=15.0 -trimpath -ldflags='-s -w' -o ../ios/Frameworks/III85IIICore.xcframework .
+      - name: Apple dependency notices
+        run: python3 tools/mobile-licenses.py --module mobile/apple-engine --output mobile/ios/App/Licenses
       - name: Generate Xcode project
         working-directory: mobile/ios
         run: xcodegen generate

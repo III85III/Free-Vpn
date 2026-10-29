@@ -14,7 +14,13 @@ targets:
   III85IIIVPN:
     type: application
     platform: iOS
-    sources: [App, Shared, Assets.xcassets]
+    sources:
+      - path: App
+        excludes: [Licenses]
+      - path: App/Licenses
+        type: folder
+      - path: Shared
+      - path: Assets.xcassets
     info:
       path: App/Info.plist
       properties:
