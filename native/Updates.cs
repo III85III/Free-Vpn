@@ -43,7 +43,7 @@ namespace III85III.Vpn {
                 long required=update.Size*3+50L*1024*1024;
                 if(new DriveInfo(Path.GetPathRoot(directory)).AvailableFreeSpace<required){MessageBox.Show(owner,"There isn't enough free disk space for this update. Free at least "+Math.Ceiling(required/(1024d*1024))+" MB on the Windows drive and try again. Nothing was installed.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
                 Engine.PrivateDirectory(directory);
-                string temporary=Path.Combine(directory,Guid.NewGuid().ToString("N")+".part"),target=Path.Combine(directory,"III85III-VPN-Setup-"+update.Version+".exe");
+                string temporary=Path.Combine(directory,Guid.NewGuid().ToString("N")+".part"),target=Path.Combine(directory,"III85III-VPN-Setup.exe");
                 try{
                     using(var client=Client())using(var response=await client.GetAsync(update.Url,HttpCompletionOption.ResponseHeadersRead)){
                         response.EnsureSuccessStatusCode();if(response.Content.Headers.ContentLength.HasValue&&response.Content.Headers.ContentLength.Value!=update.Size)throw new IOException("The update size does not match.");

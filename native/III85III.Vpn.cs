@@ -1622,17 +1622,16 @@ namespace III85III.Vpn {
             var btnRow = new FlowLayoutPanel { Location = new Point(0, 410), Size = new Size(700, 44), WrapContents = true, Name = "resourceButtons" };
             var openFolderBtn = new LuxuryButton { Text = "Open Data Folder", Width = 140 };
             var docsBtn = new LuxuryButton { Text = "User Guide", Width = 110 };
-            var dashBtn = new LuxuryButton { Text = "Engine Dashboard", Width = 150 };
+            var dashBtn = new LuxuryButton { Text = "Repair VPN service", Width = 160 };
             var updateBtn=new LuxuryButton{Text="Check for updates",Width=160};appUpdateButton=updateBtn;updateBtn.Click+=async delegate{await CheckForUpdates(true);};
 
             openFolderBtn.Click += delegate { Process.Start(new ProcessStartInfo(engine.DataDir) { UseShellExecute = true }); };
             docsBtn.Click += delegate { Process.Start(new ProcessStartInfo(Path.Combine(engine.Root, "docs", "guide.html")) { UseShellExecute = true }); };
             dashBtn.Click += async delegate {
+                if(MessageBox.Show(this,"Disconnect and repair the Windows VPN service?\n\nWindows will ask for administrator approval. Your saved accounts will be kept.","Repair VPN service",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
                 await Run(async delegate {
-                    var r = await engine.Api("POST", "/api/session/link");
-                    string path = Json.Str(r, "path");
-                    if (!path.StartsWith("/app/login/", StringComparison.Ordinal) || path.Contains("\\")) throw new IOException("Invalid dashboard link.");
-                    Process.Start(engine.Endpoint + path);
+                    await engine.Api("POST","/api/power",new{on=false});await engine.InstallTun();
+                    MessageBox.Show(this,"The VPN service is ready. Try connecting in Whole computer mode again.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);
                 });
             };
 

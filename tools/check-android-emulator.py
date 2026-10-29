@@ -137,7 +137,7 @@ try:
     adb('install','-r',options.probe)
     adb('shell','appops','set',package,'ACTIVATE_VPN','allow')
     adb('shell','am','force-stop',package)
-    adb('logcat','-c')
+    adb('logcat','-c',required=False)
     (output/'tunnel-start.txt').write_bytes(adb('shell','am','start','-W','-f','0x20000000','-n',package+'/.MainActivity','--ez','qa_screenshots','true','--ez','qa_tun','true'))
     time.sleep(3)
     adb('shell','am','start','-W','-n','io.github.iii85iii.vpn.probe/.ProbeActivity')

@@ -16,6 +16,7 @@ import java.util.*;
 public final class UpdateActivity extends Activity {
     private TextView status;private ProgressBar progress;private Button action;
     private Info available;private File downloaded;private boolean busy;
+    private static final java.util.concurrent.atomic.AtomicBoolean downloading=new java.util.concurrent.atomic.AtomicBoolean();
     static final class Info {String version,url,hash;long size,code;}
     @Override public void onCreate(Bundle state){
         super.onCreate(state);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xff101319);int pad=(int)(24*getResources().getDisplayMetrics().density);root.setPadding(pad,pad,pad,pad);
@@ -31,7 +32,7 @@ public final class UpdateActivity extends Activity {
         }else check();
     }
     private void check(){if(busy)return;busy=true;action.setEnabled(false);status.setText("Checking for updates…");progress.setIndeterminate(true);
-        CoreRuntime.IO.execute(()->{try{Info update=latest();runOnUiThread(()->{if(isDestroyed())return;available=update.code>BuildConfig.VERSION_CODE?update:null;status.setText(available==null?"You're using the latest version.":"III85III VPN "+update.version+" is available.");action.setText(available==null?"Check again":"Download update");finishWork();});}catch(Exception error){runOnUiThread(()->{if(!isDestroyed()){status.setText("Updates are unavailable right now. Check your connection and try again.");finishWork();}});}});
+        CoreRuntime.IO.execute(()->{try{Info update=latest();File cached=new File(getCacheDir(),"III85III-VPN.apk");boolean valid=false;if(update.code>BuildConfig.VERSION_CODE&&cached.isFile()){try{verify(cached,update);valid=true;}catch(Exception ignored){}}final boolean ready=valid;runOnUiThread(()->{if(isDestroyed())return;available=update.code>BuildConfig.VERSION_CODE?update:null;downloaded=ready?cached:null;status.setText(available==null?"You're using the latest version.":ready?"Update verified and ready to install.":"III85III VPN "+update.version+" is available.");action.setText(available==null?"Check again":ready?"Install update":"Download update");finishWork();});}catch(Exception error){runOnUiThread(()->{if(!isDestroyed()){status.setText("Updates are unavailable right now. Check your connection and try again.");finishWork();}});}});
     }
     private void finishWork(){busy=false;progress.setIndeterminate(false);action.setEnabled(true);}
     static HttpURLConnection open(String address)throws Exception{
@@ -56,7 +57,7 @@ public final class UpdateActivity extends Activity {
         android.content.SharedPreferences prefs=owner.getSharedPreferences("interface",MODE_PRIVATE);long now=System.currentTimeMillis();if(now-prefs.getLong("update_checked",0)<6*60*60*1000L)return;prefs.edit().putLong("update_checked",now).apply();
         CoreRuntime.IO.execute(()->{try{Info update=latest();if(update.code>BuildConfig.VERSION_CODE)owner.runOnUiThread(()->{if(owner.isDestroyed()||owner.isFinishing()||!owner.hasWindowFocus())return;new AlertDialog.Builder(owner).setTitle("Update available").setMessage("III85III VPN "+update.version+" is ready. Download and install it from this app.").setNegativeButton("Later",null).setPositiveButton("View update",(d,w)->owner.startActivity(new Intent(owner,UpdateActivity.class))).show();});}catch(Exception ignored){}});
     }
-    private void download(){if(busy||available==null)return;long required=available.size*3+30L*1024*1024;if(getCacheDir().getUsableSpace()<required){status.setText("There isn't enough free space. Free at least "+(long)Math.ceil(required/(1024d*1024))+" MB on your device and retry. Nothing was installed.");return;}busy=true;action.setEnabled(false);status.setText("Downloading update…");Info update=available;
+    private void download(){if(busy||available==null)return;long required=available.size*3+30L*1024*1024;if(getCacheDir().getUsableSpace()<required){status.setText("There isn't enough free space. Free at least "+(long)Math.ceil(required/(1024d*1024))+" MB on your device and retry. Nothing was installed.");return;}if(!downloading.compareAndSet(false,true)){status.setText("An update is already downloading. Check again in a moment.");available=null;action.setText("Check again");return;}busy=true;action.setEnabled(false);status.setText("Downloading update…");Info update=available;
         CoreRuntime.IO.execute(()->{File partial=new File(getCacheDir(),"update.part");try{
             HttpURLConnection request=open(update.url);
             try(InputStream stream=request.getInputStream();FileOutputStream output=new FileOutputStream(partial)){
@@ -64,7 +65,7 @@ public final class UpdateActivity extends Activity {
             }finally{request.disconnect();}
             verify(partial,update);File ready=new File(getCacheDir(),"III85III-VPN.apk");if(ready.exists()&&!ready.delete())throw new IOException("Previous update is busy");if(!partial.renameTo(ready))throw new IOException("Cannot prepare update");downloaded=ready;
             runOnUiThread(()->{if(!isDestroyed()){status.setText("Update verified. Android will ask you to confirm installation.");action.setText("Install update");finishWork();}});
-        }catch(Exception error){partial.delete();runOnUiThread(()->{if(!isDestroyed()){status.setText("The update could not be downloaded or verified. Nothing was installed. Please retry.");finishWork();}});}});
+        }catch(Exception error){partial.delete();runOnUiThread(()->{if(!isDestroyed()){status.setText("The update could not be downloaded or verified. Nothing was installed. Please retry.");finishWork();}});}finally{downloading.set(false);}});
     }
     static String digest(File file)throws Exception{MessageDigest hash=MessageDigest.getInstance("SHA-256");try(InputStream input=new FileInputStream(file)){byte[] buffer=new byte[65536];int n;while((n=input.read(buffer))!=-1)hash.update(buffer,0,n);}StringBuilder result=new StringBuilder();for(byte value:hash.digest())result.append(String.format(Locale.ROOT,"%02x",value&255));return result.toString();}
     private void verify(File file,Info update)throws Exception{
