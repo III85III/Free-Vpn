@@ -40,18 +40,21 @@ def hierarchy():
 
 def tap(text):
     for attempt in range(5):
-        for node in hierarchy().iter('node'):
-            if node.get('text') == text:
+        tree=hierarchy()
+        for node in tree.iter('node'):
+            if node.get('text') == text or node.get('content-desc') == text:
                 x1,y1,x2,y2 = map(int,re.findall(r'\d+',node.get('bounds','')))
                 if x2 > x1 and y2 > y1:
                     adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
                     time.sleep(.7)
                     return
         # The six-page navigation scrolls horizontally on narrow phones.
-        scrolling=next((n for n in hierarchy().iter('node') if n.get('class')=='android.widget.HorizontalScrollView'),None)
+        scrolling=next((n for n in tree.iter('node') if n.get('class')=='android.widget.HorizontalScrollView'),None)
         if scrolling is not None:
             x1,y1,x2,y2=map(int,re.findall(r'\d+',scrolling.get('bounds','')))
             adb('shell','input','swipe',str(x2-20),str((y1+y2)//2),str(x1+20),str((y1+y2)//2),'300')
+    ET.ElementTree(tree).write(output/'ui-failure.xml')
+    screenshot('ui-failure')
     raise RuntimeError('UI control unavailable: '+text)
 
 def screenshot(name):
