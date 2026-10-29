@@ -44,13 +44,12 @@ public final class MainActivity extends Activity {
         WindowLayout.apply(this,root);
         showPage(state==null?0:state.getInt("page",0));
         startTunnelCheck(getIntent());
-        main.postDelayed(()->{if(!isDestroyed()&&visible)UpdateActivity.notifyAvailable(this);},3000);
         CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible)poll();});}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
     }
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
     private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null){if(intent.getBooleanExtra("qa_tun",false))startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));if(intent.getBooleanExtra("qa_update",false))startActivity(new Intent(this,UpdateActivity.class).putExtra("qa_update",true));}}
-    @Override protected void onStart(){super.onStart();visible=true;if(ready)poll();}
+    @Override protected void onStart(){super.onStart();visible=true;if(ready)poll();main.postDelayed(()->{if(!isDestroyed()&&visible)UpdateActivity.notifyAvailable(this);},1500);}
     @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);super.onStop();}
     @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
     private TextView label(String value,int size,int color){TextView text=new TextView(this);text.setText(value);text.setTextSize(size);text.setTextColor(color);text.setTypeface(body);text.setLineSpacing(dp(4),1);return text;}
@@ -192,8 +191,8 @@ public final class MainActivity extends Activity {
         final Runnable pollFlow=()->fetch();
         SignInFlow(){
             LinearLayout fields=new LinearLayout(MainActivity.this);fields.setPadding(dp(24),dp(8),dp(24),dp(8));fields.setOrientation(LinearLayout.VERTICAL);
-            EditText email=new EditText(MainActivity.this);email.setHint("Mozilla email");email.setSingleLine(true);email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);fields.addView(email);
-            password=new EditText(MainActivity.this);password.setHint("Mozilla password");password.setSingleLine(true);password.setInputType(129);password.setTransformationMethod(PasswordTransformationMethod.getInstance());fields.addView(password);
+            EditText email=new EditText(MainActivity.this);email.setHint("Mozilla email");email.setSingleLine(true);email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);email.setTypeface(body);fields.addView(email);
+            password=new EditText(MainActivity.this);password.setHint("Mozilla password");password.setSingleLine(true);password.setInputType(129);password.setTransformationMethod(PasswordTransformationMethod.getInstance());password.setTypeface(body);fields.addView(password);
             dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Welcome to III85III").setMessage("Sign in with your own Mozilla account.").setView(fields).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Sign in",null).create();dialog.setOnCancelListener(d->cancel());dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
                 if(pending||closed)return;if(email.getText().toString().trim().isEmpty()||password.length()==0){feedback.setText("Enter your Mozilla email and password.");return;}
                 JSONObject body=object("email",email.getText().toString().trim());try{body.put("password",password.getText().toString());}catch(JSONException ignored){}password.getText().clear();pending=true;dialog.getButton(-1).setEnabled(false);
@@ -211,7 +210,7 @@ public final class MainActivity extends Activity {
                 promptStamp=state.optString("updated");
                 dialog.dismiss();LinearLayout fields=new LinearLayout(MainActivity.this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(8),dp(24),dp(8));
                 String captcha=state.optString("captcha");if(step.equals("need_captcha")&&captcha.startsWith("data:image/")&&captcha.length()<1500000){try{byte[] image=android.util.Base64.decode(captcha.substring(captcha.indexOf(',')+1),android.util.Base64.DEFAULT);ImageView view=new ImageView(MainActivity.this);view.setImageBitmap(android.graphics.BitmapFactory.decodeByteArray(image,0,image.length));fields.addView(view);}catch(Exception ignored){}}
-                EditText input=new EditText(MainActivity.this);input.setSingleLine(true);input.setHint(step.equals("need_captcha")?"Verification characters":"Verification code");fields.addView(input);
+                EditText input=new EditText(MainActivity.this);input.setSingleLine(true);input.setTypeface(body);input.setHint(step.equals("need_captcha")?"Verification characters":"Verification code");fields.addView(input);
                 String instruction=state.optString("message","Enter the code requested by Mozilla.");
                 if(!state.optString("error").isEmpty())instruction+="\n\n"+state.optString("error");
                 dialog=new AlertDialog.Builder(MainActivity.this).setTitle(step.equals("need_totp")?"Enter your security code":step.equals("need_captcha")?"Confirm your sign-in":"Check your email").setMessage(instruction).setView(fields).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Verify",null).create();

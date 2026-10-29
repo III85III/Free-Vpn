@@ -16,7 +16,7 @@ Control and removal
 Disconnect from the app, its notification or Android VPN settings. Remove an account from Accounts to remove its saved session from the device. Clearing app storage or uninstalling removes this app's local data. Those actions do not delete your Mozilla account.
 
 Updates
-Updates are distributed from the III85III/Free-Vpn GitHub repository. Opening the update page launches your browser; the app does not silently download or install a replacement. Android verifies the application's signing identity when you install an update.
+The app checks public version information from the III85III/Free-Vpn GitHub repository when it is opened, at most once every six hours. GitHub receives ordinary network request information, including your IP address and the application version; your Mozilla password, account session and local API token are not sent with these update requests. You can also check from Settings > App updates. Downloading starts only when you choose it. The APK's size, checksum, package name, version and signing identity are checked before installation. Android then asks for installation permission and confirmation. The VPN disconnects while the application updates; local account data is retained by a same-package update. The app does not silently install a replacement.
 
 Limitations
 App rules are direct-app exclusions. Enforced selected-app-only or Telegram-bot-only routing is not provided. Arbitrary UDP and a verified kill switch are not promised. Real-device login, egress, background operation and network handover require independent testing.

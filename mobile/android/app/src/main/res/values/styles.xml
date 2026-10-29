@@ -7,5 +7,14 @@
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:colorAccent">#D9BD83</item>
         <item name="android:windowBackground">#101319</item>
+        <item name="android:alertDialogTheme">@style/AppDialogTheme</item>
+    </style>
+    <style name="AppDialogTheme" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/dialog_background</item>
+        <item name="android:colorAccent">#D9BD83</item>
+        <item name="android:textColorPrimary">#EFEFEA</item>
+        <item name="android:textColorSecondary">#9FA7B4</item>
+        <item name="android:windowMinWidthMinor">90%</item>
+        <item name="android:windowMinWidthMajor">75%</item>
     </style>
 </resources>

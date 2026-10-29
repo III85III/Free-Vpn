@@ -136,7 +136,7 @@ try:
     adb('shell','settings','put','global','private_dns_mode','off')
     adb('install','-r',options.probe)
     adb('shell','appops','set',package,'ACTIVATE_VPN','allow')
-    adb('shell','am','start','-W','-n',package+'/.MainActivity','--ez','qa_screenshots','true','--ez','qa_tun','true')
+    adb('shell','am','start','-W','-f','0x20000000','-n',package+'/.MainActivity','--ez','qa_screenshots','true','--ez','qa_tun','true')
     time.sleep(3)
     adb('logcat','-c')
     adb('shell','am','start','-W','-n','io.github.iii85iii.vpn.probe/.ProbeActivity')
@@ -156,7 +156,7 @@ try:
         transfer=subprocess.run(['adb','shell',f'run-as {package} sh -c "cat > cache/qa-upgrade.apk"'],input=Path(options.upgrade).read_bytes(),capture_output=True,timeout=60)
         if transfer.returncode:raise RuntimeError('Could not stage the synthetic update')
         adb('shell','appops','set',package,'REQUEST_INSTALL_PACKAGES','allow')
-        adb('shell','am','start','-W','-n',package+'/.MainActivity','--ez','qa_screenshots','true','--ez','qa_update','true')
+        adb('shell','am','start','-W','-f','0x20000000','-n',package+'/.MainActivity','--ez','qa_screenshots','true','--ez','qa_update','true')
         time.sleep(2)
         tap('Install update')
         confirmed=False

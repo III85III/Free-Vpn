@@ -39,7 +39,9 @@ namespace III85III.Vpn {
                 if(owner.IsDisposed||(!manual&&Form.ActiveForm!=owner))return;
                 if(new Version(update.Version)<=Assembly.GetExecutingAssembly().GetName().Version){if(manual)MessageBox.Show(owner,"You're using the latest Windows version.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
                 if(MessageBox.Show(owner,"III85III VPN "+update.Version+" is available.\n\nDownload and open the installer? The VPN will disconnect during installation. Your local accounts will be kept.","Update available",MessageBoxButtons.YesNo,MessageBoxIcon.Information)!=DialogResult.Yes)return;
-                string directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN","updates");Engine.PrivateDirectory(directory);
+                string directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN","updates");
+                if(new DriveInfo(Path.GetPathRoot(directory)).AvailableFreeSpace<update.Size*3+50L*1024*1024){MessageBox.Show(owner,"There isn't enough free disk space for this update. Free at least 150 MB on the Windows drive and try again. Nothing was installed.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+                Engine.PrivateDirectory(directory);
                 string temporary=Path.Combine(directory,Guid.NewGuid().ToString("N")+".part"),target=Path.Combine(directory,"III85III-VPN-Setup-"+update.Version+".exe");
                 try{
                     using(var client=Client())using(var response=await client.GetAsync(update.Url,HttpCompletionOption.ResponseHeadersRead)){
@@ -51,6 +53,8 @@ namespace III85III.Vpn {
                     }
                     string hash;using(var algorithm=SHA256.Create())using(var file=File.OpenRead(temporary))hash=BitConverter.ToString(algorithm.ComputeHash(file)).Replace("-","").ToLowerInvariant();
                     if(!String.Equals(hash,update.Hash,StringComparison.OrdinalIgnoreCase))throw new IOException("The update checksum does not match. Nothing was installed.");
+                    var identity=FileVersionInfo.GetVersionInfo(temporary);var expected=new Version(update.Version);
+                    if(identity.CompanyName!="III85III"||identity.ProductName!="III85III VPN"||identity.FileMajorPart!=expected.Major||identity.FileMinorPart!=expected.Minor||identity.FileBuildPart!=expected.Build)throw new IOException("The installer identity or version does not match.");
                     if(File.Exists(target))File.Delete(target);File.Move(temporary,target);
                     if(!owner.IsDisposed)install(target);
                 }finally{if(File.Exists(temporary))File.Delete(temporary);}
