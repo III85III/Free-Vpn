@@ -3,6 +3,10 @@ package io.github.iii85iii.vpn;
 import android.app.*;
 import android.content.*;
 import android.net.VpnService;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import mobile.Mobile;
@@ -11,8 +15,15 @@ public final class TunnelService extends VpnService {
     static final String STOP="io.github.iii85iii.vpn.STOP";
     static volatile boolean active;
     static volatile String error="";
+    static final VpnLifecycle lifecycle=new VpnLifecycle();
     private final AtomicBoolean stopping=new AtomicBoolean();
-    private final AtomicBoolean starting=new AtomicBoolean();
+    private boolean observingNetwork;
+    private final Object networkLock=new Object();
+    private final java.util.Set<Network> networks=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final ConnectivityManager.NetworkCallback networkListener=new ConnectivityManager.NetworkCallback(){
+        @Override public void onAvailable(Network network){networks.add(network);if(lifecycle.canCancel())Mobile.networkChanged(true);}
+        @Override public void onLost(Network network){networks.remove(network);if(lifecycle.canCancel())Mobile.networkChanged(!networks.isEmpty());}
+    };
     private final Handler handler=new Handler(Looper.getMainLooper());
     private final Runnable monitor=new Runnable(){public void run(){
         if(active&&!Mobile.isOn()){error="The connection stopped. Open the app to check your account or network.";stopTunnel();}
@@ -20,12 +31,17 @@ public final class TunnelService extends VpnService {
     }};
     @Override public int onStartCommand(Intent intent,int flags,int startId){
         if(intent!=null&&STOP.equals(intent.getAction())){stopTunnel();return START_NOT_STICKY;}
-        if(active||stopping.get()||!starting.compareAndSet(false,true))return START_NOT_STICKY;
+        if(stopping.get()||!lifecycle.start())return START_NOT_STICKY;
         error="";showNotification();
         CoreRuntime.IO.execute(()->{
             try {
                 CoreRuntime.ensure(this);
                 if(stopping.get())return;
+                synchronized(networkLock){
+                    if(stopping.get())return;
+                    getSystemService(ConnectivityManager.class).registerNetworkCallback(new NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build(),networkListener);
+                    observingNetwork=true;
+                }
                 Mobile.connect();
                 Builder builder=new Builder().setSession("III85III VPN").setMtu(1500)
                     .addAddress("172.19.0.1",30).addRoute("0.0.0.0",0).addDnsServer("172.19.0.2")
@@ -39,8 +55,11 @@ public final class TunnelService extends VpnService {
                     int fd=device.detachFd();
                     Mobile.startTun(fd);
                 }
-                if(stopping.get()){Mobile.stopTun();Mobile.setOn(false);return;}
-                active=true;handler.post(monitor);
+                synchronized(lifecycle){
+                    if(stopping.get()||!lifecycle.activate()){Mobile.stopTun();Mobile.setOn(false);return;}
+                    active=true;
+                }
+                handler.post(()->{if(active&&!stopping.get()){handler.post(monitor);showNotification();}});
             } catch(Exception failure){error="Connection could not start. Check your account and try again.";stopTunnel();}
         });
         return START_NOT_STICKY;
@@ -53,14 +72,15 @@ public final class TunnelService extends VpnService {
         PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,TunnelService.class).setAction(STOP),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder notice=new Notification.Builder(this,channel);
         startForeground(85,notice.setSmallIcon(io.github.iii85iii.vpn.R.drawable.ic_notification).setContentTitle("III85III VPN")
-            .setContentText("VPN connection active or starting").setContentIntent(open).setOngoing(true)
+            .setContentText(active?"VPN is active · tap to open":"Starting VPN · tap Disconnect to cancel").setContentIntent(open).setOngoing(true)
             .addAction(new Notification.Action.Builder(null,"Disconnect",stop).build()).build());
     }
     private void stopTunnel(){
         if(!stopping.compareAndSet(false,true))return;
-        active=false;handler.removeCallbacks(monitor);
+        synchronized(lifecycle){lifecycle.stop();active=false;}
+        handler.removeCallbacks(monitor);
         CoreRuntime.IO.execute(()->{Mobile.stopTun();Mobile.setOn(false);handler.post(()->{stopForeground(true);stopSelf();});});
     }
     @Override public void onRevoke(){stopTunnel();super.onRevoke();}
-    @Override public void onDestroy(){active=false;handler.removeCallbacks(monitor);Mobile.stopTun();Mobile.setOn(false);super.onDestroy();}
+    @Override public void onDestroy(){stopping.set(true);active=false;handler.removeCallbacks(monitor);synchronized(networkLock){if(observingNetwork){try{getSystemService(ConnectivityManager.class).unregisterNetworkCallback(networkListener);}catch(IllegalArgumentException ignored){}observingNetwork=false;}}Mobile.stopTun();Mobile.setOn(false);lifecycle.finished();super.onDestroy();}
 }

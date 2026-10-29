@@ -1,0 +1,25 @@
+III85III VPN — Privacy and connection information
+
+What the VPN does
+When you connect, supported device traffic passes through the application's local VPN interface and the Mozilla network service. Selected excluded applications and the VPN application's own connections remain outside that interface. Disconnecting removes the VPN; this application does not provide a verified kill switch.
+
+Account and service data
+You supply your own Mozilla email, password and any requested verification code to the account flow. The engine performs the service's authentication and quota checks. Mozilla and the network service necessarily receive the data required to authenticate your account and carry your connection, including network addresses. Normal eligibility, regional availability and quotas apply. III85III is not an official Mozilla application.
+
+Local storage
+The app stores its account sessions, settings and connection diagnostics in app-private storage. Android cloud backup and device transfer are disabled for this data. Screenshots are blocked in the distributed app. The download contains no preconfigured account, email or session belonging to the developer.
+
+Diagnostics
+Local connection logs can contain network details. Do not share a complete log or app-data backup without reviewing it. The app does not include an advertising SDK or an analytics/crash-report upload SDK. This statement does not mean that Mozilla authentication and VPN traffic stay on your device.
+
+Control and removal
+Disconnect from the app, its notification or Android VPN settings. Remove an account from Accounts to remove its saved session from the device. Clearing app storage or uninstalling removes this app's local data. Those actions do not delete your Mozilla account.
+
+Updates
+Updates are distributed from the III85III/Free-Vpn GitHub repository. Opening the update page launches your browser; the app does not silently download or install a replacement. Android verifies the application's signing identity when you install an update.
+
+Limitations
+App rules are direct-app exclusions. Enforced selected-app-only or Telegram-bot-only routing is not provided. Arbitrary UDP and a verified kill switch are not promised. Real-device login, egress, background operation and network handover require independent testing.
+
+Project and support: https://github.com/III85III/Free-Vpn
+Service privacy: https://www.mozilla.org/privacy/

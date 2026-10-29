@@ -6,6 +6,18 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+import argparse
+from pathlib import Path
+import re
+import xml.etree.ElementTree as ET
+
+arguments = argparse.ArgumentParser()
+arguments.add_argument('--apk', default='mobile/android/app/build/outputs/apk/debug/app-debug.apk')
+arguments.add_argument('--upgrade')
+arguments.add_argument('--output', default='test-results/android')
+options = arguments.parse_args()
+output = Path(options.output)
+output.mkdir(parents=True, exist_ok=True)
 
 if os.environ.get('GITHUB_ACTIONS') != 'true':
     raise SystemExit('This check is restricted to disposable GitHub Actions emulators.')
@@ -17,8 +29,33 @@ def adb(*arguments, required=True):
 if adb('shell', 'getprop', 'ro.kernel.qemu').strip() != b'1':
     raise SystemExit('Refusing to run against a physical device.')
 package = 'io.github.iii85iii.vpn'
-adb('install', '-r', 'mobile/android/app/build/outputs/apk/debug/app-debug.apk')
-adb('shell', 'am', 'start', '-W', '-n', package+'/.MainActivity')
+adb('install', '-r', options.apk)
+def launch():
+    adb('shell', 'am', 'start', '-W', '-n', package+'/.MainActivity', '--ez', 'qa_screenshots', 'true')
+launch()
+
+def hierarchy():
+    adb('shell', 'uiautomator', 'dump', '/sdcard/vpn-view.xml')
+    return ET.fromstring(adb('exec-out', 'cat', '/sdcard/vpn-view.xml'))
+
+def tap(text):
+    for attempt in range(5):
+        for node in hierarchy().iter('node'):
+            if node.get('text') == text:
+                x1,y1,x2,y2 = map(int,re.findall(r'\d+',node.get('bounds','')))
+                if x2 > x1 and y2 > y1:
+                    adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
+                    time.sleep(.7)
+                    return
+        # The six-page navigation scrolls horizontally on narrow phones.
+        scrolling=next((n for n in hierarchy().iter('node') if n.get('class')=='android.widget.HorizontalScrollView'),None)
+        if scrolling is not None:
+            x1,y1,x2,y2=map(int,re.findall(r'\d+',scrolling.get('bounds','')))
+            adb('shell','input','swipe',str(x2-20),str((y1+y2)//2),str(x1+20),str((y1+y2)//2),'300')
+    raise RuntimeError('UI control unavailable: '+text)
+
+def screenshot(name):
+    (output/(name+'.png')).write_bytes(adb('exec-out','screencap','-p'))
 for attempt in range(80):
     data = adb('exec-out', 'run-as', package, 'cat', 'files/engine/config.json', required=False)
     token = adb('exec-out', 'run-as', package, 'cat', 'files/engine/local-api.token', required=False).strip()
@@ -60,6 +97,51 @@ try:
     except urllib.error.HTTPError as error:
         if error.code not in (401, 403):
             raise RuntimeError('Unexpected unauthenticated response') from None
+    screenshot('home')
+    tap('Accounts')
+    tap('Add an account')
+    fields=[node for node in hierarchy().iter('node') if node.get('class')=='android.widget.EditText']
+    if len(fields)!=2:
+        raise RuntimeError('Initial sign-in must contain email and password only')
+    screenshot('sign-in')
+    adb('shell','input','keyevent','4')
+    tap('Settings')
+    screenshot('settings')
+    tap('Privacy and connection information')
+    time.sleep(.7)
+    if not any('Privacy' in node.get('text','') for node in hierarchy().iter('node')):
+        raise RuntimeError('Privacy document was not visible')
+    screenshot('privacy')
+    adb('shell','input','keyevent','4')
+    adb('shell','settings','put','system','accelerometer_rotation','0')
+    adb('shell','settings','put','system','user_rotation','1')
+    time.sleep(1)
+    screenshot('landscape')
+    adb('shell','settings','put','system','user_rotation','0')
+    if options.upgrade:
+        adb('shell',f'run-as {package} sh -c "echo preserved > files/update-probe.txt"')
+        adb('shell','am','force-stop',package)
+        adb('install','-r',options.upgrade)
+        launch()
+        if adb('exec-out','run-as',package,'cat','files/update-probe.txt').strip()!=b'preserved':
+            raise RuntimeError('In-place update lost app-private data')
+        for attempt in range(40):
+            try:
+                new_config=json.loads(adb('exec-out','run-as',package,'cat','files/engine/config.json'))
+                new_port=int(new_config['dashboard']['listen'].rsplit(':',1)[1])
+                if new_port!=port:
+                    adb('forward',f'tcp:{forwarded}',f'tcp:{new_port}')
+                    token=adb('exec-out','run-as',package,'cat','files/engine/local-api.token').strip()
+                    request('/api/status')
+                    break
+            except (OSError,ValueError):
+                pass
+            time.sleep(.5)
+        else:
+            raise RuntimeError('Updated application did not restart its native API')
+        if request('/api/accounts').get('accounts'):
+            raise RuntimeError('Update introduced an unexpected account')
+    (output/'checks.txt').write_text('PASS: fresh native startup; authenticated API; missing-token rejection; empty accounts; disconnected state; two-step sign-in form; privacy page; rotation; in-place higher-version update. No real account or tunnel test.\n')
     print('PASS Android native launch, local authenticated API, empty accounts, disconnected state, unauthenticated API rejection')
     adb('shell', 'am', 'force-stop', package)
 finally:

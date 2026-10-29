@@ -34,7 +34,7 @@ public final class MainActivity extends Activity {
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
     @Override public void onCreate(Bundle state){
         super.onCreate(state);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
+        if(!(BuildConfig.DEBUG&&getIntent().getBooleanExtra("qa_screenshots",false)))getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
         try{body=Typeface.createFromAsset(getAssets(),"fonts/Lato-Regular.ttf");}catch(Exception ignored){}
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);root.setPadding(dp(18),dp(12),dp(18),0);
         TextView brand=label("III85III  /  VPN",21,GOLD);brand.setPadding(0,dp(10),0,dp(16));root.addView(brand);
@@ -42,6 +42,7 @@ public final class MainActivity extends Activity {
         nav=new LinearLayout(this);navigation.addView(nav);root.addView(navigation);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(0,dp(24),0,dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         feedback=label("Starting your local engine…",13,MUTED);feedback.setPadding(0,dp(8),0,dp(10));root.addView(feedback);setContentView(root);
+        WindowLayout.apply(this,root);
         showPage(state==null?0:state.getInt("page",0));
         CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible)poll();});}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
     }
@@ -61,7 +62,7 @@ public final class MainActivity extends Activity {
     private JSONObject object(String key,Object value){JSONObject obj=new JSONObject();try{obj.put(key,value);}catch(JSONException impossible){throw new IllegalStateException(impossible);}return obj;}
     private void showPage(int target){
         page=target;nav.removeAllViews();String[] names={"Home","Locations","App rules","Accounts","Settings","Help"};
-        for(int i=0;i<names.length;i++){final int tab=i;Button item=button(names[i],()->showPage(tab));item.setTextColor(tab==page?BG:MUTED);item.setBackground(background(tab==page?GOLD:BG));LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-2,dp(42));params.setMargins(0,0,dp(6),0);item.setLayoutParams(params);nav.addView(item);}
+        for(int i=0;i<names.length;i++){final int tab=i;Button item=button(names[i],()->showPage(tab));item.setTextColor(tab==page?BG:MUTED);item.setBackground(background(tab==page?GOLD:BG));LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-2,dp(48));params.setMargins(0,0,dp(6),0);item.setLayoutParams(params);nav.addView(item);}
         content.removeAllViews();statusText=detailText=speedText=null;power=null;
         switch(page){case 0:home();break;case 1:locationPage();break;case 2:appRules();break;case 3:accounts();break;case 4:settings();break;default:help();}
     }
@@ -75,12 +76,23 @@ public final class MainActivity extends Activity {
         note("No personal VPS required. Mozilla account eligibility and normal service quota apply.");updateHome();
     }
     private void toggleConnection(){
-        if(TunnelService.active){startService(new Intent(this,TunnelService.class).setAction(TunnelService.STOP));return;}
+        if(TunnelService.lifecycle.canCancel()){startService(new Intent(this,TunnelService.class).setAction(TunnelService.STOP));return;}
+        if(TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING){feedback.setText("Finishing the previous connection. Try again in a moment.");return;}
         api("GET","/api/accounts",null,5000,reply->{
             JSONArray rows=reply.optJSONArray("accounts");if(rows==null||rows.length()==0){showPage(3);feedback.setText("Add your Mozilla account to get started.");return;}
-            Intent permission=VpnService.prepare(this);if(permission!=null)startActivityForResult(permission,85);else startTunnel();
+            explainConnection();
         });
     }
+    private void explainConnection(){
+        if(getPreferences(MODE_PRIVATE).getInt("vpn_disclosure",0)==1){requestVpnPermission();return;}
+        new AlertDialog.Builder(this).setTitle("Before you connect")
+            .setMessage("III85III VPN uses Android's VPN interface to route supported internet traffic through Mozilla's network service. Your Mozilla account is used for sign-in and service quota checks. The service receives information needed to carry your connection, including network addresses. Selected excluded apps stay direct. Local connection diagnostics may contain network details. This app is not a verified kill switch.")
+            .setNegativeButton("Not now",(dialog,which)->feedback.setText("VPN has not been started."))
+            .setNeutralButton("Privacy details",(dialog,which)->openDocument("privacy"))
+            .setPositiveButton("Agree and continue",(dialog,which)->{getPreferences(MODE_PRIVATE).edit().putInt("vpn_disclosure",1).apply();requestVpnPermission();}).show();
+    }
+    private void requestVpnPermission(){Intent permission=VpnService.prepare(this);if(permission!=null)startActivityForResult(permission,85);else startTunnel();}
+    private void openDocument(String name){startActivity(new Intent(this,InformationActivity.class).putExtra("document",name));}
     private void startTunnel(){
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},86);
         Intent intent=new Intent(this,TunnelService.class);startForegroundService(intent);feedback.setText("Starting the VPN connection…");
@@ -98,9 +110,11 @@ public final class MainActivity extends Activity {
         JSONObject state=status.optJSONObject("state"),test=status.optJSONObject("last_test");
         String phase=state==null?"off":state.optString("phase","off");
         boolean verified=verified();
-        statusText.setText(verified?"You're connected.":TunnelService.active?"Getting you connected…":"Ready when you are.");
+        VpnLifecycle.Phase transition=TunnelService.lifecycle.phase();
+        statusText.setText(verified?"You're connected.":TunnelService.active||transition==VpnLifecycle.Phase.STARTING?"Getting you connected…":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":"Ready when you are.");
         detailText.setText(verified?"Your connection is ready.":TunnelService.error.isEmpty()?"Choose a location. Connect whenever you're ready.":TunnelService.error);
-        power.setText(TunnelService.active?"Disconnect":"Connect");
+        power.setText(transition==VpnLifecycle.Phase.STARTING?"Cancel connection":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":TunnelService.active?"Disconnect":"Connect");
+        power.setEnabled(transition!=VpnLifecycle.Phase.STOPPING);
         try{String[] rate=Mobile.speed().split(",");speedText.setText("↓ "+bytes(Double.parseDouble(rate[0]))+"/s      ↑ "+bytes(Double.parseDouble(rate[1]))+"/s");}catch(Exception ignored){}
     }
     private String bytes(double amount){String[] unit={"B","KB","MB","GB"};int n=0;while(amount>=1000&&n<3){amount/=1000;n++;}return String.format(Locale.US,n==0?"%.0f %s":"%.1f %s",amount,unit[n]);}
@@ -145,7 +159,16 @@ public final class MainActivity extends Activity {
             main.post(()->{if(isDestroyed()||page!=2)return;Set<String> seen=new HashSet<>();for(android.content.pm.ResolveInfo entry:entries){String pkg=entry.activityInfo.packageName;if(pkg.equals(getPackageName())||!seen.add(pkg))continue;CheckBox check=new CheckBox(this);check.setText(entry.loadLabel(getPackageManager()));check.setTextColor(TEXT);check.setTypeface(body);check.setChecked(selected.contains(pkg));check.setOnCheckedChangeListener((b,value)->{if(value)selected.add(pkg);else selected.remove(pkg);});apps.addView(check);}if(apps.getChildCount()==0)apps.addView(label("No visible launcher apps found.",14,MUTED));});
         });
     }
-    private void settings(){heading("Make it yours.","Built for Android, with the same III85III identity.");note("Connection mode: whole-device VPN with direct-app exclusions. The app's own network traffic stays outside the tunnel to prevent routing loops.");note("Screenshots are disabled while the app is open to protect account and verification screens. App data is excluded from Android backup.");note("Background connection uses a persistent Android notification. You can disconnect from that notification or from Android VPN settings.");note("Not a kill switch. Other traffic may go direct after disconnect or process termination. Mozilla service restrictions and quota still apply.");}
+    private void settings(){
+        heading("Make it yours.","III85III VPN "+BuildConfig.VERSION_NAME);
+        content.addView(button("Privacy and connection information",()->openDocument("privacy")));
+        content.addView(button("Open-source licenses",()->openDocument("licenses")));
+        content.addView(button("Updates on GitHub",()->startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://github.com/III85III/Free-Vpn/releases/tag/android-v2.3.0")))));
+        note("Selected excluded apps connect directly. Your choices apply when you reconnect.");
+        note("Account sessions stay in this app's private storage. Screenshots are blocked in the distributed app and account backups are disabled.");
+        note("Disconnect from the app, its notification or Android VPN settings. Manual disconnect is respected; the app does not automatically reconnect afterwards.");
+        note("Not a kill switch. Traffic can go direct after disconnect. Mozilla eligibility, regions and quotas apply.");
+    }
     private void help(){heading("A little connection help.","Check your account, network and selected location.");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Measure server latency",()->showPage(1)));note("Connection problems: check that the same account can sign in to Mozilla in a browser. Account-specific errors or service challenges are not guaranteed to be resolved by this app.");note("Telegram-bot-only routing and arbitrary UDP are not provided. App rules are exclusions, not a promise that only selected apps use the VPN.");note("This Android build needs real-device login, tunnel and network-handover testing before store publication.");}
 
     private final class SignInFlow {

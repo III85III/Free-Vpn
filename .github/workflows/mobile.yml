@@ -31,7 +31,7 @@ jobs:
           packages: platform-tools
       - name: Android native tools
         run: |
-          yes | sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'ndk;27.2.12479018' >/dev/null || test -d "$ANDROID_HOME/ndk/27.2.12479018"
+          yes | sdkmanager 'platforms;android-36' 'build-tools;35.0.0' 'ndk;27.2.12479018' >/dev/null || test -d "$ANDROID_HOME/ndk/27.2.12479018"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
       - name: Engine binding tools
         run: |
@@ -56,25 +56,65 @@ jobs:
       - name: APK and lint
         run: |
           chmod +x mobile/android/gradlew
-          mobile/android/gradlew -p mobile/android --no-daemon :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+          mobile/android/gradlew -p mobile/android --no-daemon :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug :app:lintRelease
+          mkdir -p .build/android-qa
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk .build/android-qa/app-debug.apk
+          mobile/android/gradlew -p mobile/android --no-daemon :app:assembleDebug -PversionCodeOverride=23001 -PversionNameOverride=2.3.0-qa-update
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk .build/android-qa/upgrade.apk
       - uses: actions/upload-artifact@v4
         if: inputs.platform != 'ios'
         with:
           name: III85III-VPN-Android-test
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          path: .build/android-qa/*.apk
           retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: III85III-VPN-Android-unsigned
+          path: mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 14
+  android-device:
+    if: inputs.platform != 'ios'
+    needs: android
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [26, 34, 36]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - uses: actions/download-artifact@v4
+        with:
+          name: III85III-VPN-Android-test
+          path: .build/android-qa
       - name: Enable emulator acceleration
         run: |
           if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
       - name: Native emulator startup check
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api }}
           arch: x86_64
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -wipe-data
-          script: python3 tools/check-android-emulator.py
+          script: python3 tools/check-android-emulator.py --apk .build/android-qa/app-debug.apk --upgrade .build/android-qa/upgrade.apk --output test-results/android-${{ matrix.api }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-UI-${{ matrix.api }}
+          path: test-results/android-${{ matrix.api }}
+          if-no-files-found: ignore
+          retention-days: 14
   ios:
     if: inputs.platform != 'android'
     runs-on: macos-15
