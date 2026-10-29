@@ -1,4 +1,14 @@
-# Validation — III85III VPN 2.2.0
+# Validation
+
+## Windows 2.2.1 and Android 2.3.1
+
+Windows passed 48 API/state checks, a saved-account home-button integration fixture, 528 layout checks, 18 latency checks, 21 sign-in lifecycle checks, five verification-conflict/stale-prompt checks, six update-metadata checks, 14 polling checks, 29 keyboard checks and 33 installer-recovery checks. Run `tools/test.ps1` to reproduce the native suites.
+
+An actual empty-profile startup smoke run verified the unchanged 2.2.0 backend, loopback authentication, empty accounts, settings persistence and clean shutdown. It did not connect a real account, install a Windows TUN service or verify Windows egress. The candidate's backend executable hashes matched the preserved build. The installer inventory contained no known private account, session or signing files.
+
+Android passed release/debug builds, lint, 20 unit tests and fresh Android 8/14/16 emulator checks including real native TUN synthetic DNS and an in-app, user-confirmed PackageInstaller update. See [mobile validation](../mobile/VALIDATION.md) for evidence and limits. These are direct-download releases, not store approvals or a guarantee that every account/network works.
+
+## Earlier validation: 2.2.0
 
 The release engine is built from the owner's current Go source. Its hashes are recorded in the packaged core/manifest.json. The earlier original-engine hashes describe historical builds, not the current binaries.
 

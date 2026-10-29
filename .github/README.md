@@ -12,8 +12,8 @@ Free VPN is a free application by **III85III** for Windows and Android. Sign in 
 
 | Platform | Download | Requirements |
 | --- | --- | --- |
-| Windows | [Windows installer](https://github.com/III85III/Free-Vpn/releases/download/v2.2.0/III85III-VPN-Setup.exe) | Windows x64 |
-| Android | [Android APK](https://github.com/III85III/Free-Vpn/releases/download/android-v2.3.0/III85III-VPN.apk) | Android 8.0+, arm64 or x86-64 |
+| Windows | [Windows installer](https://github.com/III85III/Free-Vpn/releases/download/v2.3.1/III85III-VPN-Setup.exe) | Windows x64 · 2.2.1 |
+| Android | [Android APK](https://github.com/III85III/Free-Vpn/releases/download/v2.3.1/III85III-VPN.apk) | Android 8.0+, arm64 or x86-64 · 2.3.1 |
 
 Android is distributed directly here. Real-phone Mozilla sign-in and tunnel routing still need validation; see [completed checks and limitations](../mobile/VALIDATION.md). There is no signed App Store version yet.
 
@@ -21,7 +21,7 @@ Android is distributed directly here. Real-phone Mozilla sign-in and tunnel rout
 
 ## Getting started
 
-1. Download **III85III-VPN-Setup.exe** from the [Windows release](https://github.com/III85III/Free-Vpn/releases/tag/v2.2.0).
+1. Download **III85III-VPN-Setup.exe** from the [current release](https://github.com/III85III/Free-Vpn/releases/tag/v2.3.1).
 2. Run Setup, then open **III85III VPN**. The interface starts in English.
 3. Add your own Mozilla account using your Mozilla password. If Mozilla requests a verification code, enter it in the separate code window.
 4. Choose your connection mode and location, then connect. Use **Check connection** to inspect the connection result.
@@ -31,8 +31,8 @@ Windows x64 is the supported platform. The installer keeps your saved account da
 ### On Android
 
 1. Download **III85III-VPN.apk** using the Android link above. Allow installation from the browser or file manager when Android asks.
-2. Open the app and add your own Mozilla account in **Accounts**. Verification codes appear in a separate step when requested.
-3. Choose a location, read the connection disclosure and approve Android's VPN permission. **App rules** lets selected applications connect directly.
+2. Open **Settings → Mozilla accounts** and add your own account. Verification codes appear in a separate step when requested.
+3. Choose a location, read the connection disclosure and approve Android's VPN permission. **Split tunneling** lets selected applications connect directly.
 4. Disconnect in Home, the persistent VPN notification or Android VPN settings. Manual disconnect does not trigger automatic reconnection.
 
 Install future APK updates over the existing app to retain its local data. The release uses the same III85III signing identity as Android 2.2.0. Keep accounts and diagnostic files private. A running VPN indicator alone does not prove that every application or protocol is protected.
@@ -45,6 +45,12 @@ Android includes latency sorting, location search, account management, private a
 </p>
 
 Screenshots show a fresh test installation with no account or active connection.
+
+### Updates from the app
+
+Windows and Android check public version information on GitHub and show a prompt when a newer version is available. Download starts when you choose it; no personal VPS is needed. Windows opens the verified installer after closing the VPN. Android checks the APK's package, version and signing identity and asks for installation confirmation.
+
+Use **Settings → Check for updates** on Windows or **Settings → App updates** on Android. The first upgrade from Windows 2.2.0 or Android 2.3.0 must be installed once using the downloads above: those older builds do not contain the updater. Later releases can be obtained from inside the app. Keep enough free space for downloading and installation.
 
 ## Features
 
@@ -61,6 +67,9 @@ Screenshots show a fresh test installation with no account or active connection.
 | Keyboard navigation | Use Enter/Space on custom controls and jump between pages with Ctrl+1 through Ctrl+6. |
 | Search shortcuts | Press Ctrl+F to search locations or the current app list; Escape clears the filter. F1 opens Help. |
 | Installer recovery | Prepare an update before replacing the previous installation, with rollback if directory promotion fails. |
+| In-app updates | Check for a newer platform version, download it and start installation from the app. |
+| Account selection | Choose a saved account explicitly; the Windows home button no longer requires an account to be active before connecting. |
+| Service repair | Repair the Windows VPN service from Settings with administrator approval. |
 
 Latency measurements describe response time at the moment of testing; they are not a guarantee of download speed.
 
@@ -86,7 +95,7 @@ Latency measurements describe response time at the moment of testing; they are n
 
 **Is it free?** The application is free. Service eligibility, regional availability, quotas and renewal dates come from Mozilla. Installing this app does not create an unlimited entitlement or bypass those limits.
 
-**Does it work on Android, iOS, macOS or Linux?** The published 2.2.0 installer is Windows x64. Native Android and iOS development projects are now in [mobile](../mobile/README.md), with separate build and validation status. They are not App Store/Google Play releases. macOS and Linux applications remain future plans.
+**Does it work on Android, iOS, macOS or Linux?** Windows and Android have direct downloads above. Android supports arm64 and x86-64. The [iOS project](../mobile/README.md) still needs Apple signing before normal installation. These are not App Store/Google Play approvals. macOS and Linux applications remain future plans.
 
 **Does it guarantee every application or protocol will work?** No. Service restrictions apply. Arbitrary UDP, a verified kill switch and enforced Telegram-bot-only routing are not promised by this release.
 

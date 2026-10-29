@@ -1,5 +1,14 @@
 # Changelog
 
+## Windows 2.2.1 / Android 2.3.1
+
+- Add platform-specific GitHub update checks, update prompts, verified downloads and user-confirmed installation from the app. No personal VPS is required.
+- Correct the Windows saved-account preflight and keep connection/tunnel errors visible during polling.
+- Reconcile verification HTTP 409 with the current sign-in state and prevent duplicate answers to a stale prompt.
+- Add explicit account selection, Windows VPN-service repair and a limited connection-status export.
+- Simplify Android navigation to VPN, Locations and Settings, with consistent dialogs and account/direct-app settings.
+- Validate native TUN synthetic DNS and actual in-app PackageInstaller updates on Android 8, 14 and 16. Real Mozilla egress and Windows routing remain separate device checks.
+
 ## Frontend reliability
 
 - Fetch diagnostic logs only while Help is open and refresh them independently of connection status.

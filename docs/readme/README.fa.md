@@ -14,9 +14,13 @@
 
 ## شروع استفاده
 
-[نصب‌کنندهٔ Windows](https://github.com/III85III/Free-Vpn/releases/download/v2.2.0/III85III-VPN-Setup.exe) · [دانلود APK اندروید](https://github.com/III85III/Free-Vpn/releases/download/android-v2.3.0/III85III-VPN.apk)
+[نصب‌کنندهٔ Windows](https://github.com/III85III/Free-Vpn/releases/download/v2.3.1/III85III-VPN-Setup.exe) · [دانلود APK اندروید](https://github.com/III85III/Free-Vpn/releases/download/v2.3.1/III85III-VPN.apk)
 
-در Android 8 به بالا، APK را نصب کن، از Accounts حساب خودت را اضافه کن و سپس مجوز VPN را تأیید کن. برنامه‌های انتخاب‌شده در App rules مستقیم وصل می‌شوند. برای حفظ داده‌ها، نسخهٔ جدید را روی نسخهٔ قبلی نصب کن. [نتیجهٔ تست‌ها و محدودیت‌های موبایل](../../mobile/VALIDATION.md) را ببین؛ ورود واقعی و مسیر اتصال هنوز روی گوشی مالک آزمایش نشده‌اند.
+در Android 8 به بالا، APK را نصب کن، از Settings → Mozilla accounts حساب خودت را اضافه کن و سپس مجوز VPN را تأیید کن. برنامه‌های انتخاب‌شده در بخش Split tunneling مستقیم وصل می‌شوند. برای حفظ داده‌ها، نسخهٔ جدید را روی نسخهٔ قبلی نصب کن. [نتیجهٔ تست‌ها و محدودیت‌های موبایل](../../mobile/VALIDATION.md) را ببین؛ اتصال واقعی به موزیلا هنوز به آزمون مستقل نیاز دارد.
+
+### به‌روزرسانی داخل برنامه
+
+در ویندوز از Settings → Check for updates و در اندروید از Settings → App updates استفاده کن. برنامه نسخهٔ جدید را روی گیت‌هاب بررسی می‌کند، پیام نشان می‌دهد و دانلود و شروع نصب را داخل برنامه انجام می‌دهد؛ VPS شخصی لازم نیست. نصب نهایی با تأیید کاربر انجام می‌شود و حساب‌ها با ارتقای معمول حفظ می‌شوند. نسخه‌های قدیمی یک بار باید به این نسخه ارتقا پیدا کنند تا قابلیت آپدیت داخلی را داشته باشند.
 
 ۱. از [آخرین انتشار رسمی](https://github.com/III85III/Free-Vpn/releases/latest)، فایل III85III-VPN-Setup.exe را بگیر و نصب کن.
 
