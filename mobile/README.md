@@ -11,7 +11,7 @@ Native Android and iOS interfaces with the desktop application's dark palette, w
 - Private application storage, disabled account backup/device transfer, authenticated loopback API and no account bundled in the APK.
 - A positive connection label requires a fresh successful test for the current connection; a previous test is not reused after reconnect or network change.
 
-Build dependencies: JDK 17, Android SDK/platform 34, build-tools 34.0.0, NDK 27.2.12479018, Go matching `core/go.mod`, and the generated Gradle wrapper.
+Build dependencies: JDK 17, Android SDK/platform 36, build-tools 35.0.0, NDK 27.2.12479018, Go matching `core/go.mod`, and the generated Gradle 8.11.1 wrapper.
 
 ```powershell
 $env:ANDROID_HOME = '<Android SDK>'
@@ -20,7 +20,7 @@ $env:ANDROID_NDK_HOME = '<NDK 27.2.12479018>'
 .\mobile\android\gradlew.bat -p mobile\android :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 ```
 
-The manual **Mobile builds** GitHub Actions workflow performs the complete binding and app build. Its Android artifact uses a testing certificate. A release APK must retain its signing key for future updates; private keys must never enter the repository or application assets.
+The manual **Mobile builds** GitHub Actions workflow performs the complete binding and app build. It produces a debug-signed test artifact and a separate unsigned release artifact. The published APK is signed privately with the preserved III85III release key. Private keys never enter the repository, CI artifacts or application assets.
 
 ## iOS
 
@@ -37,7 +37,7 @@ An unsigned IPA cannot be installed as an ordinary App Store/TestFlight applicat
 
 ## Validation limits
 
-The complete Android emulator and unsigned iOS workflow has passed for the current mobile code. See [validation details](VALIDATION.md) for the exact checks and remaining device/store work.
+Android 2.3.0 and unsigned iOS 2.2.0 have separate build and validation results. See [validation details](VALIDATION.md) for the exact checks and remaining device/store work.
 
 The Apple packet adapter has synthetic packet/DNS/TCP relay tests. The Android application has connection-state unit tests and Android Lint. Successful compilation and these tests do not establish real Mozilla sign-in, quota display, device routing, network handover or background survival. Real-device tests remain required before store publication. No verified kill-switch or universal sign-in fix is claimed.
 

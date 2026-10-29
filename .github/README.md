@@ -6,20 +6,45 @@
 
 # Free VPN
 
-### Your Mozilla connection, with a Windows app that feels at home.
+### Your Mozilla connection, at home on Windows and Android.
 
-Free VPN is a free Windows desktop application by **III85III**. Sign in with your own eligible Mozilla account, choose a location and manage your connection from one place. No personal VPS or subscription to this application is required. Mozilla determines whether your account can use the service and what quota applies.
+Free VPN is a free application by **III85III** for Windows and Android. Sign in with your own eligible Mozilla account, choose a location and manage your connection from one place. No personal VPS or subscription to this application is required. Mozilla determines whether your account can use the service and what quota applies.
+
+| Platform | Download | Requirements |
+| --- | --- | --- |
+| Windows | [Windows installer](https://github.com/III85III/Free-Vpn/releases/download/v2.2.0/III85III-VPN-Setup.exe) | Windows x64 |
+| Android | [Android APK](https://github.com/III85III/Free-Vpn/releases/download/android-v2.3.0/III85III-VPN.apk) | Android 8.0+, arm64 or x86-64 |
+
+Android is distributed directly here. Real-phone Mozilla sign-in and tunnel routing still need validation; see [completed checks and limitations](../mobile/VALIDATION.md). There is no signed App Store version yet.
 
 [Getting started](#getting-started) · [Features](#features) · [Connection modes](#connection-modes) · [Privacy](#privacy-and-account-data) · [FAQ](#faq) · [Build](#build-and-validation)
 
 ## Getting started
 
-1. Open the repository's [latest release](https://github.com/III85III/Free-Vpn/releases/latest) and download **III85III-VPN-Setup.exe**, the single Windows installer.
+1. Download **III85III-VPN-Setup.exe** from the [Windows release](https://github.com/III85III/Free-Vpn/releases/tag/v2.2.0).
 2. Run Setup, then open **III85III VPN**. The interface starts in English.
 3. Add your own Mozilla account using your Mozilla password. If Mozilla requests a verification code, enter it in the separate code window.
 4. Choose your connection mode and location, then connect. Use **Check connection** to inspect the connection result.
 
 Windows x64 is the supported platform. The installer keeps your saved account data separate from the application, so replacing application files does not intentionally remove your accounts. The download contains no preconfigured user account.
+
+### On Android
+
+1. Download **III85III-VPN.apk** using the Android link above. Allow installation from the browser or file manager when Android asks.
+2. Open the app and add your own Mozilla account in **Accounts**. Verification codes appear in a separate step when requested.
+3. Choose a location, read the connection disclosure and approve Android's VPN permission. **App rules** lets selected applications connect directly.
+4. Disconnect in Home, the persistent VPN notification or Android VPN settings. Manual disconnect does not trigger automatic reconnection.
+
+Install future APK updates over the existing app to retain its local data. The release uses the same III85III signing identity as Android 2.2.0. Keep accounts and diagnostic files private. A running VPN indicator alone does not prove that every application or protocol is protected.
+
+Android includes latency sorting, location search, account management, private account storage, a separate verification step, connection cancellation, privacy details and bundled dependency notices. Its interface uses the same dark and gold visual style. The mobile features differ from Windows; [mobile details](../mobile/README.md) explain the platform limits.
+
+<p align="center">
+  <img src="../docs/images/android-home.png" width="240" alt="Android home with connection controls">
+  <img src="../docs/images/android-sign-in.png" width="240" alt="Mozilla account sign-in with separate email and password fields">
+</p>
+
+Screenshots show a fresh test installation with no account or active connection.
 
 ## Features
 

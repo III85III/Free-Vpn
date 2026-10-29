@@ -22,7 +22,7 @@ output.mkdir(parents=True, exist_ok=True)
 if os.environ.get('GITHUB_ACTIONS') != 'true':
     raise SystemExit('This check is restricted to disposable GitHub Actions emulators.')
 def adb(*arguments, required=True):
-    result = subprocess.run(['adb', *arguments], capture_output=True, timeout=20)
+    result = subprocess.run(['adb', *arguments], capture_output=True, timeout=60)
     if required and result.returncode:
         raise RuntimeError('Emulator command failed; no private output is printed')
     return result.stdout
