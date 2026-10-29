@@ -76,6 +76,8 @@ namespace III85III.Vpn {
                 }
                 var servers=(System.Collections.Generic.List<ServerChoice>)Field(form,"allLocations");
                 servers.Add(new ServerChoice("Recommended", "") { PingMs=0 });
+                servers.Add(new ServerChoice("Lowest latency", "fastest") { PingMs=0 });
+                servers.Add(new ServerChoice("Automatic", "REC") { PingMs=0 });
                 servers.Add(new ServerChoice("United Kingdom", "gb") { PingMs=80 });
                 servers.Add(new ServerChoice("Germany", "de") { PingMs=20 });
                 servers.Add(new ServerChoice("Canada", "ca") { PingMs=20 });
@@ -83,17 +85,18 @@ namespace III85III.Vpn {
                 var filter=form.GetType().GetMethod("FilterLocations",BindingFlags.Instance|BindingFlags.NonPublic);
                 filter.Invoke(form,null);
                 var locations=(ListBox)Field(form,"locationList");
-                Check(((ServerChoice)locations.Items[0]).Code=="ca" && ((ServerChoice)locations.Items[1]).Code=="de","lowest pings first with deterministic ties");
-                Check(((ServerChoice)locations.Items[2]).Code=="gb","higher measured ping follows lower ping");
-                Check(((ServerChoice)locations.Items[3]).PingMs<=0 && ((ServerChoice)locations.Items[4]).PingMs<=0,"unknown and failed pings stay below measured servers");
-                locations.SelectedIndex=2;
+                Check(((ServerChoice)locations.Items[0]).Code=="" && ((ServerChoice)locations.Items[1]).Code=="fastest" && ((ServerChoice)locations.Items[2]).Code=="REC","automatic options stay pinned above measured countries");
+                Check(((ServerChoice)locations.Items[3]).Code=="ca" && ((ServerChoice)locations.Items[4]).Code=="de","lowest country pings first with deterministic ties");
+                Check(((ServerChoice)locations.Items[5]).Code=="gb","higher measured ping follows lower ping");
+                Check(((ServerChoice)locations.Items[6]).PingMs<=0,"unknown and failed country pings stay below measured servers");
+                locations.SelectedIndex=5;
                 form.GetType().GetField("sortByPing",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(form,false);
                 filter.Invoke(form,null);
                 Check(((ServerChoice)locations.Items[0]).Code=="","disabling sort restores service order");
                 Check(((ServerChoice)locations.SelectedItem).Code=="gb","sorting preserves selected server");
                 form.GetType().GetField("sortByPing",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(form,true);
                 ((LuxurySearchBox)Field(form,"locationSearch")).Input.Text="Germany";
-                Check(locations.Items.Count==1 && ((ServerChoice)locations.Items[0]).Code=="de","search remains compatible with ping sort");
+                Check(locations.Items.Count==4 && ((ServerChoice)locations.Items[3]).Code=="de","search preserves pinned choices while filtering countries");
                 ((LuxurySearchBox)Field(form,"locationSearch")).Input.Text="";
                 servers.Clear();filter.Invoke(form,null);
                 Check(!ConnectionState.HasAccounts(Json.Decode("{\"accounts\":{\"total\":0}}")),"first-use display recognizes a known empty account store");

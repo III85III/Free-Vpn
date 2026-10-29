@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.2.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.2.1.0")]
+[assembly: System.Reflection.AssemblyVersion("2.2.2.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.2.2.0")]
 
 namespace III85III.Vpn {
     internal sealed class AppBypass {
@@ -218,6 +218,7 @@ namespace III85III.Vpn {
             }
         }
         public async Task InstallTun() {
+            AllowTunServiceRead();
             using (var installer = Process.Start(new ProcessStartInfo(File.Exists(Path.Combine(Root, "core", "iii85iii-tun.exe")) ? Path.Combine(Root, "core", "iii85iii-tun.exe") : Path.Combine(Root, "core", "firefox-vpn-tun.exe"), "install") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })) {
                 Task<string> output = installer.StandardOutput.ReadToEndAsync(), error = installer.StandardError.ReadToEndAsync();
                 await Task.Run(delegate { installer.WaitForExit(); });
@@ -225,6 +226,12 @@ namespace III85III.Vpn {
                 if (installer.ExitCode == 3) throw new IOException("Windows administrator prompt was cancelled.");
                 if (installer.ExitCode != 0) throw new IOException("TUN installation failed. " + detail);
             }
+        }
+        internal void AllowTunServiceRead() {
+            // The service runs as SYSTEM; account data remains in its separate private folder.
+            var folder=new DirectoryInfo(Root);var security=folder.GetAccessControl();
+            security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid,null),FileSystemRights.ReadAndExecute,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));
+            folder.SetAccessControl(security);
         }
         public async Task Stop() {
             if (process == null || process.HasExited) return;
@@ -912,8 +919,8 @@ namespace III85III.Vpn {
         readonly LuxuryDial dial = new LuxuryDial();
         readonly Label dialAction = new Label(), dialSubtext = new Label();
         readonly LuxuryButton quickBtn = new LuxuryButton { Text = "Quick connect", Variant = ButtonVariant.Secondary, Width = 135 };
-        readonly LuxuryButton connectBtn = new LuxuryButton { Text = "Get started", Variant = ButtonVariant.Primary };
-        readonly LuxuryButton antigravityBtn = new LuxuryButton { Text = "Antigravity (UK)", Variant = ButtonVariant.Secondary, Width = 150 };
+        readonly LuxuryButton connectBtn = new LuxuryButton { Text = "Add account", Variant = ButtonVariant.Primary };
+        readonly LuxuryButton antigravityBtn = new LuxuryButton { Text = "United Kingdom", Variant = ButtonVariant.Secondary, Width = 150 };
         readonly LuxuryButton verifyBtn = new LuxuryButton { Text = "Check connection", Variant = ButtonVariant.Ghost, Width = 140 };
         readonly LocationCard selectedLocationCard = new LocationCard();
         readonly Label speedStats = new Label(), accountBadge = new Label(), noticeLabel = new Label();
@@ -922,11 +929,11 @@ namespace III85III.Vpn {
         // Locations View Controls
         readonly LuxurySearchBox locationSearch = new LuxurySearchBox("Search locations…");
         readonly ListBox locationList = new ListBox();
-        readonly LuxuryButton pingBtn = new LuxuryButton { Text = "Measure Latency", Variant = ButtonVariant.Secondary };
-        readonly LuxuryButton sortPingBtn = new LuxuryButton { Text = "Ping: low first", Variant = ButtonVariant.Primary };
+        readonly LuxuryButton pingBtn = new LuxuryButton { Text = "Test ping", Variant = ButtonVariant.Secondary };
+        readonly LuxuryButton sortPingBtn = new LuxuryButton { Text = "Sort by ping", Variant = ButtonVariant.Primary };
         bool sortByPing = true;
-        readonly LuxuryButton applyLocationBtn = new LuxuryButton { Text = "Connect to Location", Variant = ButtonVariant.Primary };
-        readonly LuxuryButton antigravityFilterBtn = new LuxuryButton { Text = "Antigravity Safe", Variant = ButtonVariant.Ghost, Width = 140 };
+        readonly LuxuryButton applyLocationBtn = new LuxuryButton { Text = "Use server", Variant = ButtonVariant.Primary };
+        readonly LuxuryButton antigravityFilterBtn = new LuxuryButton { Text = "Popular servers", Variant = ButtonVariant.Ghost, Width = 140 };
         readonly List<ServerChoice> allLocations = new List<ServerChoice>();
         bool antigravityFilterOnly;
         bool pingScanBusy;
@@ -934,9 +941,9 @@ namespace III85III.Vpn {
         // Split Tunnel View Controls
         readonly LuxurySearchBox splitSearch = new LuxurySearchBox("Search applications…");
         readonly ListView splitList = new ListView();
-        readonly LuxuryButton splitSave = new LuxuryButton { Text = "Save choices", Variant = ButtonVariant.Primary };
+        readonly LuxuryButton splitSave = new LuxuryButton { Text = "Save", Variant = ButtonVariant.Primary };
         readonly LuxuryButton splitReload = new LuxuryButton { Text = "Refresh apps", Variant = ButtonVariant.Secondary };
-        readonly LuxuryButton splitBrowse = new LuxuryButton { Text = "Choose an app", Variant = ButtonVariant.Secondary };
+        readonly LuxuryButton splitBrowse = new LuxuryButton { Text = "Add app", Variant = ButtonVariant.Secondary };
         readonly Label splitCountLabel = new Label();
         readonly Dictionary<string, AppBypass> splitSelected = new Dictionary<string, AppBypass>(StringComparer.OrdinalIgnoreCase);
         readonly Dictionary<string, AppBypass> splitAvailable = new Dictionary<string, AppBypass>(StringComparer.OrdinalIgnoreCase);
@@ -947,20 +954,20 @@ namespace III85III.Vpn {
         readonly LuxuryButton loginBtn = new LuxuryButton { Text = "Add an account", Variant = ButtonVariant.Primary };
         readonly LuxuryButton refreshQuotaBtn = new LuxuryButton { Text = "Check balance", Variant = ButtonVariant.Secondary };
         readonly LuxuryButton useAccountBtn = new LuxuryButton { Text = "Use account", Variant = ButtonVariant.Secondary };
-        readonly LuxuryButton removeAccountBtn = new LuxuryButton { Text = "Remove Account", Variant = ButtonVariant.Danger };
-        readonly LuxuryButton accountEyeBtn = new LuxuryButton { Text = "Hide Email", Variant = ButtonVariant.Secondary, Width = 110 };
+        readonly LuxuryButton removeAccountBtn = new LuxuryButton { Text = "Remove account", Variant = ButtonVariant.Danger };
+        readonly LuxuryButton accountEyeBtn = new LuxuryButton { Text = "Hide email", Variant = ButtonVariant.Secondary, Width = 110 };
         bool hideEmail;
 
         // Settings View Controls
         readonly LuxuryRadioCard[] modeCards = new LuxuryRadioCard[3];
-        readonly LuxuryButton applyModeBtn = new LuxuryButton { Text = "Apply Routing Mode", Variant = ButtonVariant.Primary };
+        readonly LuxuryButton applyModeBtn = new LuxuryButton { Text = "Apply", Variant = ButtonVariant.Primary };
         readonly LuxuryToggle minimizeToggle = new LuxuryToggle();
         int pendingModeIndex = 0;
 
         // Diagnostics View Controls
         readonly Label exitInfoLabel = new Label();
         readonly LuxuryButton diagTestBtn = new LuxuryButton { Text = "Test Connection", Variant = ButtonVariant.Secondary };
-        readonly LuxuryButton diagPingBtn = new LuxuryButton { Text = "Measure Latency", Variant = ButtonVariant.Secondary };
+        readonly LuxuryButton diagPingBtn = new LuxuryButton { Text = "Test ping", Variant = ButtonVariant.Secondary };
         readonly LuxuryButton copyLogsBtn = new LuxuryButton { Text = "Copy Logs", Variant = ButtonVariant.Secondary };
         readonly TextBox logsBox = new TextBox();
 
@@ -1192,11 +1199,14 @@ namespace III85III.Vpn {
         }
 
         private void SwitchPage(int index) {
+            contentArea.SuspendLayout();
+            try {
             activePageIndex = index;
             for (int i = 0; i < navButtons.Count; i++) navButtons[i].Selected = (i == index);
             for (int i = 0; i < pages.Length; i++) {
                 if (pages[i] != null) pages[i].Visible = (i == index);
             }
+            } finally {contentArea.ResumeLayout(true);}
             ArrangeResponsive();
             if (index == 5 && ready) { var _ = RefreshLogs(true); }
             if (index == 2 && ready && !splitLoaded) {
@@ -1223,17 +1233,18 @@ namespace III85III.Vpn {
             p.Controls.Add(statusPill);
             p.Controls.Add(dial);
 
-            dialAction.Text = "Let's get you connected.";
+            dialAction.Text = "Add your account";
             dialAction.Font = Theme.Display(24f);
             dialAction.ForeColor = Theme.TextPrimary;
             dialAction.TextAlign = ContentAlignment.MiddleCenter;
             dialAction.Size = new Size(360, 26);
             p.Controls.Add(dialAction);
 
-            dialSubtext.Text = "Add your Mozilla account to get started.";
+            dialSubtext.Text = "Sign in with Mozilla to connect.";
             dialSubtext.Font = Theme.Font(11f);
             dialSubtext.ForeColor = Theme.TextSecondary;
             dialSubtext.TextAlign = ContentAlignment.MiddleCenter;
+            dialSubtext.Click+=delegate {string failure=lastActionError!=""?lastActionError:ConnectionState.Failure(lastStatus);if(failure!="")ShowFailure(failure);};
             dialSubtext.Size = new Size(460, 20);
             p.Controls.Add(dialSubtext);
             connectBtn.Font = Theme.Font(11f, FontStyle.Bold);
@@ -1287,7 +1298,7 @@ namespace III85III.Vpn {
 
             p.Controls.Add(metricsPanel);
 
-            noticeLabel.Text = "Your account stays on this computer.\nNeed a hand? Connection details are in Help.";
+            noticeLabel.Text = "Account saved on this device.";
             noticeLabel.Font = Theme.Font(9f);
             noticeLabel.ForeColor = Theme.TextSubtle;
             noticeLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -1310,10 +1321,10 @@ namespace III85III.Vpn {
         }
 
         private void BuildLocationsPage(Panel p) {
-            var title = new Label { Text = "Pick your location", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
+            var title = new Label { Text = "Servers", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
             p.Controls.Add(title);
 
-            var desc = new Label { Text = "Choose somewhere to connect from. You can change it whenever you like.", Font = Theme.Font(10f), ForeColor = Theme.TextSecondary, AutoSize = true, Location = new Point(0, 26) };
+            var desc = new Label { Text = "Choose a server.", Font = Theme.Font(10f), ForeColor = Theme.TextSecondary, AutoSize = true, Location = new Point(0, 26) };
             p.Controls.Add(desc);
 
             p.Controls.Add(locationSearch);
@@ -1400,10 +1411,10 @@ namespace III85III.Vpn {
         }
 
         private void BuildSplitPage(Panel p) {
-            var title = new Label { Text = "Your apps, your choice", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
+            var title = new Label { Text = "App rules", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
             p.Controls.Add(title);
 
-            var desc = new Label { Text = "Tick the apps you want to use without the VPN. Works in Whole computer mode.", Font = Theme.Font(10f), ForeColor = Theme.TextSecondary, AutoSize = true, Location = new Point(0, 26) };
+            var desc = new Label { Text = "Selected apps bypass VPN in Whole computer mode.", Font = Theme.Font(10f), ForeColor = Theme.TextSecondary, AutoSize = true, Location = new Point(0, 26) };
             p.Controls.Add(desc);
 
             p.Controls.Add(splitSearch);
@@ -1503,7 +1514,7 @@ namespace III85III.Vpn {
             var title = new Label { Text = "Your account", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
             p.Controls.Add(title);
 
-            var desc = new Label { Text = "Sign in with Mozilla, then keep an eye on your monthly balance here.", Font = Theme.Font(10f), ForeColor = Theme.TextSecondary, AutoSize = true, Location = new Point(0, 26) };
+            var desc = new Label { Text = "Mozilla accounts and data balance.", Font = Theme.Font(10f), ForeColor = Theme.TextSecondary, AutoSize = true, Location = new Point(0, 26) };
             p.Controls.Add(desc);
 
             loginBtn.Location = new Point(0, 58); loginBtn.Size = new Size(130, 36);
@@ -1549,9 +1560,9 @@ namespace III85III.Vpn {
                 var r = new Rectangle(0, 0, infoBox.Width - 1, infoBox.Height - 1);
                 using (var pen = new Pen(Theme.Border, 1f)) Theme.DrawRounded(e.Graphics, pen, r, 8);
             };
-            var privTitle = new Label { Text = "At home on your computer", Font = Theme.Font(10f, FontStyle.Bold), ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true };
+            var privTitle = new Label { Text = "Privacy", Font = Theme.Font(10f, FontStyle.Bold), ForeColor = Theme.TextPrimary, Location = new Point(14, 12), AutoSize = true };
             var privDesc = new Label {
-                Text = "Your sign-in details are stored in your Windows account.\nIII85III doesn't send them to a separate III85III server.",
+                Text = "Account saved in your Windows profile.",
                 Font = Theme.Font(8.5f), ForeColor = Theme.TextSecondary, Location = new Point(14, 32)
             };
             infoBox.Controls.Add(privTitle); infoBox.Controls.Add(privDesc);
@@ -1578,15 +1589,15 @@ namespace III85III.Vpn {
         }
 
         private void BuildSettingsPage(Panel p) {
-            var title = new Label { Text = "Make it yours", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
+            var title = new Label { Text = "Settings", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
             p.Controls.Add(title);
 
             var sec1 = new Label { Text = "Connection mode", Font = Theme.Font(9f, FontStyle.Bold), ForeColor = Theme.TextSubtle, AutoSize = true, Location = new Point(0, 40) };
             p.Controls.Add(sec1);
 
-            modeCards[0] = new LuxuryRadioCard("Whole computer · Recommended", "Sends TCP traffic through the VPN. Your app exceptions still apply.", 0) { Location = new Point(0, 62), Checked = true };
-            modeCards[1] = new LuxuryRadioCard("Windows system proxy", "Configures Windows Internet Options proxy settings for browsers and web apps.", 1) { Location = new Point(0, 124) };
-            modeCards[2] = new LuxuryRadioCard("Local proxy only", "Runs loopback HTTP and SOCKS5 proxies without altering system routing.", 2) { Location = new Point(0, 186) };
+            modeCards[0] = new LuxuryRadioCard("Whole computer", "Routes TCP traffic through VPN. App rules apply.", 0) { Location = new Point(0, 62), Checked = true };
+            modeCards[1] = new LuxuryRadioCard("System proxy", "For apps that use Windows proxy settings.", 1) { Location = new Point(0, 124) };
+            modeCards[2] = new LuxuryRadioCard("Local proxy only", "For apps configured to use the local proxy.", 2) { Location = new Point(0, 186) };
 
             for (int i = 0; i < modeCards.Length; i++) {
                 int idx = i;
@@ -1628,10 +1639,10 @@ namespace III85III.Vpn {
             openFolderBtn.Click += delegate { Process.Start(new ProcessStartInfo(engine.DataDir) { UseShellExecute = true }); };
             docsBtn.Click += delegate { Process.Start(new ProcessStartInfo(Path.Combine(engine.Root, "docs", "guide.html")) { UseShellExecute = true }); };
             dashBtn.Click += async delegate {
-                if(MessageBox.Show(this,"Disconnect and repair the Windows VPN service?\n\nWindows will ask for administrator approval. Your saved accounts will be kept.","Repair VPN service",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
+                if(!ConfirmRepair())return;
                 await Run(async delegate {
                     await engine.Api("POST","/api/power",new{on=false});await engine.InstallTun();
-                    MessageBox.Show(this,"The VPN service is ready. Try connecting in Whole computer mode again.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                    ShowNotice("Ready to connect","The VPN service is repaired. Try Whole computer again.","Your saved accounts have been kept.",false);
                 });
             };
 
@@ -1655,7 +1666,7 @@ namespace III85III.Vpn {
         }
 
         private void BuildDiagnosticsPage(Panel p) {
-            var title = new Label { Text = "A little connection help", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
+            var title = new Label { Text = "Help", Font = Theme.Display(19f), ForeColor = Theme.TextPrimary, AutoSize = true, Location = new Point(0, 0) };
             p.Controls.Add(title);
 
             exitInfoLabel.Text = "Exit IP: not verified yet";
@@ -1845,17 +1856,58 @@ namespace III85III.Vpn {
             splitBrowse.Enabled = enabled;
         }
 
+        private bool ConfirmRepair() {
+            using(var dialog=new Form{Text="III85III VPN",BackColor=Theme.Bg,ForeColor=Theme.TextPrimary,ClientSize=new Size(480,200),StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false,ShowInTaskbar=false}){
+                dialog.Controls.Add(new Label{Text="Repair your VPN service",Font=Theme.Font(17f,FontStyle.Bold),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(24,20,432,36)});
+                dialog.Controls.Add(new Label{Text="This disconnects the VPN and asks for Windows administrator approval. Your accounts stay saved.",Font=Theme.Font(11f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(24,68,432,62)});
+                var cancel=new LuxuryButton{Text="Cancel",Variant=ButtonVariant.Ghost,DialogResult=DialogResult.Cancel,Bounds=new Rectangle(224,144,100,36)};
+                var repair=new LuxuryButton{Text="Repair",DialogResult=DialogResult.OK,Bounds=new Rectangle(336,144,120,36)};
+                dialog.Controls.Add(cancel);dialog.Controls.Add(repair);dialog.AcceptButton=repair;dialog.CancelButton=cancel;return dialog.ShowDialog(this)==DialogResult.OK;
+            }
+        }
+        internal static string FriendlyFailure(string detail) {
+            if(detail.IndexOf("application ID",StringComparison.OrdinalIgnoreCase)>=0 && detail.IndexOf("Access is denied",StringComparison.OrdinalIgnoreCase)>=0)return "Windows couldn't give the VPN service access. Repair the service in Settings.";
+            if(detail.IndexOf("TUN",StringComparison.OrdinalIgnoreCase)>=0)return "Whole computer couldn't start. Check the VPN service in Settings.";
+            if(detail.IndexOf("account",StringComparison.OrdinalIgnoreCase)>=0)return "Your account needs attention. Open Account to continue.";
+            if(detail.IndexOf("cancel",StringComparison.OrdinalIgnoreCase)>=0)return "The operation was cancelled. You can try again whenever you're ready.";
+            return "We couldn't complete that. Check your connection and try again.";
+        }
+        private void ShowFailure(string detail) {
+            dialSubtext.Text=FriendlyFailure(detail)+"  ·  Click for details";
+            dialSubtext.Cursor=Cursors.Hand;
+            dial.State=DialState.Error;statusPill.State=DialState.Error;statusPill.StatusText="Needs attention";
+            dialAction.Text="Connection problem";dial.Invalidate();statusPill.Invalidate();
+            ShowNotice("Connection problem",FriendlyFailure(detail),detail,true);
+        }
+        internal void ShowNotice(string title,string message,string detail,bool repair) {
+            using(var dialog=new Form {Text="III85III VPN",StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false,ShowInTaskbar=false,BackColor=Theme.Bg,ForeColor=Theme.TextPrimary,ClientSize=new Size(520,220),AutoScaleMode=AutoScaleMode.Dpi}) {
+                var heading=new Label{Text=title,Font=Theme.Font(18f,FontStyle.Bold),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(24,22,472,38)};
+                var summary=new Label{Text=message,Font=Theme.Font(11f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(24,70,472,66)};
+                var details=new TextBox{Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,Text=detail,BackColor=Theme.Surface,ForeColor=Theme.TextSecondary,BorderStyle=BorderStyle.FixedSingle,Bounds=new Rectangle(24,208,472,120),Visible=false};
+                var expand=new LuxuryButton{Text="Technical details",Variant=ButtonVariant.Ghost,Bounds=new Rectangle(24,155,152,38)};
+                expand.Click+=delegate{details.Visible=!details.Visible;dialog.ClientSize=new Size(520,details.Visible?352:220);expand.Text=details.Visible?"Hide details":"Technical details";};
+                var close=new LuxuryButton{Text="Got it",Bounds=new Rectangle(382,155,114,38),DialogResult=DialogResult.OK};
+                dialog.Controls.AddRange(new Control[]{heading,summary,details,expand,close});dialog.AcceptButton=close;dialog.CancelButton=close;
+                if(repair){var settings=new LuxuryButton{Text="Open Settings",Bounds=new Rectangle(224,155,146,38),Variant=ButtonVariant.Secondary};settings.Click+=delegate{dialog.Close();SwitchPage(4);};dialog.Controls.Add(settings);}
+                dialog.ShowDialog(this);
+            }
+        }
         private async Task Run(Func<Task> action) {
             if (!ready || busy || closing) return;
             busy = true;lastActionError=""; SetActions(false);
-            try { await action(); await Poll(); }
-            catch (Exception e) { lastActionError=e.Message;dialSubtext.Text = e.Message; }
+            dialSubtext.Text="Applying your changes…";dialSubtext.Update();
+            try { await action(); busy=false; await Poll(); }
+            catch (Exception e) { lastActionError=e.Message;ShowFailure(e.Message); }
             finally { busy = false; if (!closing) SetActions(ready); }
         }
 
         private async Task ConnectFromHome() {
             if (!ready || busy || closing) return;
             string phase = Json.Str(Json.Child(lastStatus, "state"), "phase");
+            dial.State=DialState.Connecting;statusPill.State=DialState.Connecting;
+            statusPill.StatusText=phase=="off"?"Connecting":"Disconnecting";
+            dialAction.Text=phase=="off"?"Connecting…":"Disconnecting…";
+            dial.Invalidate();statusPill.Invalidate();dialAction.Update();
             await Run(TogglePower);
         }
 
@@ -1869,9 +1921,10 @@ namespace III85III.Vpn {
             }
             string mode = pendingModeIndex == 0 ? "tun" : pendingModeIndex == 1 ? "set" : "clear";
             if (mode == "tun") {
+                engine.AllowTunServiceRead();
                 if (!Json.Bool(lastStatus, "tun_supported")) throw new IOException("Whole-system TUN is unavailable on this computer.");
                 if (!Json.Bool(Json.Child(lastStatus, "tun"), "installed")) {
-                    dialSubtext.Text = "Installing TUN driver… Please accept prompt.";
+                    dialSubtext.Text = "Setting up VPN… Approve the Windows prompt.";
                     await engine.InstallTun();
                 }
             }
@@ -1925,7 +1978,7 @@ namespace III85III.Vpn {
 
         private void UpdateEyeButtons() {
             eyeBtn.Text = hideEmail ? "Show" : "Hide";
-            accountEyeBtn.Text = hideEmail ? "Show Email" : "Hide Email";
+            accountEyeBtn.Text = hideEmail ? "Show email" : "Hide email";
         }
 
         private void UpdateAccountBadge() {
@@ -1947,7 +2000,7 @@ namespace III85III.Vpn {
             } catch (Exception error) { if (!closing) dialSubtext.Text = error.Message; }
             finally {
                 pingScanBusy = false;
-                if (!closing) { pingBtn.Text = diagPingBtn.Text = "Measure Latency"; pingBtn.Enabled = diagPingBtn.Enabled = ready && !busy; }
+                if (!closing) { pingBtn.Text = diagPingBtn.Text = "Test ping"; pingBtn.Enabled = diagPingBtn.Enabled = ready && !busy; }
             }
         }
 
@@ -1975,7 +2028,7 @@ namespace III85III.Vpn {
             }
 
             await engine.Api("POST", "/api/location", new { country = targetCode });
-            selectedLocationCard.LocationName = targetChoice != null ? targetChoice.Name + " (Antigravity)" : "United Kingdom (Antigravity)";
+            selectedLocationCard.LocationName = targetChoice != null ? targetChoice.Name + "" : "United Kingdom";
             selectedLocationCard.CountryCode = targetCode;
             selectedLocationCard.Latency = (targetChoice != null && targetChoice.PingMs > 0) ? targetChoice.PingMs + " ms" : "— ms";
             selectedLocationCard.Invalidate();
@@ -1983,9 +2036,8 @@ namespace III85III.Vpn {
             if (Json.Str(Json.Child(lastStatus, "state"), "phase") == "off") {
                 await TogglePower();
             } else {
-                dialSubtext.Text = "Reconnecting to Antigravity server (" + targetCode.ToUpperInvariant() + ")…";
+                dialSubtext.Text = "Switching server (" + targetCode.ToUpperInvariant() + ")…";
                 await engine.Api("POST", "/api/power", new { on = false });
-                await Task.Delay(350);
                 await engine.Api("POST", "/api/power", new { on = true });
             }
         }
@@ -1993,7 +2045,7 @@ namespace III85III.Vpn {
         private void ToggleAntigravityFilter() {
             antigravityFilterOnly = !antigravityFilterOnly;
             antigravityFilterBtn.Variant = antigravityFilterOnly ? ButtonVariant.Primary : ButtonVariant.Ghost;
-            antigravityFilterBtn.Text = antigravityFilterOnly ? "All Locations" : "Antigravity Safe";
+            antigravityFilterBtn.Text = antigravityFilterOnly ? "All Locations" : "Popular servers";
             FilterLocations();
         }
 
@@ -2002,6 +2054,7 @@ namespace III85III.Vpn {
             polling = true;
             try {
                 lastStatus = await engine.Api("GET", "/api/status", null, 5000);
+                if(busy || closing)return;
                 var state = Json.Child(lastStatus, "state");
                 var tun = Json.Child(lastStatus, "tun");
                 var proxy = Json.Child(lastStatus, "proxy");
@@ -2015,7 +2068,7 @@ namespace III85III.Vpn {
                 if(connected)lastActionError="";
                 string failure=lastActionError!=""?lastActionError:ConnectionState.Failure(lastStatus);
 
-                timer.Interval = phase == "running" && !connected ? 500 : 2000;
+                timer.Interval = phase != "off" && !connected ? 350 : 1000;
 
                 dial.State = phase == "off" ? DialState.Disconnected :
                              connected ? DialState.Connected :
@@ -2025,19 +2078,20 @@ namespace III85III.Vpn {
                 statusPill.State = dial.State;
                 statusPill.StatusText = phase == "off" ? "Not connected" :
                                         connected ? "Connected" :
-                                        phase == "running" ? "Connecting" :
                                         failure!="" ? "Needs attention" :
+                                        phase == "running" ? "Connecting" :
                                         phase == "waiting" ? "Waiting" : "Connecting";
                 statusPill.Invalidate();
 
                 bool needsAccount = !ConnectionState.HasAccounts(lastStatus) && (phase == "off" || phase == "waiting");
-                dialAction.Text = needsAccount ? "Let's get you connected." : phase == "off" ? "Ready when you are." : connected ? "You're connected." : phase == "error" ? "Let's try that again." : "Getting you connected…";
-                connectBtn.Text = needsAccount ? "Get started" : phase == "off" ? "Connect" : connected ? "Disconnect" : phase == "error" ? "Reset connection" : "Cancel connection";
-                dialSubtext.Text = needsAccount ? "Add your Mozilla account to get started." :
-                    failure!="" ? failure : phase == "off" ? "Choose a location. Connect whenever you're ready." :
-                    connected ? "Your connection is ready. Make yourself at home." : Json.Str(state, "message");
+                dialAction.Text = needsAccount ? "Add your account" : connected ? "Connected" : failure!="" ? "Connection problem" : phase == "off" ? "Ready to connect" : "Connecting…";
+                connectBtn.Text = needsAccount ? "Add account" : phase == "off" ? "Connect" : connected ? "Disconnect" : phase == "error" ? "Reset connection" : "Cancel connection";
+                dialSubtext.Text = needsAccount ? "Sign in with Mozilla to connect." :
+                    failure!="" ? FriendlyFailure(failure)+"  ·  Click for details" : phase == "off" ? "Choose a server, then connect." :
+                    connected ? "VPN is on." : Json.Str(state, "message");
 
                 // Update metrics
+                dialSubtext.Cursor=failure!=""?Cursors.Hand:Cursors.Default;
                 speedStats.Text = "↓ " + Theme.Bytes(Json.Num(traffic, "down_rate")) + "/s     ↑ " + Theme.Bytes(Json.Num(traffic, "up_rate")) + "/s";
                 UpdateAccountBadge();
 
@@ -2089,9 +2143,10 @@ namespace III85III.Vpn {
                 var result = await engine.Api("POST", "/api/test");
                 if (show && !closing) {
                     bool ok = Json.Bool(result, "ok");
-                    MessageBox.Show(this, ok ? "Connection verified! Exit IP: " + Json.Str(result, "exit_ipv4") : Json.Str(result, "error"), "Connection test", MessageBoxButtons.OK, ok ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+                    if(ok)ShowNotice("You're connected","Your connection check passed.","Exit IP: "+Json.Str(result,"exit_ipv4"),false);
+                    else ShowFailure(Json.Str(result,"error"));
                 }
-            } catch (Exception e) { if (show && !closing) MessageBox.Show(this, e.Message, "Test error", MessageBoxButtons.OK, MessageBoxIcon.Error); }
+            } catch (Exception e) { if (show && !closing) ShowFailure(e.Message); }
             finally { testing = false; warmup.Finished(DateTime.UtcNow); if (!closing) verifyBtn.Enabled = ready && !busy; }
             if (!closing) await Poll();
         }
@@ -2116,7 +2171,7 @@ namespace III85III.Vpn {
             string selected = Json.Str(lastStatus, "selection");
             allLocations.Clear();
             allLocations.Add(new ServerChoice("Recommended (Fastest)", "") { PingMs = 0 });
-            allLocations.Add(new ServerChoice("Lowest latency (scans)", "fastest") { PingMs = 0 });
+            allLocations.Add(new ServerChoice("Fastest", "fastest") { PingMs = 0 });
 
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "", "fastest", "REC" };
             foreach (var l in Json.Rows(reply, "locations")) {
@@ -2147,10 +2202,14 @@ namespace III85III.Vpn {
             string selectedCode = selected == null ? null : selected.Code;
             var visible = new List<ServerChoice>();
             foreach (var sc in allLocations) {
+                if (sc.Code=="" || sc.Code=="fastest" || sc.Code=="REC") {visible.Add(sc);continue;}
                 if (antigravityFilterOnly && sc.Code != "" && !agSafe.Contains(sc.Code)) continue;
                 if (q == "" || sc.Name.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0 || sc.Code.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0) visible.Add(sc);
             }
             if (sortByPing) visible.Sort(delegate(ServerChoice a, ServerChoice b) {
+                int pinnedA=a.Code==""?0:a.Code=="fastest"?1:a.Code=="REC"?2:3;
+                int pinnedB=b.Code==""?0:b.Code=="fastest"?1:b.Code=="REC"?2:3;
+                if(pinnedA!=pinnedB)return pinnedA.CompareTo(pinnedB);
                 int result = (a.PingMs > 0 ? a.PingMs : Int32.MaxValue).CompareTo(b.PingMs > 0 ? b.PingMs : Int32.MaxValue);
                 if (result != 0) return result;
                 result = StringComparer.OrdinalIgnoreCase.Compare(a.Name, b.Name);
@@ -2168,7 +2227,7 @@ namespace III85III.Vpn {
         }
 
         private void UpdatePingSort() {
-            sortPingBtn.Text = sortByPing ? "Ping: low first" : "Sort by ping";
+            sortPingBtn.Text = sortByPing ? "Sort by ping" : "Sort by ping";
             sortPingBtn.Variant = sortByPing ? ButtonVariant.Primary : ButtonVariant.Secondary;
             sortPingBtn.Invalidate();
         }

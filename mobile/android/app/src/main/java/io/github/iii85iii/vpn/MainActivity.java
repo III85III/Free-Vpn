@@ -25,6 +25,8 @@ public final class MainActivity extends Activity {
     private int page;
     private boolean ready,visible,polling,pinging;
     private boolean warming;
+    private boolean checkingAccount;
+    private int connectAttempt;
     private long nextWarmup;
     private JSONObject status=new JSONObject();
     private JSONArray locations=new JSONArray();
@@ -54,12 +56,28 @@ public final class MainActivity extends Activity {
     @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
     private TextView label(String value,int size,int color){TextView text=new TextView(this);text.setText(value);text.setTextSize(size);text.setTextColor(color);text.setTypeface(body);text.setLineSpacing(dp(4),1);return text;}
     private GradientDrawable background(int color){GradientDrawable shape=new GradientDrawable();shape.setColor(color);shape.setCornerRadius(dp(15));return shape;}
-    private Button button(String title,Runnable action){Button b=new Button(this);b.setText(title);b.setAllCaps(false);b.setTextSize(15);b.setTypeface(body);b.setTextColor(TEXT);b.setBackground(background(SURFACE));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(54));p.setMargins(0,dp(7),0,dp(7));b.setLayoutParams(p);b.setOnClickListener(v->action.run());return b;}
-    private void heading(String title,String subtitle){TextView h=label(title,27,TEXT);content.addView(h);TextView sub=label(subtitle,14,MUTED);sub.setPadding(0,dp(8),0,dp(20));content.addView(sub);}
-    private void note(String text){TextView view=label(text,14,MUTED);view.setPadding(0,dp(8),0,dp(12));content.addView(view);}
+    private Button button(String title,Runnable action){Button b=new Button(this);b.setText(title);b.setAllCaps(false);b.setTextSize(15);b.setTypeface(body);b.setTextColor(TEXT);b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33D9BD83),background(SURFACE),background(Color.WHITE)));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(54));p.setMargins(0,dp(7),0,dp(7));b.setLayoutParams(p);b.setOnClickListener(v->action.run());return b;}
+    private void showError(String detail){
+        if(isDestroyed()||isFinishing())return;
+        String message=detail==null?"":detail;
+        String summary=message.toLowerCase(Locale.ROOT).contains("account")||message.toLowerCase(Locale.ROOT).contains("sign-in")?"Your account needs attention. Check your sign-in and try again.":"We couldn't complete that. Check your connection and try again.";
+        feedback.setText(summary+"  ·  Tap for details");
+        Runnable display=()->{
+            LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(24),dp(12),dp(24),dp(8));
+            panel.addView(label(summary,16,TEXT));
+            TextView technical=label(message,13,MUTED);technical.setTextIsSelectable(true);technical.setVisibility(View.GONE);
+            ScrollView scroll=new ScrollView(this);scroll.addView(technical);scroll.setVisibility(View.GONE);
+            panel.addView(button("Technical details",()->{scroll.setVisibility(scroll.getVisibility()==View.GONE?View.VISIBLE:View.GONE);technical.setVisibility(View.VISIBLE);}));panel.addView(scroll,new LinearLayout.LayoutParams(-1,dp(140)));
+            new AlertDialog.Builder(this).setTitle("Connection problem").setView(panel).setPositiveButton("Got it",null).show();
+        };
+        feedback.setOnClickListener(v->display.run());display.run();
+    }
+    private void heading(String title,String subtitle){TextView h=label(title,27,TEXT);h.setPadding(0,0,0,dp(12));content.addView(h);if(subtitle.isEmpty())return;TextView sub=label(subtitle,14,MUTED);sub.setPadding(0,dp(8),0,dp(20));content.addView(sub);}
+    private void note(String text){if(text.isEmpty())return;TextView view=label(text,14,MUTED);view.setPadding(0,dp(8),0,dp(12));content.addView(view);}
     private void api(String method,String path,JSONObject body,int timeout,Reply reply){
         if(!ready){feedback.setText("Your local engine is starting.");return;}
-        CoreRuntime.IO.execute(()->{try{JSONObject value=CoreRuntime.request(method,path,body,timeout);main.post(()->{if(!isDestroyed())reply.accept(value);});}catch(Exception error){main.post(()->{if(!isDestroyed())feedback.setText(error.getMessage()==null?"The request could not finish. Try again.":error.getMessage());});}});
+        feedback.setText("Working…");
+        CoreRuntime.IO.execute(()->{try{JSONObject value=CoreRuntime.request(method,path,body,timeout);main.post(()->{if(!isDestroyed()){feedback.setText("");feedback.setOnClickListener(null);reply.accept(value);}});}catch(Exception error){main.post(()->{if(!isDestroyed())showError(error.getMessage());});}});
     }
     private JSONObject object(String key,Object value){JSONObject obj=new JSONObject();try{obj.put(key,value);}catch(JSONException impossible){throw new IllegalStateException(impossible);}return obj;}
     private void showPage(int target){
@@ -69,21 +87,21 @@ public final class MainActivity extends Activity {
         switch(page){case 0:home();break;case 1:locationPage();break;case 2:appRules();break;case 3:accounts();break;case 4:settings();break;default:help();}
     }
     private void home(){
-        heading("Your VPN connection.","Choose a server and connect when you need it.");
-        statusText=label("Ready when you are",28,GOLD);statusText.setGravity(Gravity.CENTER);statusText.setPadding(0,dp(34),0,dp(16));content.addView(statusText);
-        detailText=label("Add your Mozilla account, choose a location and connect.",14,MUTED);detailText.setGravity(Gravity.CENTER);content.addView(detailText);
+        heading("VPN","");
+        statusText=label("Ready to connect",28,GOLD);statusText.setGravity(Gravity.CENTER);statusText.setPadding(0,dp(34),0,dp(16));content.addView(statusText);
+        detailText=label("Add your account to connect.",14,MUTED);detailText.setGravity(Gravity.CENTER);content.addView(detailText);
         power=button("Connect",this::toggleConnection);power.setTextColor(BG);power.setBackground(background(GOLD));content.addView(power);
         server=button("Server · Automatic",()->showPage(1));content.addView(server);
         speedText=label("↓ 0 B/s      ↑ 0 B/s",16,TEXT);speedText.setGravity(Gravity.CENTER);speedText.setPadding(0,dp(24),0,dp(20));content.addView(speedText);
-        note("No personal VPS required. Mozilla account eligibility and normal service quota apply.");updateHome();
+        note("");updateHome();
     }
     private void toggleConnection(){
-        if(TunnelService.lifecycle.canCancel()){startService(new Intent(this,TunnelService.class).setAction(TunnelService.STOP));return;}
+        if(!ready){feedback.setText("Your local engine is starting.");return;}
+        if(checkingAccount){checkingAccount=false;connectAttempt++;updateHome();feedback.setText("Connection cancelled.");return;}
+        if(TunnelService.lifecycle.canCancel()){startService(new Intent(this,TunnelService.class).setAction(TunnelService.STOP));statusText.setText("Disconnecting…");power.setText("Disconnecting…");main.postDelayed(this::poll,100);return;}
         if(TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING){feedback.setText("Finishing the previous connection. Try again in a moment.");return;}
-        api("GET","/api/accounts",null,5000,reply->{
-            JSONArray rows=reply.optJSONArray("accounts");if(rows==null||rows.length()==0){showPage(3);feedback.setText("Add your Mozilla account to get started.");return;}
-            explainConnection();
-        });
+        checkingAccount=true;final int attempt=++connectAttempt;updateHome();feedback.setText("Checking your account…");
+        CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("GET","/api/accounts",null,5000);main.post(()->{if(isDestroyed()||attempt!=connectAttempt)return;checkingAccount=false;updateHome();JSONArray rows=reply.optJSONArray("accounts");if(rows==null||rows.length()==0){showPage(3);feedback.setText("Add your Mozilla account to get started.");return;}feedback.setText("");explainConnection();});}catch(Exception error){main.post(()->{if(isDestroyed()||attempt!=connectAttempt)return;checkingAccount=false;updateHome();showError(error.getMessage());});}});
     }
     private void explainConnection(){
         if(getPreferences(MODE_PRIVATE).getInt("vpn_disclosure",0)==1){requestVpnPermission();return;}
@@ -97,13 +115,13 @@ public final class MainActivity extends Activity {
     private void openDocument(String name){startActivity(new Intent(this,InformationActivity.class).putExtra("document",name));}
     private void startTunnel(){
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},86);
-        Intent intent=new Intent(this,TunnelService.class);startForegroundService(intent);feedback.setText("Starting the VPN connection…");
+        Intent intent=new Intent(this,TunnelService.class);startForegroundService(intent);feedback.setText("Starting the VPN connection…");if(statusText!=null){statusText.setText("Connecting…");power.setText("Cancel connection");}main.postDelayed(this::poll,100);
     }
     @Override protected void onActivityResult(int request,int result,Intent value){super.onActivityResult(request,result,value);if(BuildConfig.DEBUG&&request==185&&result==RESULT_OK)startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));if(request==85){if(result==RESULT_OK)startTunnel();else feedback.setText("VPN permission was not granted. Your connection is unchanged.");}}
     private final Runnable pollAgain=this::poll;
     private void poll(){
         if(!visible||!ready||polling)return;polling=true;
-        CoreRuntime.IO.execute(()->{try{JSONObject value=CoreRuntime.request("GET","/api/status",null,4000);main.post(()->{if(!isDestroyed()){status=value;updateHome();warmConnection();}});}catch(Exception ignored){main.post(()->{if(!isDestroyed()){status=new JSONObject();updateHome();feedback.setText("Connection status is unavailable. Check the VPN notification or try again.");}});}finally{main.post(()->{polling=false;if(visible&&!isDestroyed())main.postDelayed(pollAgain,2000);});}});
+        CoreRuntime.IO.execute(()->{try{JSONObject value=CoreRuntime.request("GET","/api/status",null,4000);main.post(()->{if(!isDestroyed()){status=value;updateHome();warmConnection();}});}catch(Exception ignored){main.post(()->{if(!isDestroyed()){status=new JSONObject();updateHome();feedback.setText("Connection status is unavailable. Check the VPN notification or try again.");}});}finally{main.post(()->{polling=false;if(visible&&!isDestroyed()){main.removeCallbacks(pollAgain);main.postDelayed(pollAgain,checkingAccount||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STARTING||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING?350:1000);}});}});
     }
     private boolean verified(){JSONObject state=status.optJSONObject("state"),test=status.optJSONObject("last_test");return ConnectionTruth.verified(TunnelService.active,state==null?"off":state.optString("phase"),test!=null&&test.optBoolean("ok"),test==null?"":test.optString("at"),state==null?"":state.optString("since"),status.optString("network_changed_at"));}
     private void warmConnection(){if(!TunnelService.active||verified()||warming||SystemClock.elapsedRealtime()<nextWarmup)return;warming=true;nextWarmup=SystemClock.elapsedRealtime()+30000;CoreRuntime.IO.execute(()->{try{CoreRuntime.request("POST","/api/test",new JSONObject(),20000);}catch(Exception ignored){}finally{main.post(()->warming=false);}});}
@@ -115,9 +133,11 @@ public final class MainActivity extends Activity {
         String selected=status.optString("selection_name");if(server!=null)server.setText("Server · "+(selected.isEmpty()?"Automatic":selected));
         String problem=connectionProblem(status);
         VpnLifecycle.Phase transition=TunnelService.lifecycle.phase();
-        statusText.setText(verified?"Connected":!problem.isEmpty()?"Needs attention":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":TunnelService.active||transition==VpnLifecycle.Phase.STARTING?"Connecting…":"Disconnected");
-        detailText.setText(verified?"Your connection is ready.":!TunnelService.error.isEmpty()?TunnelService.error:!problem.isEmpty()?problem:"Choose a server. Connect whenever you're ready.");
-        power.setText(transition==VpnLifecycle.Phase.STARTING?"Cancel connection":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":TunnelService.active?"Disconnect":"Connect");
+        statusText.setText(checkingAccount?"Checking your account…":verified?"Connected":!problem.isEmpty()?"Needs attention":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":TunnelService.active||transition==VpnLifecycle.Phase.STARTING?"Connecting…":"Disconnected");
+        String detail=!TunnelService.error.isEmpty()?TunnelService.error:problem;
+        detailText.setText(verified?"VPN is on.":!detail.isEmpty()?"Connection failed · Tap for details":"Choose a server, then connect.");
+        detailText.setOnClickListener(detail.isEmpty()?null:v->showError(detail));
+        power.setText(checkingAccount||transition==VpnLifecycle.Phase.STARTING?"Cancel connection":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":TunnelService.active?"Disconnect":"Connect");
         power.setEnabled(transition!=VpnLifecycle.Phase.STOPPING);
         try{String[] rate=Mobile.speed().split(",");speedText.setText("↓ "+bytes(Double.parseDouble(rate[0]))+"/s      ↑ "+bytes(Double.parseDouble(rate[1]))+"/s");}catch(Exception ignored){}
     }
@@ -131,23 +151,24 @@ public final class MainActivity extends Activity {
         return "";
     }
     private void locationPage(){
-        heading("Somewhere that suits you.","Measure response time, then choose your location.");
+        heading("Servers","");
         EditText search=new EditText(this);search.setSingleLine(true);search.setHint("Search country or code");search.setTextColor(TEXT);search.setHintTextColor(MUTED);content.addView(search);
-        Button measure=button(pinging?"Measuring…":"Measure latency",()->{
-            if(pinging)return;pinging=true;feedback.setText("Measuring locations. You can still disconnect from Home.");
-            CoreRuntime.IO.execute(()->{try{CoreRuntime.request("POST","/api/locations/ping",object("codes",new JSONArray()),60000);}catch(Exception error){main.post(()->feedback.setText("Latency measurement could not finish. You can retry."));}finally{main.post(()->{pinging=false;if(page==1)showPage(1);});}});
+        Button measure=button(pinging?"Testing…":"Test ping",()->{
+            if(pinging)return;pinging=true;feedback.setText("Testing ping…");
+            CoreRuntime.IO.execute(()->{try{CoreRuntime.request("POST","/api/locations/ping",object("codes",new JSONArray()),60000);}catch(Exception error){main.post(()->feedback.setText("Ping test failed. Try again."));}finally{main.post(()->{pinging=false;if(page==1)showPage(1);});}});
         });measure.setEnabled(!pinging);content.addView(measure);
         LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);content.addView(list);
-        Runnable render=()->{list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.ROOT);List<JSONObject> values=new ArrayList<>();for(int i=0;i<locations.length();i++)values.add(locations.optJSONObject(i));values.sort((a,b)->{int x=a.optInt("ping_ms",0),y=b.optInt("ping_ms",0);return Integer.compare(x>0?x:Integer.MAX_VALUE,y>0?y:Integer.MAX_VALUE);});
+        Runnable render=()->{list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.ROOT);List<JSONObject> values=new ArrayList<>();for(int i=0;i<locations.length();i++){JSONObject row=locations.optJSONObject(i);if(row!=null&&!LocationOrder.pinned(row.optString("code")))values.add(row);}values.sort((a,b)->LocationOrder.compare(a.optString("code"),a.optString("name"),a.optInt("ping_ms",0),b.optString("code"),b.optString("name"),b.optInt("ping_ms",0)));
             for(JSONObject row:values){String code=row.optString("code"),name=row.optString("name",code);if(!(name+" "+code).toLowerCase(Locale.ROOT).contains(q))continue;int ping=row.optInt("ping_ms",0);list.addView(button(name+(ping>0?"  ·  "+ping+" ms":""),()->api("POST","/api/location",object("country",code),10000,reply->{feedback.setText("Location selected: "+name);showPage(0);})));}
             if(list.getChildCount()==0){TextView empty=label("No matching locations yet.",14,MUTED);list.addView(empty);}
         };
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){render.run();}public void afterTextChanged(Editable value){}});
-        content.addView(button("Recommended location",()->api("POST","/api/location",object("country",""),10000,reply->{showPage(0);})),2);
+        content.addView(button("Recommended",()->api("POST","/api/location",object("country",""),10000,reply->{showPage(0);})),1);
+        content.addView(button("Fastest",()->api("POST","/api/location",object("country","fastest"),60000,reply->{showPage(0);})),2);
         api("GET","/api/locations",null,15000,reply->{JSONArray rows=reply.optJSONArray("locations");locations=rows==null?new JSONArray():rows;if(page==1)render.run();});render.run();
     }
     private void accounts(){
-        heading("Your own accounts.","Use your Mozilla password, not your Google password.");
+        heading("Accounts","Sign in with Mozilla.");
         content.addView(button("Add an account",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();}));
         boolean hidden=getPreferences(MODE_PRIVATE).getBoolean("hide_email",true);
         content.addView(button(hidden?"Show email addresses":"Hide email addresses",()->{getPreferences(MODE_PRIVATE).edit().putBoolean("hide_email",!hidden).apply();showPage(3);}));
@@ -163,9 +184,9 @@ public final class MainActivity extends Activity {
         });
     }
     private void appRules(){
-        heading("Your apps, your choice.","Selected applications connect directly, without the VPN. Apply choices before connecting.");
+        heading("App rules","Selected apps bypass VPN. Reconnect to apply.");
         Set<String> selected=new HashSet<>(getSharedPreferences("interface",MODE_PRIVATE).getStringSet("direct_apps",Collections.emptySet()));
-        content.addView(button("Save choices",()->{getSharedPreferences("interface",MODE_PRIVATE).edit().putStringSet("direct_apps",selected).apply();feedback.setText(TunnelService.active?"Saved. Disconnect and reconnect to apply these choices.":"App choices saved.");}));
+        content.addView(button("Save",()->{getSharedPreferences("interface",MODE_PRIVATE).edit().putStringSet("direct_apps",selected).apply();feedback.setText(TunnelService.active?"Saved. Reconnect to apply.":"Saved.");}));
         LinearLayout apps=new LinearLayout(this);apps.setOrientation(LinearLayout.VERTICAL);content.addView(apps);
         CoreRuntime.IO.execute(()->{
             Intent launcher=new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
@@ -174,19 +195,16 @@ public final class MainActivity extends Activity {
         });
     }
     private void settings(){
-        heading("Make it yours.","III85III VPN "+BuildConfig.VERSION_NAME);
+        heading("Settings","III85III VPN "+BuildConfig.VERSION_NAME);
         content.addView(button("Mozilla accounts",()->showPage(3)));
-        content.addView(button("Split tunneling · direct apps",()->showPage(2)));
-        content.addView(button("Connection help",()->showPage(5)));
-        content.addView(button("Privacy and connection information",()->openDocument("privacy")));
-        content.addView(button("Open-source licenses",()->openDocument("licenses")));
+        content.addView(button("App rules",()->showPage(2)));
+        content.addView(button("Help",()->showPage(5)));
+        content.addView(button("Privacy",()->openDocument("privacy")));
+        content.addView(button("Licenses",()->openDocument("licenses")));
         content.addView(button("App updates",()->startActivity(new Intent(this,UpdateActivity.class))));
-        note("Selected excluded apps connect directly. Your choices apply when you reconnect.");
-        note("Account sessions stay in this app's private storage. Screenshots are blocked in the distributed app and account backups are disabled.");
-        note("Disconnect from the app, its notification or Android VPN settings. Manual disconnect is respected; the app does not automatically reconnect afterwards.");
-        note("Not a kill switch. Traffic can go direct after disconnect. Mozilla eligibility, regions and quotas apply.");
+        note("Account saved on this device.");
     }
-    private void help(){heading("A little connection help.","Check your account, network and selected location.");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Measure server latency",()->showPage(1)));note("Connection problems: check that the same account can sign in to Mozilla in a browser. Account-specific errors or service challenges are not guaranteed to be resolved by this app.");note("Telegram-bot-only routing and arbitrary UDP are not provided. App rules are exclusions, not a promise that only selected apps use the VPN.");note("This Android build needs real-device login, tunnel and network-handover testing before store publication.");}
+    private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 
     private final class SignInFlow {
         boolean closed,pending;String session="",promptStamp="",answeredStamp="";AlertDialog dialog;EditText password;
@@ -198,7 +216,7 @@ public final class MainActivity extends Activity {
             dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Welcome to III85III").setMessage("Sign in with your own Mozilla account.").setView(fields).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Sign in",null).create();dialog.setOnCancelListener(d->cancel());dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
                 if(pending||closed)return;if(email.getText().toString().trim().isEmpty()||password.length()==0){feedback.setText("Enter your Mozilla email and password.");return;}
                 JSONObject body=object("email",email.getText().toString().trim());try{body.put("password",password.getText().toString());}catch(JSONException ignored){}password.getText().clear();pending=true;dialog.getButton(-1).setEnabled(false);
-                CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("POST","/api/signin",body,60000);String id=reply.optString("id");main.post(()->{pending=false;session=id;if(closed){cancelSession(id);return;}dialog.dismiss();verification();apply(reply);});}catch(Exception error){main.post(()->{pending=false;if(!closed){feedback.setText(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}});
+                CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("POST","/api/signin",body,60000);String id=reply.optString("id");main.post(()->{pending=false;session=id;if(closed){cancelSession(id);return;}dialog.dismiss();verification();apply(reply);});}catch(Exception error){main.post(()->{pending=false;if(!closed){showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}});
             }));dialog.show();
         }
         void verification(){dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Checking your sign-in").setMessage("Waiting for Mozilla…").setNegativeButton("Cancel",(d,w)->cancel()).create();dialog.setOnCancelListener(d->cancel());dialog.show();}
@@ -227,7 +245,7 @@ public final class MainActivity extends Activity {
                             try{reply=CoreRuntime.request("POST","/api/signin/"+session,object("value",value),30000);}
                             catch(CoreRuntime.ApiFailure conflict){if(conflict.status!=409)throw conflict;reply=CoreRuntime.request("GET","/api/signin/"+session,null,5000);}
                             JSONObject current=reply;main.post(()->{pending=false;if(!closed)apply(current);});
-                        }catch(Exception error){main.post(()->{pending=false;if(!closed){answeredStamp="";feedback.setText(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}
+                        }catch(Exception error){main.post(()->{pending=false;if(!closed){answeredStamp="";showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}
                     });
                 }));dialog.show();
             }else{dialog.setMessage(state.optString("message","Waiting for Mozilla…"));main.removeCallbacks(pollFlow);main.postDelayed(pollFlow,1500);}

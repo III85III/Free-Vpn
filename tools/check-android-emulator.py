@@ -122,7 +122,7 @@ try:
     (output/'after-cancel.txt').write_bytes(adb('shell','dumpsys','activity','top'))
     tap('Settings')
     screenshot('settings')
-    tap('Privacy and connection information')
+    tap('Privacy')
     time.sleep(.7)
     if not any('Privacy' in node.get('text','') for node in hierarchy().iter('node')):
         raise RuntimeError('Privacy document was not visible')
@@ -172,7 +172,7 @@ try:
         if not confirmed:raise RuntimeError('Android did not present user confirmation for the in-app update')
         for attempt in range(90):
             details=adb('shell','dumpsys','package',package).decode(errors='replace')
-            if 'versionCode=23002 ' in details:break
+            if 'versionCode=23003 ' in details:break
             time.sleep(1)
         else:raise RuntimeError('The in-app PackageInstaller update did not complete')
         (output/'in-app-update.txt').write_text('PASS: APK staged in private cache, same-package/signature verification, PackageInstaller session, Android user confirmation, higher-version installation. No production signing key in CI.\n')

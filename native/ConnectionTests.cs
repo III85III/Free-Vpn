@@ -15,10 +15,12 @@ namespace III85III.Vpn {
         [STAThread]static int Main(){try{Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);Run();return 0;}catch(Exception error){Console.Error.WriteLine(error);return 1;}}
         static void Run(){
             var listener=new TcpListener(IPAddress.Loopback,0);listener.Start();int port=((IPEndPoint)listener.LocalEndpoint).Port;
+            var release=new ManualResetEventSlim(false);
             string[] expected={"GET /api/accounts ","POST /api/system-proxy ","POST /api/power ","GET /api/status "};
             var worker=Task.Run(async delegate{
                 for(int index=0;index<expected.Length;index++)using(var socket=await listener.AcceptTcpClientAsync())using(var stream=socket.GetStream())using(var reader=new StreamReader(stream,Encoding.UTF8,false,1024,true)){
                     string first=await reader.ReadLineAsync();if(!first.StartsWith(expected[index]))throw new Exception("Saved-account connect did not reach the expected API step");int size=0;string header;
+                    if(index==0 && !release.Wait(5000))throw new Exception("Immediate-feedback fixture was not released");
                     while(!String.IsNullOrEmpty(header=await reader.ReadLineAsync()))if(header.StartsWith("Content-Length:",StringComparison.OrdinalIgnoreCase))size=Int32.Parse(header.Substring(15).Trim());if(size>4096)throw new Exception("Fixture body too large");char[] body=new char[size];int read=0;while(read<size){int count=await reader.ReadAsync(body,read,size-read);if(count==0)break;read+=count;}
                     string content=new string(body);if(index==1&&Json.Str(Json.Decode(content),"mode")!="clear")throw new Exception("Unexpected mode");if(index==2&&!Json.Bool(Json.Decode(content),"on"))throw new Exception("Connect was not requested");
                     string response=index==0?"{\"accounts\":[{\"id\":\"fixture\",\"enabled\":true,\"status\":\"ready\"}]}":index==3?"{\"state\":{\"phase\":\"off\"},\"accounts\":{\"total\":1}}":"{}";
@@ -27,9 +29,13 @@ namespace III85III.Vpn {
             });
             try{using(var engine=new Engine("unused","unused","http://127.0.0.1:"+port,"synthetic-token"))using(var form=new MainForm(engine,true)){
                 form.Show();Set(form,"ready",true);Set(form,"pendingModeIndex",2);Set(form,"lastStatus",Json.Decode("{\"state\":{\"phase\":\"off\"},\"accounts\":{\"total\":1}}"));
-                var connect=(Task)form.GetType().GetMethod("ConnectFromHome",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(form,null);Pump(()=>connect.IsCompleted);connect.GetAwaiter().GetResult();Pump(()=>worker.IsCompleted);worker.GetAwaiter().GetResult();
+                var connect=(Task)form.GetType().GetMethod("ConnectFromHome",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(form,null);
+                var dial=(LuxuryDial)form.GetType().GetField("dial",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(form);
+                if(connect.IsCompleted || dial.State!=DialState.Connecting)throw new Exception("Connect must show immediate feedback before a delayed API response");
+                Console.WriteLine("PASS connect feedback appears before the local API responds");release.Set();
+                Pump(()=>connect.IsCompleted);connect.GetAwaiter().GetResult();Pump(()=>worker.IsCompleted);worker.GetAwaiter().GetResult();
                 Console.WriteLine("PASS saved account without active_account reaches power-on through the real home-button handler");
-            }}finally{listener.Stop();}
+            }}finally{release.Set();listener.Stop();release.Dispose();}
         }
     }
 }

@@ -9,7 +9,7 @@ using System.Windows.Forms;
 [assembly:AssemblyTitle("III85III VPN Setup")]
 [assembly:AssemblyCompany("III85III")]
 [assembly:AssemblyProduct("III85III VPN")]
-[assembly:AssemblyVersion("2.2.1.0")]
+[assembly:AssemblyVersion("2.2.2.0")]
 internal static class Installer {
     [STAThread]static int Main(){
         Application.EnableVisualStyles();
@@ -22,7 +22,7 @@ internal static class Installer {
         try{
             string root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","III85III VPN");
             using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("payload"))InstallPackage.Install(stream,root,delegate(string stage){
-                var security=new DirectorySecurity();var sid=WindowsIdentity.GetCurrent().User;security.SetAccessRuleProtection(true,false);security.AddAccessRule(new FileSystemAccessRule(sid,FileSystemRights.FullControl,InheritanceFlags.ContainerInherit|InheritanceFlags.ObjectInherit,PropagationFlags.None,AccessControlType.Allow));new DirectoryInfo(stage).SetAccessControl(security);
+                InstallPackage.PrepareDirectory(stage);
             });
             string exe=Path.Combine(root,"III85III VPN.exe");if(!File.Exists(exe))throw new IOException("Incomplete package.");
             CreateShortcut(exe,root);

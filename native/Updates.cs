@@ -24,6 +24,7 @@ namespace III85III.Vpn {
         }
     }
     internal static class AppUpdates {
+        static void Notice(Form owner,string title,string message){var window=owner as MainForm;if(window!=null)window.ShowNotice(title,message,"",false);}
         const string Feed="https://raw.githubusercontent.com/III85III/Free-Vpn/main/docs/updates.json";
         static HttpClient Client(){var c=new HttpClient(new HttpClientHandler{UseProxy=true});c.Timeout=TimeSpan.FromMinutes(5);c.DefaultRequestHeaders.UserAgent.ParseAdd("III85III-VPN/"+Assembly.GetExecutingAssembly().GetName().Version);return c;}
         internal static async Task Check(Form owner,Action<string> report,Action<string> install,bool manual){
@@ -37,11 +38,11 @@ namespace III85III.Vpn {
                     }
                 }
                 if(owner.IsDisposed||(!manual&&Form.ActiveForm!=owner))return;
-                if(new Version(update.Version)<=Assembly.GetExecutingAssembly().GetName().Version){if(manual)MessageBox.Show(owner,"You're using the latest Windows version.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+                if(new Version(update.Version)<=Assembly.GetExecutingAssembly().GetName().Version){if(manual)Notice(owner,"You're up to date","You're using the latest Windows version.");return;}
                 if(MessageBox.Show(owner,"III85III VPN "+update.Version+" is available.\n\nDownload and open the installer? The VPN will disconnect during installation. Your local accounts will be kept.","Update available",MessageBoxButtons.YesNo,MessageBoxIcon.Information)!=DialogResult.Yes)return;
                 string directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN","updates");
                 long required=update.Size*3+50L*1024*1024;
-                if(new DriveInfo(Path.GetPathRoot(directory)).AvailableFreeSpace<required){MessageBox.Show(owner,"There isn't enough free disk space for this update. Free at least "+Math.Ceiling(required/(1024d*1024))+" MB on the Windows drive and try again. Nothing was installed.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);return;}
+                if(new DriveInfo(Path.GetPathRoot(directory)).AvailableFreeSpace<required){Notice(owner,"A little more space is needed","Free at least "+Math.Ceiling(required/(1024d*1024))+" MB on the Windows drive and try again. Nothing was installed.");return;}
                 Engine.PrivateDirectory(directory);
                 string temporary=Path.Combine(directory,Guid.NewGuid().ToString("N")+".part"),target=Path.Combine(directory,"III85III-VPN-Setup.exe");
                 try{
@@ -59,7 +60,7 @@ namespace III85III.Vpn {
                     if(File.Exists(target))File.Delete(target);File.Move(temporary,target);
                     if(!owner.IsDisposed)install(target);
                 }finally{if(File.Exists(temporary))File.Delete(temporary);}
-            }catch(Exception){if(!owner.IsDisposed&&manual){MessageBox.Show(owner,"The update could not be checked or downloaded. Check your connection and try again. Nothing was installed.","III85III VPN",MessageBoxButtons.OK,MessageBoxIcon.Information);report("Update unavailable");}}
+            }catch(Exception){if(!owner.IsDisposed&&manual){Notice(owner,"Update unavailable","Check your connection and try again. Nothing was installed.");report("Update unavailable");}}
         }
     }
 }

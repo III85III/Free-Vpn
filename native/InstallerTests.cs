@@ -19,6 +19,14 @@ internal static class InstallerTests {
         string root=Path.Combine(workspace,"app");
         try{
             Directory.CreateDirectory(root);
+            InstallPackage.PrepareDirectory(root);
+            string system="S-1-5-18";bool systemRead=false,systemWrite=false;
+            foreach(System.Security.AccessControl.FileSystemAccessRule rule in new DirectoryInfo(root).GetAccessControl().GetAccessRules(true,true,typeof(System.Security.Principal.SecurityIdentifier))){
+                if(rule.IdentityReference.Value!=system || rule.AccessControlType!=System.Security.AccessControl.AccessControlType.Allow)continue;
+                systemRead|=(rule.FileSystemRights&System.Security.AccessControl.FileSystemRights.ReadAndExecute)==System.Security.AccessControl.FileSystemRights.ReadAndExecute;
+                systemWrite|=(rule.FileSystemRights&System.Security.AccessControl.FileSystemRights.WriteData)!=0;
+            }
+            Check(systemRead&&!systemWrite,"SYSTEM can read and execute installed components without write access");
             File.WriteAllText(Path.Combine(root,"III85III VPN.exe"),"old");
             File.WriteAllText(Path.Combine(root,"old.dll"),"old");
             File.WriteAllText(Path.Combine(workspace,"accounts.fixture"),"untouched");

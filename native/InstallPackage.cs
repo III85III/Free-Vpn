@@ -4,6 +4,13 @@ using System.IO;
 using System.IO.Compression;
 
 internal static class InstallPackage {
+    internal static void PrepareDirectory(string path){
+        var security=new System.Security.AccessControl.DirectorySecurity();
+        security.SetAccessRuleProtection(true,false);
+        security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(System.Security.Principal.WindowsIdentity.GetCurrent().User,System.Security.AccessControl.FileSystemRights.FullControl,System.Security.AccessControl.InheritanceFlags.ContainerInherit|System.Security.AccessControl.InheritanceFlags.ObjectInherit,System.Security.AccessControl.PropagationFlags.None,System.Security.AccessControl.AccessControlType.Allow));
+        security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.LocalSystemSid,null),System.Security.AccessControl.FileSystemRights.ReadAndExecute,System.Security.AccessControl.InheritanceFlags.ContainerInherit|System.Security.AccessControl.InheritanceFlags.ObjectInherit,System.Security.AccessControl.PropagationFlags.None,System.Security.AccessControl.AccessControlType.Allow));
+        new DirectoryInfo(path).SetAccessControl(security);
+    }
     internal static void Install(Stream payload,string destination,Action<string> prepareDirectory){
         string root=Path.GetFullPath(destination).TrimEnd(Path.DirectorySeparatorChar);
         string parent=Path.GetDirectoryName(root);
