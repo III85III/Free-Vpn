@@ -26,6 +26,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: android-actions/setup-android@v3
       - name: Android native tools
         run: |
           yes | sdkmanager 'platforms;android-34' 'build-tools;34.0.0' 'ndk;27.2.12479018' >/dev/null || test -d "$ANDROID_HOME/ndk/27.2.12479018"
@@ -47,7 +48,9 @@ jobs:
           GOOS: android
           GOARCH: arm64
           CGO_ENABLED: '1'
-        run: python3 tools/mobile-licenses.py --module core/mobile --output mobile/android/app/src/main/assets/licenses
+        run: |
+          export CC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang"
+          python3 tools/mobile-licenses.py --module core/mobile --output mobile/android/app/src/main/assets/licenses
       - name: APK and lint
         run: |
           chmod +x mobile/android/gradlew
