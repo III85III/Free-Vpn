@@ -162,7 +162,7 @@ try:
     adb('shell','am','force-stop',package)
     if options.upgrade:
         # Only this disposable empty-account emulator: persist a synthetic required version.
-        mandatory=b'<?xml version="1.0" encoding="utf-8"?><map><long name="required_update" value="23004" /><boolean name="account_intro_seen" value="true" /></map>'
+        mandatory=b'<?xml version="1.0" encoding="utf-8"?><map><long name="required_update" value="23005" /><boolean name="account_intro_seen" value="true" /></map>'
         adb('shell',f'run-as {package} mkdir -p shared_prefs')
         gate_write=subprocess.run(['adb','shell',f'run-as {package} sh -c "cat > shared_prefs/interface.xml"'],input=mandatory,capture_output=True,timeout=20)
         if gate_write.returncode:raise RuntimeError('Could not stage the mandatory-update fixture')
@@ -202,10 +202,12 @@ try:
         if not confirmed:raise RuntimeError('Android did not present user confirmation for the in-app update')
         for attempt in range(90):
             details=adb('shell','dumpsys','package',package).decode(errors='replace')
-            if 'versionCode=23004 ' in details:break
+            if 'versionCode=23005 ' in details:break
             time.sleep(1)
         else:raise RuntimeError('The in-app PackageInstaller update did not complete')
-        (output/'in-app-update.txt').write_text('PASS: APK staged in private cache, same-package/signature verification, PackageInstaller session, Android user confirmation, higher-version installation. No production signing key in CI.\n')
+        validation=adb('exec-out','run-as',package,'cat','cache/update-validation.txt').decode()
+        if not validation.startswith('PASS: production partial-file promotion'):raise RuntimeError('The actual downloaded-file validation path was not tested')
+        (output/'in-app-update.txt').write_text(validation+'PASS: same-package/signature verification, PackageInstaller session, Android user confirmation, higher-version installation. No production signing key in CI.\n')
         launch()
         if adb('exec-out','run-as',package,'cat','files/update-probe.txt').strip()!=b'preserved':
             raise RuntimeError('In-place update lost app-private data')

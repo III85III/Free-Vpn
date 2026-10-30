@@ -34,7 +34,18 @@ public final class UpdateActivity extends Activity {
         android.graphics.drawable.GradientDrawable button=new android.graphics.drawable.GradientDrawable();button.setColor(0xffd9bd83);button.setCornerRadius(pad/2f);action.setBackground(button);action.setTextColor(0xff101319);action.setMinHeight((int)(54*getResources().getDisplayMetrics().density));progress.setProgressTintList(android.content.res.ColorStateList.valueOf(0xffd9bd83));
         TextView note=new TextView(this);note.setTextColor(0xff9fa7b4);note.setText("Updates come from the official III85III GitHub repository. Downloads are checked before Android asks you to install. Your local accounts stay on this device. The VPN disconnects while the app updates.");note.setPadding(0,pad,0,0);root.addView(note);setContentView(root);WindowLayout.apply(this,root);
         if(BuildConfig.DEBUG&&getIntent().getBooleanExtra("qa_update",false)){
-            action.setEnabled(false);status.setText("Preparing synthetic update test…");CoreRuntime.IO.execute(()->{try{File file=new File(getCacheDir(),"qa-upgrade.apk");PackageInfo candidate=getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(),0);if(candidate==null)throw new IOException("Missing test APK");Info info=new Info();info.code=Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode;info.version=candidate.versionName;info.size=file.length();info.hash=digest(file);verify(file,info);available=info;downloaded=file;runOnUiThread(()->{if(!isDestroyed()){status.setText("Synthetic update verified.");action.setText("Install update");action.setEnabled(true);install();}});}catch(Exception error){runOnUiThread(()->status.setText("Synthetic update rejected."));}});
+            action.setEnabled(false);status.setText("Preparing synthetic update test…");CoreRuntime.IO.execute(()->{try{
+                File file=new File(getCacheDir(),"qa-upgrade.apk");PackageInfo candidate=getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(),0);if(candidate==null)throw new IOException("Missing test APK");
+                Info info=new Info();info.code=Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode;info.version=candidate.versionName;info.size=file.length();info.hash=digest(file);
+                File partial=new File(getCacheDir(),"update.part");try(InputStream input=new FileInputStream(file);OutputStream output=new FileOutputStream(partial)){byte[] buffer=new byte[65536];int count;while((count=input.read(buffer))!=-1)output.write(buffer,0,count);}
+                String legacy;try{verify(partial,info);legacy="accepted";}catch(Exception rejected){legacy="rejected";}
+                String hash=info.hash;info.hash=String.join("",Collections.nCopies(64,"0"));expectRejected(partial,info,"HASH");info.hash=hash;
+                info.size++;expectRejected(partial,info,"SIZE");info.size--;
+                long code=info.code;info.code++;expectRejected(file,info,"VERSION");info.code=code;
+                available=info;downloaded=prepareUpdate(partial,info);
+                try(FileWriter report=new FileWriter(new File(getCacheDir(),"update-validation.txt"))){report.write("PASS: production partial-file promotion, checksum, size, package version and signing verification. Legacy .part parser: "+legacy+".\n");}
+                runOnUiThread(()->{if(!isDestroyed()){status.setText("Synthetic update verified.");action.setText("Install update");action.setEnabled(true);install();}});
+            }catch(Exception error){runOnUiThread(()->status.setText("Synthetic update rejected: "+downloadError(error)));}});
         }else check();
     }
     private void check(){if(busy)return;busy=true;action.setEnabled(false);status.setText("Checking for updates…");progress.setIndeterminate(true);
@@ -42,14 +53,17 @@ public final class UpdateActivity extends Activity {
     }
     private void finishWork(){busy=false;progress.setIndeterminate(false);action.setEnabled(true);}
     static HttpURLConnection open(String address)throws Exception{
+        return open(address,0);
+    }
+    static HttpURLConnection open(String address,long offset)throws Exception{
         URI uri=new URI(address);
         Proxy route=Proxy.NO_PROXY;
         try{if(mobile.Mobile.isOn()){String endpoint=mobile.Mobile.proxyAddress();URI local=new URI("http://"+endpoint);if("127.0.0.1".equals(local.getHost())&&local.getPort()>0)route=new Proxy(Proxy.Type.HTTP,new InetSocketAddress("127.0.0.1",local.getPort()));}}catch(Exception ignored){}
         for(int attempt=0;attempt<6;attempt++){
             if(!UpdatePolicy.trustedRedirect(uri))throw new IOException("Untrusted update host");
-            HttpURLConnection request=(HttpURLConnection)uri.toURL().openConnection(route);request.setInstanceFollowRedirects(false);request.setConnectTimeout(15000);request.setReadTimeout(30000);request.setRequestProperty("User-Agent","III85III-VPN/"+BuildConfig.VERSION_NAME);
+            HttpURLConnection request=(HttpURLConnection)uri.toURL().openConnection(route);request.setUseCaches(false);request.setInstanceFollowRedirects(false);request.setConnectTimeout(15000);request.setReadTimeout(30000);request.setRequestProperty("User-Agent","III85III-VPN/"+BuildConfig.VERSION_NAME);request.setRequestProperty("Accept-Encoding","identity");if(offset>0)request.setRequestProperty("Range","bytes="+offset+"-");
             int code=request.getResponseCode();if(code>=300&&code<400){String target=request.getHeaderField("Location");request.disconnect();if(target==null)throw new IOException("Missing update location");uri=uri.resolve(target);continue;}
-            if(code!=200){request.disconnect();throw new IOException("Update unavailable");}return request;
+            if(code!=200&&!(offset>0&&code==206)){request.disconnect();throw new IOException("Update unavailable");}return request;
         }throw new IOException("Too many update redirects");
     }
     static Info latest()throws Exception{
@@ -65,22 +79,45 @@ public final class UpdateActivity extends Activity {
     }
     private void download(){if(busy||available==null)return;long required=available.size*3+30L*1024*1024;if(getCacheDir().getUsableSpace()<required){status.setText("There isn't enough free space. Free at least "+(long)Math.ceil(required/(1024d*1024))+" MB on your device and retry. Nothing was installed.");return;}if(!downloading.compareAndSet(false,true)){status.setText("An update is already downloading. Check again in a moment.");available=null;action.setText("Check again");return;}busy=true;action.setEnabled(false);status.setText("Downloading update…");Info update=available;
         CoreRuntime.IO.execute(()->{File partial=new File(getCacheDir(),"update.part");try{
-            HttpURLConnection request=open(update.url);
-            try(InputStream stream=request.getInputStream();FileOutputStream output=new FileOutputStream(partial)){
-                long total=0;byte[] buffer=new byte[65536];int count;while((count=stream.read(buffer))!=-1){total+=count;if(total>update.size)throw new IOException("Update exceeds expected size");output.write(buffer,0,count);int percent=(int)(total*100/update.size);runOnUiThread(()->progress.setProgress(percent));}if(total!=update.size)throw new IOException("Incomplete update");output.getFD().sync();
-            }finally{request.disconnect();}
-            verify(partial,update);File ready=new File(getCacheDir(),"III85III-VPN.apk");if(ready.exists()&&!ready.delete())throw new IOException("Previous update is busy");if(!partial.renameTo(ready))throw new IOException("Cannot prepare update");downloaded=ready;
-            runOnUiThread(()->{if(!isDestroyed()){status.setText("Confirm installation in Android.");action.setText("Install update");finishWork();install();}});
-        }catch(Exception error){partial.delete();runOnUiThread(()->{if(!isDestroyed()){status.setText("The update could not be downloaded or verified. Nothing was installed. Please retry.");finishWork();}});}finally{downloading.set(false);}});
+            UpdateTransfer.download(partial,update.size,offset->open(update.url,offset),percent->runOnUiThread(()->progress.setProgress(percent)));
+            downloaded=prepareUpdate(partial,update);
+            runOnUiThread(()->{if(!isDestroyed()){progress.setProgress(100);status.setText("Confirm installation in Android.");action.setText("Install update");finishWork();install();}});
+        }catch(Exception error){partial.delete();final String message=downloadError(error);runOnUiThread(()->{if(!isDestroyed()){status.setText(message);finishWork();}});}finally{downloading.set(false);}});
+    }
+    private File prepareUpdate(File partial,Info update)throws Exception{
+        verifyBytes(partial,update);
+        // Android package parsers (including vendor implementations) expect an APK path.
+        File ready=new File(getCacheDir(),"III85III-VPN.apk");
+        if(ready.exists()&&!ready.delete())throw new UpdateFailure("STORAGE","Couldn't prepare the update. Close the app and retry.");
+        if(!partial.renameTo(ready))throw new UpdateFailure("STORAGE","Couldn't prepare the update. Close the app and retry.");
+        try{verify(ready,update);return ready;}catch(Exception error){ready.delete();throw error;}
+    }
+    private static final class UpdateFailure extends IOException {
+        final String code;
+        UpdateFailure(String code,String message){super(message);this.code=code;}
+    }
+    static String downloadError(Exception error){
+        if(error instanceof UpdateFailure)return error.getMessage()+" ["+((UpdateFailure)error).code+"] Nothing was installed.";
+        return "Download interrupted. Check your connection and retry. [NETWORK] Nothing was installed.";
+    }
+    private static void verifyBytes(File file,Info update)throws Exception{
+        if(file.length()!=update.size)throw new UpdateFailure("SIZE","The download is incomplete. Please retry.");
+        if(!digest(file).equalsIgnoreCase(update.hash))throw new UpdateFailure("HASH","The downloaded file doesn't match this update. Check for updates and retry.");
+    }
+    private void expectRejected(File file,Info update,String code)throws Exception{
+        try{verify(file,update);}catch(UpdateFailure error){if(code.equals(error.code))return;throw error;}
+        throw new IOException("Invalid update was accepted");
     }
     static String digest(File file)throws Exception{MessageDigest hash=MessageDigest.getInstance("SHA-256");try(InputStream input=new FileInputStream(file)){byte[] buffer=new byte[65536];int n;while((n=input.read(buffer))!=-1)hash.update(buffer,0,n);}StringBuilder result=new StringBuilder();for(byte value:hash.digest())result.append(String.format(Locale.ROOT,"%02x",value&255));return result.toString();}
     private void verify(File file,Info update)throws Exception{
-        if(file.length()!=update.size||!digest(file).equalsIgnoreCase(update.hash))throw new IOException("Update checksum mismatch");
+        verifyBytes(file,update);
         int flags=Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;
         PackageInfo candidate=getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(),flags),current=getPackageManager().getPackageInfo(getPackageName(),flags);
-        if(candidate==null||!getPackageName().equals(candidate.packageName)||(Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode)!=update.code||update.code<=BuildConfig.VERSION_CODE)throw new IOException("Unexpected package or version");
+        if(candidate==null)throw new UpdateFailure("PACKAGE","Android couldn't read the update package. Please retry.");
+        if(!getPackageName().equals(candidate.packageName)||(Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode)!=update.code||update.code<=BuildConfig.VERSION_CODE)throw new UpdateFailure("VERSION","This update isn't compatible with the installed app. Check for updates again.");
+        if(Build.VERSION.SDK_INT>=28&&(current.signingInfo==null||candidate.signingInfo==null))throw new UpdateFailure("SIGNATURE","Android couldn't verify the update signature. Nothing was changed.");
         android.content.pm.Signature[] expected=Build.VERSION.SDK_INT>=28?current.signingInfo.getApkContentsSigners():current.signatures,actual=Build.VERSION.SDK_INT>=28?candidate.signingInfo.getApkContentsSigners():candidate.signatures;
-        if(expected==null||actual==null||!new HashSet<>(Arrays.asList(expected)).equals(new HashSet<>(Arrays.asList(actual))))throw new IOException("Update signing identity changed");
+        if(expected==null||actual==null||!new HashSet<>(Arrays.asList(expected)).equals(new HashSet<>(Arrays.asList(actual))))throw new UpdateFailure("SIGNATURE","The update signature differs from this app. Keep your current installation and contact support.");
     }
     private void install(){
         if(busy||downloaded==null)return;
