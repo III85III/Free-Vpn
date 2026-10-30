@@ -2,17 +2,18 @@
 [🇬🇧 English](../../.github/README.md) · [🇮🇷 فارسی](README.fa.md) · [🇸🇦 العربية](README.ar.md) · [🇹🇷 Türkçe](README.tr.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇪🇸 Español](README.es.md) · [🇧🇷 Português](README.pt.md) · [🇷🇺 Русский](README.ru.md) · **🇨🇳 简体中文** · [🇯🇵 日本語](README.ja.md) · [🇮🇳 हिन्दी](README.hi.md)
 <!-- language-selector:end -->
 
-# III85III VPN
+# Free VPN
 
-III85III Windows 界面使用 III85III 的原版 Firefox VPN Client 引擎。界面和安装程序以 III85III 命名；引擎保持原样，并保留 GPL 许可证和作者信息。
+使用你的 Firefox/Mozilla 账户连接的免费 Windows 和 Android VPN 应用。
 
-请使用您自己的 Mozilla 账户及 Mozilla 密码。需要验证码时会打开独立窗口。无需个人 VPS；资格与配额由 Mozilla 决定。
+[Windows](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [Android](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk)
 
-在此引擎中，勾选的应用被排除在 VPN 之外并直连。本版本不提供仅让所选应用走 VPN 的模式。
+## 使用方法
 
-自动测试不保证所有账户均能登录；此前出现 HTTP 406 的用户实际连接仍待验证。
+1. 创建 Firefox/Mozilla 账户。
+2. 打开应用，输入该账户的邮箱地址和 Mozilla 密码。
+3. 选择服务器并连接。
 
-[⬇ Windows Setup (.exe)](https://github.com/III85III/Free-Vpn/releases)
+服务可用性和流量额度由 Mozilla 决定。
 
-[Guide](../OVERVIEW.md) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [GPL / Credits](../../licenses/NOTICE.txt)
-
+[Telegram](https://t.me/cabicy)

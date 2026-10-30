@@ -2,17 +2,18 @@
 [🇬🇧 English](../../.github/README.md) · [🇮🇷 فارسی](README.fa.md) · [🇸🇦 العربية](README.ar.md) · [🇹🇷 Türkçe](README.tr.md) · [🇩🇪 Deutsch](README.de.md) · [🇫🇷 Français](README.fr.md) · [🇪🇸 Español](README.es.md) · **🇧🇷 Português** · [🇷🇺 Русский](README.ru.md) · [🇨🇳 简体中文](README.zh.md) · [🇯🇵 日本語](README.ja.md) · [🇮🇳 हिन्दी](README.hi.md)
 <!-- language-selector:end -->
 
-# III85III VPN
+# Free VPN
 
-A interface Windows III85III usa o motor original Firefox VPN Client de III85III. A interface e o instalador levam o nome III85III; o motor permanece inalterado, com licença GPL e créditos.
+VPN gratuita para Windows e Android com a sua conta Firefox/Mozilla.
 
-Use sua própria conta e senha Mozilla. Uma janela separada abre quando um código é solicitado. Não é necessário VPS próprio; a Mozilla define elegibilidade e cotas.
+[Windows](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [Android](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk)
 
-Neste motor, aplicativos marcados são excluídos da VPN e se conectam diretamente. Esta versão não oferece VPN apenas para os aplicativos selecionados.
+## Como usar
 
-Os testes automatizados não garantem o acesso de todas as contas. A validação real do usuário antes afetado por HTTP 406 continua pendente.
+1. Crie uma conta Firefox/Mozilla.
+2. Abra a aplicação e introduza o e-mail e a palavra-passe Mozilla dessa conta.
+3. Escolha um servidor e ligue-se.
 
-[⬇ Windows Setup (.exe)](https://github.com/III85III/Free-Vpn/releases)
+Aplicam-se as condições de acesso e os limites de dados da Mozilla.
 
-[Guide](../OVERVIEW.md) · [Privacy](../PRIVACY.md) · [Validation](../VALIDATION.md) · [GPL / Credits](../../licenses/NOTICE.txt)
-
+[Telegram](https://t.me/cabicy)

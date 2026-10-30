@@ -1343,8 +1343,9 @@ namespace III85III.Vpn {
 
             p.Controls.Add(metricsPanel);
 
-            noticeLabel.Text = "Accounts stay on this device.";
-            noticeLabel.Visible=false;
+            noticeLabel.Text = "Telegram";
+            noticeLabel.Visible=true;noticeLabel.Cursor=Cursors.Hand;noticeLabel.ForeColor=Theme.Accent;noticeLabel.AccessibleName="Telegram support";
+            noticeLabel.Click+=delegate{try{Process.Start(new ProcessStartInfo("https://t.me/cabicy"){UseShellExecute=true});}catch{ShowNotice("Telegram","Open t.me/cabicy in your browser.","",false);}};
             noticeLabel.Font = Theme.Font(9f);
             noticeLabel.ForeColor = Theme.TextSubtle;
             noticeLabel.TextAlign = ContentAlignment.MiddleCenter;

@@ -41,7 +41,9 @@ public final class MainActivity extends Activity {
         if(!(BuildConfig.DEBUG&&getIntent().getBooleanExtra("qa_screenshots",false)))getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
         try{body=Typeface.createFromAsset(getAssets(),"fonts/Lato-Regular.ttf");}catch(Exception ignored){}
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);root.setPadding(dp(18),dp(12),dp(18),0);
-        TextView brand=label("III85III  /  VPN",21,GOLD);brand.setPadding(0,dp(10),0,dp(16));root.addView(brand);
+        TextView brand=label("III85III  /  VPN",21,GOLD);brand.setPadding(0,dp(10),0,dp(16));
+        LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
+        TextView contact=label("Telegram",13,GOLD);contact.setPadding(dp(12),dp(10),0,dp(16));contact.setContentDescription("Telegram support");contact.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});header.addView(contact);root.addView(header);
         nav=new LinearLayout(this);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(0,dp(24),0,dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         feedback=label("Starting your local engine…",13,MUTED);feedback.setPadding(0,dp(8),0,dp(10));root.addView(feedback);root.addView(nav);setContentView(root);
