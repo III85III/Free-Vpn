@@ -26,7 +26,7 @@ public final class MainActivity extends Activity {
     private boolean ready,visible,polling,pinging;
     private boolean warming;
     private boolean checkingAccount;
-    private boolean checkingAccountIntro;
+    private boolean checkingAccountIntro,accountIntroShowing;
     private int connectAttempt;
     private long nextWarmup;
     private final Runnable updateAgain=new Runnable(){public void run(){if(isDestroyed()||!visible)return;UpdateActivity.notifyAvailable(MainActivity.this);main.postDelayed(this,300000);}};
@@ -118,14 +118,15 @@ public final class MainActivity extends Activity {
     private void openDocument(String name){startActivity(new Intent(this,InformationActivity.class).putExtra("document",name));}
     private void showAccountIntro(){
         android.content.SharedPreferences prefs=getSharedPreferences("interface",MODE_PRIVATE);
-        if(checkingAccountIntro||prefs.getBoolean("account_intro_seen",false)||UpdateActivity.isRequired(this))return;
+        if(checkingAccountIntro||accountIntroShowing||prefs.getBoolean("account_intro_seen",false)||UpdateActivity.isRequired(this))return;
         checkingAccountIntro=true;
         CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("GET","/api/accounts",null,5000);JSONArray accounts=reply.optJSONArray("accounts");int count=accounts==null?-1:accounts.length();main.post(()->{
             checkingAccountIntro=false;if(isDestroyed()||!visible||!AccountSetup.shouldShow(prefs.getBoolean("account_intro_seen",false),count,UpdateActivity.isRequired(this)))return;
-            prefs.edit().putBoolean("account_intro_seen",true).apply();
-            new AlertDialog.Builder(this).setTitle("Your Firefox account").setMessage(AccountSetup.MESSAGE)
-                .setNeutralButton("Create account",(d,w)->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(AccountSetup.URL)));}catch(ActivityNotFoundException error){showError("Open accounts.firefox.com to create your account.");}})
-                .setPositiveButton("Sign in",(d,w)->{if(UpdateActivity.isRequired(this)){UpdateActivity.openRequired(this);return;}showPage(3);if(signIn==null||signIn.closed)signIn=new SignInFlow();}).show();
+            accountIntroShowing=true;
+            AlertDialog intro=new AlertDialog.Builder(this).setTitle("Your Firefox account").setMessage(AccountSetup.MESSAGE)
+                .setPositiveButton("Got it",(d,w)->prefs.edit().putBoolean("account_intro_seen",true).apply()).create();
+            intro.setOnCancelListener(d->{if(!UpdateActivity.isRequired(this))prefs.edit().putBoolean("account_intro_seen",true).apply();});
+            intro.setOnDismissListener(d->accountIntroShowing=false);intro.show();
         });}catch(Exception ignored){main.post(()->checkingAccountIntro=false);}});
     }
     private void startTunnel(){

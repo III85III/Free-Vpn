@@ -896,21 +896,18 @@ namespace III85III.Vpn {
 
 
     internal static class AccountSetup {
-        internal const string SignupUrl="https://accounts.firefox.com/";
-        internal const string Message="Create a Firefox/Mozilla account before connecting.\nThen sign in here with its email and Mozilla password.";
+        internal const string Message="To use VPN, first create a Firefox/Mozilla account.\nThen enter its email and Mozilla password in the app.";
         internal static bool ShouldShow(bool seen,bool hasAccounts,bool updateRequired){return !seen&&!hasAccounts&&!updateRequired;}
     }
     internal sealed class AccountIntroForm : Form {
         internal AccountIntroForm(){
-            Text="III85III VPN";BackColor=Theme.Bg;ForeColor=Theme.TextPrimary;FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterParent;ClientSize=new Size(520,280);AutoScaleMode=AutoScaleMode.Dpi;
+            Text="III85III VPN";BackColor=Theme.Bg;ForeColor=Theme.TextPrimary;FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterParent;ClientSize=new Size(520,252);AutoScaleMode=AutoScaleMode.Dpi;
             Paint+=delegate(object sender,PaintEventArgs e){using(var pen=new Pen(Theme.Border))e.Graphics.DrawRectangle(pen,0,0,ClientSize.Width-1,ClientSize.Height-1);};
             var heading=new Label{Text="Your Firefox account",Font=Theme.Display(22f),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(28,24,464,44)};
             var message=new Label{Text=AccountSetup.Message,Font=Theme.Font(12f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(28,84,464,88)};
-            var create=new LuxuryButton{Text="Create account",Bounds=new Rectangle(28,198,200,44)};
-            var signin=new LuxuryButton{Text="Sign in",Variant=ButtonVariant.Primary,Bounds=new Rectangle(244,198,248,44),DialogResult=DialogResult.Yes};
+            var acknowledge=new LuxuryButton{Text="Got it",Variant=ButtonVariant.Primary,Bounds=new Rectangle(28,182,464,44),DialogResult=DialogResult.OK};
             var close=new LuxuryButton{Text="×",Variant=ButtonVariant.Ghost,Bounds=new Rectangle(478,8,32,30),DialogResult=DialogResult.Cancel,AccessibleName="Close account setup"};
-            create.Click+=delegate{try{Process.Start(new ProcessStartInfo(AccountSetup.SignupUrl){UseShellExecute=true});}catch{message.Text="Open accounts.firefox.com to create your account.\nThen return here and choose Sign in.";}};
-            Controls.AddRange(new Control[]{heading,message,create,signin,close});AcceptButton=signin;CancelButton=close;
+            Controls.AddRange(new Control[]{heading,message,acknowledge,close});AcceptButton=acknowledge;CancelButton=close;
         }
         protected override bool ProcessCmdKey(ref Message msg,Keys keyData){if(keyData==Keys.Escape){DialogResult=DialogResult.Cancel;Close();return true;}return base.ProcessCmdKey(ref msg,keyData);}
     }
@@ -1964,10 +1961,8 @@ namespace III85III.Vpn {
         }
         private void ShowAccountIntro(){
             if(!AccountSetup.ShouldShow(accountIntroSeen,accountsList.Items.Count>0,requiredUpdate))return;
-            accountIntroSeen=true;SavePreferences();
-            using(var dialog=new AccountIntroForm()){
-                if(dialog.ShowDialog(this)==DialogResult.Yes && !requiredUpdate){SwitchPage(3);loginBtn.PerformClick();}
-            }
+            using(var dialog=new AccountIntroForm())dialog.ShowDialog(this);
+            if(!requiredUpdate){accountIntroSeen=true;SavePreferences();}
         }
 
         private async Task TogglePower() {
