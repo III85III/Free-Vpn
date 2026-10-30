@@ -924,7 +924,7 @@ namespace III85III.Vpn {
             if(requiredUpdateButton!=null)requiredUpdateButton.Enabled=false;
             if(requiredUpdateStatus!=null)requiredUpdateStatus.Text="Checking for updates…";
             if(appUpdateButton!=null)appUpdateButton.Text="Checking…";
-            try{await AppUpdates.Check(this,text=>{if(!closing&&appUpdateButton!=null)appUpdateButton.Text=text;if(requiredUpdateStatus!=null)requiredUpdateStatus.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true});allowClose=true;Close();},manual);}finally{updating=false;if(!closing&&appUpdateButton!=null)appUpdateButton.Text="Check for updates";if(requiredUpdateButton!=null){requiredUpdateButton.Enabled=true;requiredUpdateButton.Text="Update";}}
+            try{await AppUpdates.Check(this,text=>{if(!closing&&appUpdateButton!=null)appUpdateButton.Text=text;if(requiredUpdateStatus!=null)requiredUpdateStatus.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-update -wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true});allowClose=true;Close();},manual);}finally{updating=false;if(!closing&&appUpdateButton!=null)appUpdateButton.Text="Check for updates";if(requiredUpdateButton!=null){requiredUpdateButton.Enabled=true;requiredUpdateButton.Text="Update";}}
         }
         readonly LuxuryTitleBar titleBar;
         readonly Panel sidebar = new Panel();

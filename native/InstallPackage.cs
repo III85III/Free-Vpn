@@ -4,6 +4,13 @@ using System.IO;
 using System.IO.Compression;
 
 internal static class InstallPackage {
+    internal static int UpdateParent(string[] arguments){
+        if(arguments.Length==1)return 0;
+        int index=Array.IndexOf(arguments,"-wait-pid"),pid;
+        if(index<1 || index+1>=arguments.Length || !Int32.TryParse(arguments[index+1],out pid) || pid<=0)throw new IOException("Invalid update invocation.");
+        for(int i=1;i<arguments.Length;i++)if(i!=index&&i!=index+1&&arguments[i]!="-update")throw new IOException("Invalid installer option.");
+        return pid;
+    }
     internal static void PrepareDirectory(string path){
         var security=new System.Security.AccessControl.DirectorySecurity();
         security.SetAccessRuleProtection(true,false);

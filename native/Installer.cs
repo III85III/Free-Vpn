@@ -13,20 +13,21 @@ using System.Windows.Forms;
 internal static class Installer {
     [STAThread]static int Main(){
         Application.EnableVisualStyles();
-        var arguments=Environment.GetCommandLineArgs();int previous;
-        if(arguments.Length==3&&arguments[1]=="-wait-pid"&&Int32.TryParse(arguments[2],out previous)){
-            try{using(var app=Process.GetProcessById(previous)){if(app.ProcessName=="III85III VPN"&&app.SessionId==Process.GetCurrentProcess().SessionId)app.WaitForExit(60000);}}catch(ArgumentException){}
+        int previous;try{previous=InstallPackage.UpdateParent(Environment.GetCommandLineArgs());}catch(IOException){return 1;}
+        if(previous>0){
+            try{using(var app=Process.GetProcessById(previous)){if(app.ProcessName!="III85III VPN"||app.SessionId!=Process.GetCurrentProcess().SessionId)return 1;app.WaitForExit(60000);}}catch(ArgumentException){}
         }
+        string root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","III85III VPN");
+        bool update=previous>0&&File.Exists(Path.Combine(root,"III85III VPN.exe"));
         if(Process.GetProcessesByName("III85III VPN").Length>0){MessageBox.Show("Close III85III VPN from the notification tray before installing this update, then run Setup again. Your accounts will be kept.","III85III VPN Setup",MessageBoxButtons.OK,MessageBoxIcon.Information);return 1;}
-        if(MessageBox.Show("Install III85III VPN for this Windows user?\n\nEnglish is the default language. Your account data is kept separately.\n\nThe package includes the required components and licenses.","III85III VPN Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 0;
+        if(!update&&MessageBox.Show("Install III85III VPN for this Windows user?\n\nEnglish is the default language. Your account data is kept separately.\n\nThe package includes the required components and licenses.","III85III VPN Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 0;
         try{
-            string root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","III85III VPN");
             using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("payload"))InstallPackage.Install(stream,root,delegate(string stage){
                 InstallPackage.PrepareDirectory(stage);
             });
             string exe=Path.Combine(root,"III85III VPN.exe");if(!File.Exists(exe))throw new IOException("Incomplete package.");
             CreateShortcut(exe,root);
-            if(MessageBox.Show("Installation complete. Open III85III VPN now?\n\nLocation: "+root,"III85III VPN Setup",MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes)Process.Start(new ProcessStartInfo(exe){UseShellExecute=true,WorkingDirectory=root});
+            if(update||MessageBox.Show("Installation complete. Open III85III VPN now?\n\nLocation: "+root,"III85III VPN Setup",MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes)Process.Start(new ProcessStartInfo(exe){UseShellExecute=true,WorkingDirectory=root});
             return 0;
         }catch(Exception){MessageBox.Show("Installation could not finish. Close any running copy of III85III VPN and try again. Your saved accounts were not removed.","III85III VPN Setup",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
     }

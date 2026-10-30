@@ -179,7 +179,7 @@ try:
         adb('shell','appops','set',package,'REQUEST_INSTALL_PACKAGES','allow')
         adb('shell','am','start','-W','-f','0x20000000','-n',package+'/.MainActivity','--ez','qa_screenshots','true','--ez','qa_update','true')
         time.sleep(2)
-        tap('Install update')
+        # Verification hands directly to PackageInstaller; no second in-app install tap.
         confirmed=False
         for attempt in range(35):
             for node in hierarchy().iter('node'):

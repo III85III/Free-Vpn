@@ -18,6 +18,10 @@ internal static class InstallerTests {
         string workspace=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"installer-"+Guid.NewGuid().ToString("N"));
         string root=Path.Combine(workspace,"app");
         try{
+            Check(InstallPackage.UpdateParent(new[]{"Setup.exe"})==0,"manual installation keeps its normal confirmation");
+            Check(InstallPackage.UpdateParent(new[]{"Setup.exe","-wait-pid","123"})==123,"existing clients use automatic replacement without another download");
+            Check(InstallPackage.UpdateParent(new[]{"Setup.exe","-update","-wait-pid","123"})==123,"explicit in-app update waits for its previous process");
+            bool invalidUpdate=false;try{InstallPackage.UpdateParent(new[]{"Setup.exe","-update"});}catch(IOException){invalidUpdate=true;}Check(invalidUpdate,"unattended update requires a valid previous process argument");
             Directory.CreateDirectory(root);
             InstallPackage.PrepareDirectory(root);
             string system="S-1-5-18";bool systemRead=false,systemWrite=false;
