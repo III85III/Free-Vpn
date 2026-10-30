@@ -4,6 +4,8 @@ import static org.junit.Assert.*;
 import java.net.URI;
 
 public final class UpdatePolicyTest {
+    @Test public void newerVersionIsMandatory(){assertTrue(UpdatePolicy.required(23003,23004));}
+    @Test public void installingRequiredVersionClearsGate(){assertFalse(UpdatePolicy.required(23004,23004));assertFalse(UpdatePolicy.required(23005,23004));}
     private static final String URL="https://github.com/III85III/Free-Vpn/releases/download/v2.3.1/III85III-VPN.apk",HASH="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     @Test public void acceptsOfficialApk()throws Exception{UpdatePolicy.validate(URL,HASH,12000000,23002);}
     @Test public void rejectsOtherRepositories()throws Exception{reject(URL.replace("III85III/Free-Vpn","other/project"),HASH,12000000,23002);}

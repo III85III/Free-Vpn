@@ -65,7 +65,7 @@ jobs:
           mkdir -p .build/android-qa
           cp mobile/android/app/build/outputs/apk/debug/app-debug.apk .build/android-qa/app-debug.apk
           cp mobile/android/probe/build/outputs/apk/debug/probe-debug.apk .build/android-qa/probe.apk
-          mobile/android/gradlew -p mobile/android --no-daemon :app:assembleDebug -PversionCodeOverride=23003 -PversionNameOverride=2.3.2-qa-update
+          mobile/android/gradlew -p mobile/android --no-daemon :app:assembleDebug -PversionCodeOverride=23004 -PversionNameOverride=2.3.3-qa-update
           cp mobile/android/app/build/outputs/apk/debug/app-debug.apk .build/android-qa/upgrade.apk
       - uses: actions/upload-artifact@v4
         if: inputs.platform != 'ios'

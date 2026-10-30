@@ -12,6 +12,8 @@ using System.Windows.Forms;
 namespace III85III.Vpn {
     internal sealed class AppUpdate {
         internal string Version, Url, Hash; internal long Size;
+        internal static bool Required(string installed,string offered){Version a,b;return System.Version.TryParse(installed,out a)&&System.Version.TryParse(offered,out b)&&b>a;}
+        internal static string SavedRequirement(string directory){try{string value=File.ReadAllText(Path.Combine(directory,"required-update.txt")).Trim();return Required(Assembly.GetExecutingAssembly().GetName().Version.ToString(),value)?value:"";}catch(IOException){return "";}catch(UnauthorizedAccessException){return "";}}
         internal static AppUpdate Read(Dictionary<string,object> document,string platform) {
             if(Json.Num(document,"schema")!=1)throw new IOException("Unsupported update information.");
             var item=Json.Child(document,platform);System.Version parsed;Uri url;
@@ -40,7 +42,9 @@ namespace III85III.Vpn {
                 if(owner.IsDisposed||(!manual&&Form.ActiveForm!=owner))return;
                 if(new Version(update.Version)<=Assembly.GetExecutingAssembly().GetName().Version){if(manual)Notice(owner,"You're up to date","You're using the latest Windows version.");return;}
                 var window=owner as MainForm;
-                if(window==null || !window.ConfirmAction("Update available","Version "+update.Version+" is ready. VPN disconnects during installation. Your accounts stay saved.","Update"))return;
+                if(window==null)return;
+                await window.RequireUpdate(update.Version);
+                if(!manual)return;
                 string directory=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN","updates");
                 long required=update.Size*3+50L*1024*1024;
                 if(new DriveInfo(Path.GetPathRoot(directory)).AvailableFreeSpace<required){Notice(owner,"A little more space is needed","Free at least "+Math.Ceiling(required/(1024d*1024))+" MB on the Windows drive and try again. Nothing was installed.");return;}

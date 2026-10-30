@@ -14,13 +14,19 @@ import java.security.MessageDigest;
 import java.util.*;
 
 public final class UpdateActivity extends Activity {
+    static boolean isRequired(Context context){return UpdatePolicy.required(BuildConfig.VERSION_CODE,context.getSharedPreferences("interface",MODE_PRIVATE).getLong("required_update",0));}
+    static void openRequired(Activity owner){owner.startActivity(new Intent(owner,UpdateActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));}
+    private static void require(Activity owner,Info info){owner.getSharedPreferences("interface",MODE_PRIVATE).edit().putLong("required_update",info.code).putString("required_update_version",info.version).apply();owner.startService(new Intent(owner,TunnelService.class).setAction(TunnelService.STOP));}
+    @Override public void onBackPressed(){if(isRequired(this))finishAffinity();else super.onBackPressed();}
+    private Button back;
     private TextView status;private ProgressBar progress;private Button action;
     private Info available;private File downloaded;private boolean busy;
     private static final java.util.concurrent.atomic.AtomicBoolean downloading=new java.util.concurrent.atomic.AtomicBoolean();
     static final class Info {String version,url,hash;long size,code;}
     @Override public void onCreate(Bundle state){
         super.onCreate(state);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xff101319);int pad=(int)(24*getResources().getDisplayMetrics().density);root.setPadding(pad,pad,pad,pad);
-        Button back=new Button(this);back.setText("Back to settings");back.setAllCaps(false);back.setOnClickListener(v->finish());root.addView(back);
+        if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->{if(isRequired(this))finishAffinity();else finish();});
+        back=new Button(this);back.setText(isRequired(this)?"Exit":"Back to settings");back.setAllCaps(false);back.setOnClickListener(v->{if(isRequired(this))finishAffinity();else finish();});root.addView(back);
         status=new TextView(this);status.setTextColor(0xffefefea);status.setTextSize(18);status.setPadding(0,pad,0,pad);root.addView(status);
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(100);root.addView(progress);
         action=new Button(this);action.setAllCaps(false);action.setText("Check for updates");action.setOnClickListener(v->{if(downloaded!=null)install();else if(available!=null)download();else check();});root.addView(action);
@@ -32,7 +38,7 @@ public final class UpdateActivity extends Activity {
         }else check();
     }
     private void check(){if(busy)return;busy=true;action.setEnabled(false);status.setText("Checking for updates…");progress.setIndeterminate(true);
-        CoreRuntime.IO.execute(()->{try{Info update=latest();File cached=new File(getCacheDir(),"III85III-VPN.apk");boolean valid=false;if(update.code>BuildConfig.VERSION_CODE&&cached.isFile()){try{verify(cached,update);valid=true;}catch(Exception ignored){}}final boolean ready=valid;runOnUiThread(()->{if(isDestroyed())return;available=update.code>BuildConfig.VERSION_CODE?update:null;downloaded=ready?cached:null;status.setText(available==null?"You're using the latest version.":ready?"Update verified and ready to install.":"III85III VPN "+update.version+" is available.");action.setText(available==null?"Check again":ready?"Install update":"Download update");finishWork();});}catch(Exception error){runOnUiThread(()->{if(!isDestroyed()){status.setText("Updates are unavailable right now. Check your connection and try again.");finishWork();}});}});
+        CoreRuntime.IO.execute(()->{try{Info update=latest();File cached=new File(getCacheDir(),"III85III-VPN.apk");boolean valid=false;if(update.code>BuildConfig.VERSION_CODE&&cached.isFile()){try{verify(cached,update);valid=true;}catch(Exception ignored){}}final boolean ready=valid;runOnUiThread(()->{if(isDestroyed())return;available=update.code>BuildConfig.VERSION_CODE?update:null;if(available!=null){require(this,update);back.setText("Exit");}downloaded=ready?cached:null;status.setText(available==null?(isRequired(this)?"Update required. Check again to continue.":"You're up to date."):ready?"Update ready to install.":"Update to "+update.version+" to use VPN.");action.setText(available==null?"Check again":ready?"Install update":"Download update");finishWork();});}catch(Exception error){runOnUiThread(()->{if(!isDestroyed()){status.setText("Updates are unavailable. Check your connection and retry.");finishWork();}});}});
     }
     private void finishWork(){busy=false;progress.setIndeterminate(false);action.setEnabled(true);}
     static HttpURLConnection open(String address)throws Exception{
@@ -54,8 +60,8 @@ public final class UpdateActivity extends Activity {
         }finally{request.disconnect();}
     }
     static void notifyAvailable(Activity owner){
-        android.content.SharedPreferences prefs=owner.getSharedPreferences("interface",MODE_PRIVATE);long now=System.currentTimeMillis();if(now-prefs.getLong("update_checked",0)<6*60*60*1000L)return;prefs.edit().putLong("update_checked",now).apply();
-        CoreRuntime.IO.execute(()->{try{Info update=latest();if(update.code>BuildConfig.VERSION_CODE)owner.runOnUiThread(()->{if(owner.isDestroyed()||owner.isFinishing()||!owner.hasWindowFocus())return;new AlertDialog.Builder(owner).setTitle("Update available").setMessage("III85III VPN "+update.version+" is ready. Download and install it from this app.").setNegativeButton("Later",null).setPositiveButton("View update",(d,w)->owner.startActivity(new Intent(owner,UpdateActivity.class))).show();});}catch(Exception ignored){}});
+        android.content.SharedPreferences prefs=owner.getSharedPreferences("interface",MODE_PRIVATE);long now=System.currentTimeMillis();if(now-prefs.getLong("update_checked",0)<5*60*1000L)return;prefs.edit().putLong("update_checked",now).apply();
+        CoreRuntime.IO.execute(()->{try{Info update=latest();if(update.code>BuildConfig.VERSION_CODE)owner.runOnUiThread(()->{if(owner.isDestroyed()||owner.isFinishing()||!owner.hasWindowFocus())return;require(owner,update);openRequired(owner);});}catch(Exception ignored){}});
     }
     private void download(){if(busy||available==null)return;long required=available.size*3+30L*1024*1024;if(getCacheDir().getUsableSpace()<required){status.setText("There isn't enough free space. Free at least "+(long)Math.ceil(required/(1024d*1024))+" MB on your device and retry. Nothing was installed.");return;}if(!downloading.compareAndSet(false,true)){status.setText("An update is already downloading. Check again in a moment.");available=null;action.setText("Check again");return;}busy=true;action.setEnabled(false);status.setText("Downloading update…");Info update=available;
         CoreRuntime.IO.execute(()->{File partial=new File(getCacheDir(),"update.part");try{

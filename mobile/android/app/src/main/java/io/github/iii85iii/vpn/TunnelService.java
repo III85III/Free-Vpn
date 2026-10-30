@@ -31,6 +31,7 @@ public final class TunnelService extends VpnService {
     }};
     @Override public int onStartCommand(Intent intent,int flags,int startId){
         if(intent!=null&&STOP.equals(intent.getAction())){stopTunnel();return START_NOT_STICKY;}
+        if(UpdateActivity.isRequired(this)){error="Update required.";stopSelf();return START_NOT_STICKY;}
         if(stopping.get()||!lifecycle.start())return START_NOT_STICKY;
         final boolean synthetic=BuildConfig.DEBUG&&intent!=null&&intent.getBooleanExtra("qa_tun",false);
         error="";showNotification();

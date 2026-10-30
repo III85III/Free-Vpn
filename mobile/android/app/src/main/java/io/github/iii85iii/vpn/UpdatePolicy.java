@@ -3,6 +3,7 @@ package io.github.iii85iii.vpn;
 import java.net.URI;
 
 final class UpdatePolicy {
+    static boolean required(long installed,long offered){return offered>installed;}
     static final String FEED="https://raw.githubusercontent.com/III85III/Free-Vpn/main/docs/updates.json";
     static void validate(String address,String hash,long size,long version)throws Exception{
         URI uri=new URI(address);

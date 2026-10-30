@@ -152,6 +152,26 @@ try:
     (output/'tunnel.txt').write_text('PASS: real Android VPN interface/native TUN answered a synthetic DNS name with a fake address. No Mozilla account or upstream traffic used.\n')
     adb('shell','am','force-stop',package)
     if options.upgrade:
+        # Only this disposable empty-account emulator: persist a synthetic required version.
+        mandatory=b'<?xml version="1.0" encoding="utf-8"?><map><long name="required_update" value="23004" /></map>'
+        adb('shell',f'run-as {package} mkdir -p shared_prefs')
+        gate_write=subprocess.run(['adb','shell',f'run-as {package} sh -c "cat > shared_prefs/interface.xml"'],input=mandatory,capture_output=True,timeout=20)
+        if gate_write.returncode:raise RuntimeError('Could not stage the mandatory-update fixture')
+        launch()
+        time.sleep(2)
+        tree=hierarchy()
+        texts=[node.get('text','') for node in tree.iter('node')]
+        if 'Exit' not in texts or 'Later' in texts or 'Connect' in texts:raise RuntimeError('Mandatory update did not block VPN access')
+        screenshot('required-update')
+        adb('shell','input','keyevent','4')
+        time.sleep(.5)
+        if any(n.get('text','')=='Connect' for n in hierarchy().iter('node')):raise RuntimeError('Back bypassed mandatory update')
+        launch()
+        time.sleep(1)
+        if not any(n.get('text','')=='Exit' for n in hierarchy().iter('node')):raise RuntimeError('Required update did not survive reopening')
+        (output/'required-update.txt').write_text('PASS: cached required version blocks Connect, has no Later, Back exits and reopening preserves the gate.\n')
+        adb('shell','am','force-stop',package)
+        adb('shell',f'run-as {package} rm shared_prefs/interface.xml')
         adb('shell',f'run-as {package} sh -c "echo preserved > files/update-probe.txt"')
         adb('shell','am','force-stop',package)
         transfer=subprocess.run(['adb','shell',f'run-as {package} sh -c "cat > cache/qa-upgrade.apk"'],input=Path(options.upgrade).read_bytes(),capture_output=True,timeout=60)
@@ -172,7 +192,7 @@ try:
         if not confirmed:raise RuntimeError('Android did not present user confirmation for the in-app update')
         for attempt in range(90):
             details=adb('shell','dumpsys','package',package).decode(errors='replace')
-            if 'versionCode=23003 ' in details:break
+            if 'versionCode=23004 ' in details:break
             time.sleep(1)
         else:raise RuntimeError('The in-app PackageInstaller update did not complete')
         (output/'in-app-update.txt').write_text('PASS: APK staged in private cache, same-package/signature verification, PackageInstaller session, Android user confirmation, higher-version installation. No production signing key in CI.\n')

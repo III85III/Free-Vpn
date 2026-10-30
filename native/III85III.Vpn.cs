@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.2.2.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.2.2.0")]
+[assembly: System.Reflection.AssemblyVersion("2.2.3.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.2.3.0")]
 
 namespace III85III.Vpn {
     internal sealed class AppBypass {
@@ -897,11 +897,34 @@ namespace III85III.Vpn {
 
     internal sealed class MainForm : Form {
         readonly Engine engine;
-        bool updating;string lastActionError="";LuxuryButton appUpdateButton; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(20);
+        bool updating,requiredUpdate;string lastActionError="";LuxuryButton appUpdateButton,requiredUpdateButton;Label requiredUpdateStatus;Panel updateGate; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(2);
+        internal async Task RequireUpdate(string version){
+            if(!AppUpdate.Required(Application.ProductVersion,version))return;
+            bool first=!requiredUpdate;requiredUpdate=true;
+            try{Directory.CreateDirectory(engine.DataDir);File.WriteAllText(Path.Combine(engine.DataDir,"required-update.txt"),version);}catch(IOException){}catch(UnauthorizedAccessException){}
+            SetActions(false);
+            if(updateGate==null){
+                updateGate=new Panel{Dock=DockStyle.Fill,BackColor=Theme.Bg,Name="requiredUpdate"};
+                var title=new Label{Text="Update required",Font=Theme.Display(25f),ForeColor=Theme.TextPrimary,TextAlign=ContentAlignment.MiddleCenter};
+                requiredUpdateStatus=new Label{Font=Theme.Font(11f),ForeColor=Theme.TextSecondary,TextAlign=ContentAlignment.MiddleCenter};
+                requiredUpdateButton=new LuxuryButton{Text="Update",Variant=ButtonVariant.Primary};
+                requiredUpdateButton.Click+=async delegate{await CheckForUpdates(true);};
+                var exit=new LuxuryButton{Text="Exit",Variant=ButtonVariant.Ghost};exit.Click+=delegate{allowClose=true;Close();};
+                updateGate.Controls.AddRange(new Control[]{title,requiredUpdateStatus,requiredUpdateButton,exit});
+                Action arrange=delegate{int width=Math.Min(520,Math.Max(200,ClientSize.Width-40)),x=(ClientSize.Width-width)/2,y=Math.Max(30,(ClientSize.Height-220)/2);title.SetBounds(x,y,width,44);requiredUpdateStatus.SetBounds(x,y+58,width,56);requiredUpdateButton.SetBounds(ClientSize.Width/2-148,y+142,144,44);exit.SetBounds(ClientSize.Width/2+4,y+142,144,44);};
+                updateGate.Resize+=delegate{arrange();};Controls.Add(updateGate);arrange();
+            }
+            requiredUpdateStatus.Text="Install version "+version+" to use VPN. Your accounts stay saved.";
+            requiredUpdateButton.Enabled=!updating;
+            updateGate.BringToFront();
+            if(first&&ready){bool stopped=false;try{await engine.Api("POST","/api/power",new{on=false},10000);stopped=true;}catch{}if(!stopped){try{await engine.Stop();}catch{} }}
+        }
         async Task CheckForUpdates(bool manual){
-            if(updating||closing)return;updating=true;nextUpdateCheck=DateTime.UtcNow.AddHours(6);
+            if(updating||closing)return;updating=true;nextUpdateCheck=DateTime.UtcNow.AddMinutes(5);
+            if(requiredUpdateButton!=null)requiredUpdateButton.Enabled=false;
+            if(requiredUpdateStatus!=null)requiredUpdateStatus.Text="Checking for updates…";
             if(appUpdateButton!=null)appUpdateButton.Text="Checking…";
-            try{await AppUpdates.Check(this,text=>{if(!closing&&appUpdateButton!=null)appUpdateButton.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true});allowClose=true;Close();},manual);}finally{updating=false;if(!closing&&appUpdateButton!=null)appUpdateButton.Text="Check for updates";}
+            try{await AppUpdates.Check(this,text=>{if(!closing&&appUpdateButton!=null)appUpdateButton.Text=text;if(requiredUpdateStatus!=null)requiredUpdateStatus.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true});allowClose=true;Close();},manual);}finally{updating=false;if(!closing&&appUpdateButton!=null)appUpdateButton.Text="Check for updates";if(requiredUpdateButton!=null){requiredUpdateButton.Enabled=true;requiredUpdateButton.Text="Update";}}
         }
         readonly LuxuryTitleBar titleBar;
         readonly Panel sidebar = new Panel();
@@ -1109,6 +1132,7 @@ namespace III85III.Vpn {
                     UpdateEyeButtons();
                     await engine.Start();
                     ready = true;
+                    string savedUpdate=AppUpdate.SavedRequirement(engine.DataDir);if(savedUpdate!="")await RequireUpdate(savedUpdate);
                     timer.Start();
                     await Poll();
                     await RefreshAccounts();
@@ -1839,6 +1863,7 @@ namespace III85III.Vpn {
         }
 
         private void SetActions(bool enabled) {
+            enabled=enabled&&!requiredUpdate;
             dial.Enabled = enabled;
             connectBtn.Enabled = enabled;
             quickBtn.Enabled = enabled && Json.Str(Json.Child(lastStatus, "state"), "phase") == "off";
@@ -1897,7 +1922,7 @@ namespace III85III.Vpn {
             }
         }
         private async Task Run(Func<Task> action) {
-            if (!ready || busy || closing) return;
+            if (!ready || busy || closing || requiredUpdate) return;
             busy = true;lastActionError=""; SetActions(false);
             dialSubtext.Text="Applying your changes…";dialSubtext.Update();
             try { await action(); busy=false; await Poll(); }
@@ -1916,6 +1941,7 @@ namespace III85III.Vpn {
         }
 
         private async Task TogglePower() {
+            if(requiredUpdate)throw new IOException("Update required.");
             if (Json.Str(Json.Child(lastStatus, "state"), "phase") != "off") {
                 await engine.Api("POST", "/api/power", new { on = false }); return;
             }

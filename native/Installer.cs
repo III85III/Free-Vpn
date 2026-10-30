@@ -9,7 +9,7 @@ using System.Windows.Forms;
 [assembly:AssemblyTitle("III85III VPN Setup")]
 [assembly:AssemblyCompany("III85III")]
 [assembly:AssemblyProduct("III85III VPN")]
-[assembly:AssemblyVersion("2.2.2.0")]
+[assembly:AssemblyVersion("2.2.3.0")]
 internal static class Installer {
     [STAThread]static int Main(){
         Application.EnableVisualStyles();
