@@ -14,7 +14,7 @@
 
 ## شروع استفاده
 
-[نصب‌کنندهٔ Windows](https://github.com/III85III/Free-Vpn/releases/download/v2.3.3/III85III-VPN-Setup.exe) · [دانلود APK اندروید](https://github.com/III85III/Free-Vpn/releases/download/v2.3.3/III85III-VPN.apk)
+[نصب‌کنندهٔ Windows](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [دانلود APK اندروید](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk)
 
 در Android 8 به بالا، APK را نصب کن، از Settings → Mozilla accounts حساب خودت را اضافه کن و سپس مجوز VPN را تأیید کن. برنامه‌های انتخاب‌شده در بخش Split tunneling مستقیم وصل می‌شوند. برای حفظ داده‌ها، نسخهٔ جدید را روی نسخهٔ قبلی نصب کن. [نتیجهٔ تست‌ها و محدودیت‌های موبایل](../../mobile/VALIDATION.md) را ببین؛ اتصال واقعی به موزیلا هنوز به آزمون مستقل نیاز دارد.
 
