@@ -36,8 +36,16 @@ def launch():
 launch()
 
 def hierarchy():
-    adb('shell', 'uiautomator', 'dump', '/sdcard/vpn-view.xml')
-    return ET.fromstring(adb('exec-out', 'cat', '/sdcard/vpn-view.xml'))
+    # Some emulator versions return exit 0 even when the idle-window dump fails.
+    # Never reuse the preceding screen's XML after such a failure.
+    for attempt in range(4):
+        adb('shell', 'rm', '-f', '/sdcard/vpn-view.xml')
+        result=adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/vpn-view.xml')
+        if b'dumped to' in result.lower():
+            try:return ET.fromstring(adb('exec-out', 'cat', '/sdcard/vpn-view.xml'))
+            except ET.ParseError:pass
+        time.sleep(.5)
+    raise RuntimeError('A fresh emulator UI snapshot was unavailable')
 
 def tap(text):
     for attempt in range(5):

@@ -1,5 +1,12 @@
 # Changelog
 
+## Android 2.3.4
+
+- Resume interrupted update downloads, with a bounded number of automatic retries.
+- Prepare a verified APK filename before asking Android to inspect the package.
+- Distinguish connection, incomplete-file, checksum, package and signature errors. Keep the existing app if verification fails.
+- Keep the same signing identity, account storage and VPN engine. Windows remains 2.2.3.
+
 ## Windows 2.2.3 / Android 2.3.3
 
 - Simplify Home to the main connection control, server selection and account/traffic status. Move supporting options into Help and About.
