@@ -1,5 +1,13 @@
 # Changelog
 
+## Windows 2.2.3 / Android 2.3.3
+
+- Make detected newer app releases mandatory: Update or Exit, with no Later action.
+- Block VPN use while a required update is pending and remember the requirement across reopening.
+- Keep retry available after a failed check, download or installation. User confirmation from the operating system is still required.
+- Check while the app is open approximately every five minutes, and shortly after opening.
+- Preserve local accounts and keep the backend unchanged. Previously distributed clients need one normal upgrade before this policy applies to them.
+
 ## Windows 2.2.2 / Android 2.3.2
 
 - Fix Windows Whole computer startup when the service cannot read the installed engine. New installations grant SYSTEM read/execute access; the app also repairs this program-folder permission before starting TUN. Account storage is separate.

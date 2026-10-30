@@ -1,5 +1,11 @@
 # Validation
 
+## Required update behavior: Windows 2.2.3 / Android 2.3.3
+
+Windows regression suites pass, including a required-update fixture covering newer/equal/older version comparisons, persisted requirements, Update/Exit-only controls, disabled Connect, direct power-handler rejection and clearing an already-satisfied requirement. The requirement is an app UX policy, not remote control over old binaries or protection against a modified client.
+
+Android adds equivalent persisted version checks at the main screen and VPN service entry point. Back exits instead of allowing continued VPN use. The device validation fixture uses an empty disposable emulator profile to check that the gate survives reopening, then tests the existing confirmed PackageInstaller upgrade path. See the mobile validation document for the current workflow result.
+
 ## Windows 2.2.2 and Android 2.3.2
 
 Windows passed the native API/state, connection, layout, ping, sign-in, verification, update-policy, polling, keyboard and installer suites. The connection fixture holds the API reply and verifies that the button already shows Connecting. Installer checks verify that SYSTEM receives read/execute access without write access. A failed ping opens a themed app notice. Automatic server choices remain pinned during sorting and search.

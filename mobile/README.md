@@ -37,7 +37,7 @@ An unsigned IPA cannot be installed as an ordinary App Store/TestFlight applicat
 
 ## Validation limits
 
-Android 2.3.2 and unsigned iOS 2.2.0 have separate build and validation results. See [validation details](VALIDATION.md) for the exact checks and remaining device/store work.
+Android 2.3.3 and unsigned iOS 2.2.0 have separate build and validation results. See [validation details](VALIDATION.md) for the exact checks and remaining device/store work.
 
 Android has three main tabs, saved-account selection and direct-app rules in Settings. In-app updates use public GitHub metadata, verified downloads and Android's user-confirmed PackageInstaller. This direct GitHub build requests permission to install updates; a future Google Play build must use Play's update mechanism instead.
 

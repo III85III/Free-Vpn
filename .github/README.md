@@ -12,8 +12,8 @@ Free VPN is a free application by **III85III** for Windows and Android. Sign in 
 
 | Platform | Download | Requirements |
 | --- | --- | --- |
-| Windows | [Windows installer](https://github.com/III85III/Free-Vpn/releases/download/v2.3.2/III85III-VPN-Setup.exe) | Windows x64 · 2.2.2 |
-| Android | [Android APK](https://github.com/III85III/Free-Vpn/releases/download/v2.3.2/III85III-VPN.apk) | Android 8.0+, arm64 or x86-64 · 2.3.2 |
+| Windows | [Windows installer](https://github.com/III85III/Free-Vpn/releases/download/v2.3.3/III85III-VPN-Setup.exe) | Windows x64 · 2.2.3 |
+| Android | [Android APK](https://github.com/III85III/Free-Vpn/releases/download/v2.3.3/III85III-VPN.apk) | Android 8.0+, arm64 or x86-64 · 2.3.3 |
 
 Android is distributed directly here. Real-phone Mozilla sign-in and tunnel routing still need validation; see [completed checks and limitations](../mobile/VALIDATION.md). There is no signed App Store version yet.
 
@@ -21,7 +21,7 @@ Android is distributed directly here. Real-phone Mozilla sign-in and tunnel rout
 
 ## Getting started
 
-1. Download **III85III-VPN-Setup.exe** from the [current release](https://github.com/III85III/Free-Vpn/releases/tag/v2.3.2).
+1. Download **III85III-VPN-Setup.exe** from the [current release](https://github.com/III85III/Free-Vpn/releases/tag/v2.3.3).
 2. Run Setup, then open **III85III VPN**. The interface starts in English.
 3. Add your own Mozilla account using your Mozilla password. If Mozilla requests a verification code, enter it in the separate code window.
 4. Choose your connection mode and location, then connect. Use **Check connection** to inspect the connection result.
@@ -47,6 +47,8 @@ Android includes latency sorting, location search, account management, private a
 Screenshots show a fresh test installation with no account or active connection.
 
 ### Updates from the app
+
+Starting with Windows 2.2.3 and Android 2.3.3, a detected newer release is required before continuing to use VPN. Choose Update or Exit. This requirement is remembered across reopening; failed downloads can be retried. Existing older binaries need one normal upgrade to adopt this behavior. Checks run shortly after opening and about every five minutes while the app is open. Operating-system installation confirmation is preserved.
 
 Windows and Android check public version information on GitHub and show a prompt when a newer version is available. Download starts when you choose it; no personal VPS is needed. Windows opens the verified installer after closing the VPN. Android checks the APK's package, version and signing identity and asks for installation confirmation.
 

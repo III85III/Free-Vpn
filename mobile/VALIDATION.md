@@ -1,6 +1,14 @@
 # Mobile build validation
 
-## Current Android release: 2.3.2
+## Current Android release: 2.3.3
+
+Android 2.3.3 (code 23003) passed build, lint, unit tests and Android 8/14/16 emulator checks in [run 40978078429](https://github.com/III85III/Free-Vpn/actions/runs/40978078429). The new fixture verifies that a persisted required version blocks Connect, has no Later action, exits on Back and survives reopening. Existing synthetic native TUN DNS and user-confirmed in-app PackageInstaller upgrade checks passed as well. Production certificate is unchanged. Real-phone Mozilla sign-in, upstream egress and background/handover remain unverified.
+
+APK SHA-256: 5e7896fb016d5e834e1a551ae567c6192759d77af3b048334a735ec6d32e985f.
+
+Windows 2.2.3 passed its required-update persistence/UI/power-guard checks, all native regression suites and an isolated empty-account startup check. The 2.2.0 backend binaries remain unchanged.
+
+## Previous Android release: 2.3.2
 
 Android 2.3.2 (code 23002) passed build, lint, unit tests and fresh Android 8/14/16 emulator checks in [run 40974953443](https://github.com/III85III/Free-Vpn/actions/runs/40974953443). This includes synthetic native TUN DNS and a user-confirmed in-app PackageInstaller update. Its UI uses shorter labels, pinned automatic server choices, immediate account-check feedback and themed error details. Production signing identity is unchanged; real-phone Mozilla sign-in, egress and background/handover remain unverified.
 
