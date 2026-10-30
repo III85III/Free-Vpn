@@ -13,6 +13,10 @@ namespace III85III.Vpn {
         static int Run(string[] args) {
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
             Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
+            Check(AccountSetup.ShouldShow(false,false,false),"fresh empty profile gets account setup instructions");
+            Check(!AccountSetup.ShouldShow(true,false,false)&&!AccountSetup.ShouldShow(false,true,false)&&!AccountSetup.ShouldShow(false,false,true),"account setup skips existing accounts, acknowledged intros and required updates");
+            Check(AccountSetup.Message.Contains("Mozilla password")&&AccountSetup.SignupUrl=="https://accounts.firefox.com/","setup identifies Mozilla credentials and the official signup page");
+            using(var intro=new AccountIntroForm()){Check(TextBoxes(intro)==0,"setup introduction does not collect credentials before sign-in");}
             using(var body=Theme.Font(10f)) { Check(body.FontFamily.Name=="Lato","bundled Lato body font must load"); Check(body.Size>=10.5f,"body font must be readable"); }
             using(var heading=Theme.Display(24f)) { Check(heading.FontFamily.Name.StartsWith("Lato"),"bundled heading font must load"); }
             using(var engine=new Engine(AppDomain.CurrentDomain.BaseDirectory,System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"layout-data")))

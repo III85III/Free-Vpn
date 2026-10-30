@@ -39,7 +39,7 @@ namespace III85III.Vpn {
                         update=AppUpdate.Read(Json.Decode(System.Text.Encoding.UTF8.GetString(data.ToArray())),"windows");
                     }
                 }
-                if(owner.IsDisposed||(!manual&&Form.ActiveForm!=owner))return;
+                if(owner.IsDisposed)return;
                 if(new Version(update.Version)<=Assembly.GetExecutingAssembly().GetName().Version){if(manual)Notice(owner,"You're up to date","You're using the latest Windows version.");return;}
                 var window=owner as MainForm;
                 if(window==null)return;

@@ -109,6 +109,13 @@ try:
     except urllib.error.HTTPError as error:
         if error.code not in (401, 403):
             raise RuntimeError('Unexpected unauthenticated response') from None
+    for attempt in range(12):
+        if any(node.get('text','')=='Your Firefox account' for node in hierarchy().iter('node')):break
+        time.sleep(.5)
+    else:raise RuntimeError('Fresh account setup introduction was not shown')
+    screenshot('account-intro')
+    adb('shell','input','keyevent','4')
+    time.sleep(.5)
     screenshot('home')
     tap('Settings')
     tap('Mozilla accounts')
@@ -153,7 +160,7 @@ try:
     adb('shell','am','force-stop',package)
     if options.upgrade:
         # Only this disposable empty-account emulator: persist a synthetic required version.
-        mandatory=b'<?xml version="1.0" encoding="utf-8"?><map><long name="required_update" value="23004" /></map>'
+        mandatory=b'<?xml version="1.0" encoding="utf-8"?><map><long name="required_update" value="23004" /><boolean name="account_intro_seen" value="true" /></map>'
         adb('shell',f'run-as {package} mkdir -p shared_prefs')
         gate_write=subprocess.run(['adb','shell',f'run-as {package} sh -c "cat > shared_prefs/interface.xml"'],input=mandatory,capture_output=True,timeout=20)
         if gate_write.returncode:raise RuntimeError('Could not stage the mandatory-update fixture')
@@ -171,7 +178,8 @@ try:
         if not any(n.get('text','')=='Exit' for n in hierarchy().iter('node')):raise RuntimeError('Required update did not survive reopening')
         (output/'required-update.txt').write_text('PASS: cached required version blocks Connect, has no Later, Back exits and reopening preserves the gate.\n')
         adb('shell','am','force-stop',package)
-        adb('shell',f'run-as {package} rm shared_prefs/interface.xml')
+        clear_gate=subprocess.run(['adb','shell',f'run-as {package} sh -c "cat > shared_prefs/interface.xml"'],input=b'<?xml version="1.0" encoding="utf-8"?><map><boolean name="account_intro_seen" value="true" /></map>',capture_output=True,timeout=20)
+        if clear_gate.returncode:raise RuntimeError('Could not clear the synthetic required version')
         adb('shell',f'run-as {package} sh -c "echo preserved > files/update-probe.txt"')
         adb('shell','am','force-stop',package)
         transfer=subprocess.run(['adb','shell',f'run-as {package} sh -c "cat > cache/qa-upgrade.apk"'],input=Path(options.upgrade).read_bytes(),capture_output=True,timeout=60)

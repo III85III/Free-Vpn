@@ -26,6 +26,7 @@ public final class MainActivity extends Activity {
     private boolean ready,visible,polling,pinging;
     private boolean warming;
     private boolean checkingAccount;
+    private boolean checkingAccountIntro;
     private int connectAttempt;
     private long nextWarmup;
     private final Runnable updateAgain=new Runnable(){public void run(){if(isDestroyed()||!visible)return;UpdateActivity.notifyAvailable(MainActivity.this);main.postDelayed(this,300000);}};
@@ -47,12 +48,12 @@ public final class MainActivity extends Activity {
         WindowLayout.apply(this,root);
         showPage(state==null?0:state.getInt("page",0));
         startTunnelCheck(getIntent());
-        CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible)poll();});}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
+        CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible){poll();showAccountIntro();}});}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
     }
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
     private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null){if(intent.getBooleanExtra("qa_tun",false)){Intent permission=VpnService.prepare(this);if(permission==null)startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));else startActivityForResult(permission,185);}if(intent.getBooleanExtra("qa_update",false))startActivity(new Intent(this,UpdateActivity.class).putExtra("qa_update",true));}}
-    @Override protected void onStart(){super.onStart();if(UpdateActivity.isRequired(this)){visible=false;UpdateActivity.openRequired(this);return;}visible=true;if(ready)poll();main.postDelayed(updateAgain,1500);}
+    @Override protected void onStart(){super.onStart();if(UpdateActivity.isRequired(this)){visible=false;UpdateActivity.openRequired(this);return;}visible=true;if(ready){poll();showAccountIntro();}main.postDelayed(updateAgain,1500);}
     @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);main.removeCallbacks(updateAgain);super.onStop();}
     @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
     private TextView label(String value,int size,int color){TextView text=new TextView(this);text.setText(value);text.setTextSize(size);text.setTextColor(color);text.setTypeface(body);text.setLineSpacing(dp(4),1);return text;}
@@ -115,6 +116,18 @@ public final class MainActivity extends Activity {
     }
     private void requestVpnPermission(){Intent permission=VpnService.prepare(this);if(permission!=null)startActivityForResult(permission,85);else startTunnel();}
     private void openDocument(String name){startActivity(new Intent(this,InformationActivity.class).putExtra("document",name));}
+    private void showAccountIntro(){
+        android.content.SharedPreferences prefs=getSharedPreferences("interface",MODE_PRIVATE);
+        if(checkingAccountIntro||prefs.getBoolean("account_intro_seen",false)||UpdateActivity.isRequired(this))return;
+        checkingAccountIntro=true;
+        CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("GET","/api/accounts",null,5000);JSONArray accounts=reply.optJSONArray("accounts");int count=accounts==null?-1:accounts.length();main.post(()->{
+            checkingAccountIntro=false;if(isDestroyed()||!visible||!AccountSetup.shouldShow(prefs.getBoolean("account_intro_seen",false),count,UpdateActivity.isRequired(this)))return;
+            prefs.edit().putBoolean("account_intro_seen",true).apply();
+            new AlertDialog.Builder(this).setTitle("Your Firefox account").setMessage(AccountSetup.MESSAGE)
+                .setNeutralButton("Create account",(d,w)->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(AccountSetup.URL)));}catch(ActivityNotFoundException error){showError("Open accounts.firefox.com to create your account.");}})
+                .setPositiveButton("Sign in",(d,w)->{if(UpdateActivity.isRequired(this)){UpdateActivity.openRequired(this);return;}showPage(3);if(signIn==null||signIn.closed)signIn=new SignInFlow();}).show();
+        });}catch(Exception ignored){main.post(()->checkingAccountIntro=false);}});
+    }
     private void startTunnel(){
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},86);
         Intent intent=new Intent(this,TunnelService.class);startForegroundService(intent);feedback.setText("Starting the VPN connection…");if(statusText!=null){statusText.setText("Connecting…");power.setText("Cancel connection");}main.postDelayed(this::poll,100);

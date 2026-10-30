@@ -895,8 +895,28 @@ namespace III85III.Vpn {
     }
 
 
+    internal static class AccountSetup {
+        internal const string SignupUrl="https://accounts.firefox.com/";
+        internal const string Message="Create a Firefox/Mozilla account before connecting.\nThen sign in here with its email and Mozilla password.";
+        internal static bool ShouldShow(bool seen,bool hasAccounts,bool updateRequired){return !seen&&!hasAccounts&&!updateRequired;}
+    }
+    internal sealed class AccountIntroForm : Form {
+        internal AccountIntroForm(){
+            Text="III85III VPN";BackColor=Theme.Bg;ForeColor=Theme.TextPrimary;FormBorderStyle=FormBorderStyle.None;StartPosition=FormStartPosition.CenterParent;ClientSize=new Size(520,280);AutoScaleMode=AutoScaleMode.Dpi;
+            Paint+=delegate(object sender,PaintEventArgs e){using(var pen=new Pen(Theme.Border))e.Graphics.DrawRectangle(pen,0,0,ClientSize.Width-1,ClientSize.Height-1);};
+            var heading=new Label{Text="Your Firefox account",Font=Theme.Display(22f),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(28,24,464,44)};
+            var message=new Label{Text=AccountSetup.Message,Font=Theme.Font(12f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(28,84,464,88)};
+            var create=new LuxuryButton{Text="Create account",Bounds=new Rectangle(28,198,200,44)};
+            var signin=new LuxuryButton{Text="Sign in",Variant=ButtonVariant.Primary,Bounds=new Rectangle(244,198,248,44),DialogResult=DialogResult.Yes};
+            var close=new LuxuryButton{Text="×",Variant=ButtonVariant.Ghost,Bounds=new Rectangle(478,8,32,30),DialogResult=DialogResult.Cancel,AccessibleName="Close account setup"};
+            create.Click+=delegate{try{Process.Start(new ProcessStartInfo(AccountSetup.SignupUrl){UseShellExecute=true});}catch{message.Text="Open accounts.firefox.com to create your account.\nThen return here and choose Sign in.";}};
+            Controls.AddRange(new Control[]{heading,message,create,signin,close});AcceptButton=signin;CancelButton=close;
+        }
+        protected override bool ProcessCmdKey(ref Message msg,Keys keyData){if(keyData==Keys.Escape){DialogResult=DialogResult.Cancel;Close();return true;}return base.ProcessCmdKey(ref msg,keyData);}
+    }
     internal sealed class MainForm : Form {
         readonly Engine engine;
+        bool accountIntroSeen;
         bool updating,requiredUpdate;string lastActionError="";LuxuryButton appUpdateButton,requiredUpdateButton;Label requiredUpdateStatus;Panel updateGate; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(2);
         internal async Task RequireUpdate(string version){
             if(!AppUpdate.Required(Application.ProductVersion,version))return;
@@ -917,6 +937,8 @@ namespace III85III.Vpn {
             requiredUpdateStatus.Text="Install version "+version+" to use VPN. Your accounts stay saved.";
             requiredUpdateButton.Enabled=!updating;
             updateGate.BringToFront();
+            foreach(Form child in OwnedForms)if(child is AccountIntroForm)child.Close();
+            if(first){Show();WindowState=FormWindowState.Normal;Activate();}
             if(first&&ready){bool stopped=false;try{await engine.Api("POST","/api/power",new{on=false},10000);stopped=true;}catch{}if(!stopped){try{await engine.Stop();}catch{} }}
         }
         async Task CheckForUpdates(bool manual){
@@ -1084,7 +1106,7 @@ namespace III85III.Vpn {
             };
 
             loginBtn.Click += async delegate {
-                if (!ready) return;
+                if (!ready || requiredUpdate) return;
                 using (var dialog = new SignInForm(engine)) { dialog.ShowDialog(this); }
                 await Run(RefreshAccounts);
             };
@@ -1094,6 +1116,7 @@ namespace III85III.Vpn {
                     string id = Convert.ToString(accountsList.SelectedItems[0].Tag);
                     await engine.Api("POST", "/api/accounts/" + Uri.EscapeDataString(id) + "/refresh");
                     await RefreshAccounts();
+                    ShowAccountIntro();
                 });
             };
             useAccountBtn.Click+=async delegate{await Run(async delegate{
@@ -1123,7 +1146,7 @@ namespace III85III.Vpn {
             copyLogsBtn.Text="Copy status";
             copyLogsBtn.Click += delegate { try { Clipboard.SetText(Json.Encode(new{app_version=Application.ProductVersion,state=Json.Str(Json.Child(lastStatus,"state"),"phase"),state_code=Json.Str(Json.Child(lastStatus,"state"),"code"),mode=Json.Str(lastStatus,"system_proxy"),tun_state=Json.Str(Json.Child(lastStatus,"tun"),"state"),tun_code=Json.Str(Json.Child(lastStatus,"tun"),"code"),tun_installed=Json.Bool(Json.Child(lastStatus,"tun"),"installed"),accounts_total=Json.Num(Json.Child(lastStatus,"accounts"),"total"),connect_failure=Json.Str(lastStatus,"connect_failure")})); } catch { } };
 
-            timer.Tick += async delegate { await Poll(); if(!closing&&Visible&&Form.ActiveForm==this&&DateTime.UtcNow>=nextUpdateCheck){var updateCheck=CheckForUpdates(false);} };
+            timer.Tick += async delegate { await Poll(); if(!closing&&DateTime.UtcNow>=nextUpdateCheck){var updateCheck=CheckForUpdates(false);} };
 
             Shown += async delegate {
                 if (layoutOnly) return;
@@ -1939,6 +1962,13 @@ namespace III85III.Vpn {
             dial.Invalidate();statusPill.Invalidate();dialAction.Update();
             await Run(TogglePower);
         }
+        private void ShowAccountIntro(){
+            if(!AccountSetup.ShouldShow(accountIntroSeen,accountsList.Items.Count>0,requiredUpdate))return;
+            accountIntroSeen=true;SavePreferences();
+            using(var dialog=new AccountIntroForm()){
+                if(dialog.ShowDialog(this)==DialogResult.Yes && !requiredUpdate){SwitchPage(3);loginBtn.PerformClick();}
+            }
+        }
 
         private async Task TogglePower() {
             if(requiredUpdate)throw new IOException("Update required.");
@@ -1975,6 +2005,7 @@ namespace III85III.Vpn {
                 if (File.Exists(path)) {
                     var prefs = Json.Decode(File.ReadAllText(path));
                     hideEmail = Json.Bool(prefs, "hide_email");
+                    accountIntroSeen=Json.Bool(prefs,"account_intro_seen");
                     if (Json.Get(prefs, "sort_ping") != null) sortByPing = Json.Bool(prefs, "sort_ping");
                 }
             } catch { }
@@ -1984,7 +2015,7 @@ namespace III85III.Vpn {
         private void SavePreferences() {
             try {
                 string path = Path.Combine(engine.DataDir, "ui-prefs.json");
-                File.WriteAllText(path, Json.Encode(new Dictionary<string, object> { { "hide_email", hideEmail }, { "sort_ping", sortByPing } }));
+                File.WriteAllText(path, Json.Encode(new Dictionary<string, object> { { "hide_email", hideEmail }, { "sort_ping", sortByPing }, { "account_intro_seen", accountIntroSeen } }));
             } catch { }
         }
 
