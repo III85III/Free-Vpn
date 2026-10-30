@@ -1915,8 +1915,8 @@ namespace III85III.Vpn {
             }
         }
         internal static string FriendlyFailure(string detail) {
-            if(detail.IndexOf("application ID",StringComparison.OrdinalIgnoreCase)>=0 && detail.IndexOf("Access is denied",StringComparison.OrdinalIgnoreCase)>=0)return "Windows couldn't give the VPN service access. Repair the service in Settings.";
-            if(detail.IndexOf("TUN",StringComparison.OrdinalIgnoreCase)>=0)return "Whole computer couldn't start. Check the VPN service in Settings.";
+            if(detail.IndexOf("application ID",StringComparison.OrdinalIgnoreCase)>=0 && detail.IndexOf("Access is denied",StringComparison.OrdinalIgnoreCase)>=0)return "VPN needs a quick repair. Open Help to continue.";
+            if(detail.IndexOf("TUN",StringComparison.OrdinalIgnoreCase)>=0)return "Whole computer couldn't start. Open Help to repair VPN.";
             if(detail.IndexOf("account",StringComparison.OrdinalIgnoreCase)>=0)return "Your account needs attention. Open Account to continue.";
             if(detail.IndexOf("cancel",StringComparison.OrdinalIgnoreCase)>=0)return "The operation was cancelled. You can try again whenever you're ready.";
             return "We couldn't complete that. Check your connection and try again.";
@@ -1939,7 +1939,7 @@ namespace III85III.Vpn {
                 expand.Click+=delegate{details.Visible=!details.Visible;dialog.ClientSize=new Size(520,details.Visible?352:220);expand.Text=details.Visible?"Hide details":"Technical details";};
                 var close=new LuxuryButton{Text="Got it",Bounds=new Rectangle(382,155,114,38),DialogResult=DialogResult.OK};
                 dialog.Controls.AddRange(new Control[]{heading,summary,details,expand,close});dialog.AcceptButton=close;dialog.CancelButton=close;
-                if(repair){var settings=new LuxuryButton{Text="Open Settings",Bounds=new Rectangle(224,155,146,38),Variant=ButtonVariant.Secondary};settings.Click+=delegate{dialog.Close();SwitchPage(4);};dialog.Controls.Add(settings);}
+                if(repair){bool account=detail.IndexOf("account",StringComparison.OrdinalIgnoreCase)>=0;var settings=new LuxuryButton{Text=account?"Open account":"Get help",Bounds=new Rectangle(224,155,146,38),Variant=ButtonVariant.Secondary};settings.Click+=delegate{dialog.Close();SwitchPage(account?3:5);};dialog.Controls.Add(settings);}
                 dialog.ShowDialog(this);
             }
         }
@@ -1955,6 +1955,8 @@ namespace III85III.Vpn {
         private async Task ConnectFromHome() {
             if (!ready || busy || closing) return;
             string phase = Json.Str(Json.Child(lastStatus, "state"), "phase");
+            var accounts=Json.Child(lastStatus,"accounts");
+            if(phase=="off"&&Json.Get(accounts,"total")!=null&&Json.Num(accounts,"total")==0&&accountsList.Items.Count==0&&!requiredUpdate){SwitchPage(3);loginBtn.PerformClick();return;}
             dial.State=DialState.Connecting;statusPill.State=DialState.Connecting;
             statusPill.StatusText=phase=="off"?"Connecting":"Disconnecting";
             dialAction.Text=phase=="off"?"Connecting…":"Disconnecting…";
