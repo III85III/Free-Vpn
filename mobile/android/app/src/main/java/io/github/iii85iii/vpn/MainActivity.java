@@ -211,14 +211,12 @@ public final class MainActivity extends Activity {
         });
     }
     private void settings(){
-        heading("Settings","III85III VPN "+BuildConfig.VERSION_NAME);
+        heading("Settings","");
         content.addView(button("Mozilla accounts",()->showPage(3)));
         content.addView(button("App rules",()->showPage(2)));
         content.addView(button("Help",()->showPage(5)));
-        content.addView(button("Privacy",()->openDocument("privacy")));
-        content.addView(button("Licenses",()->openDocument("licenses")));
         content.addView(button("App updates",()->startActivity(new Intent(this,UpdateActivity.class))));
-        note("Account saved on this device.");
+        content.addView(button("About",()->new AlertDialog.Builder(this).setTitle("III85III VPN").setMessage("Version "+BuildConfig.VERSION_NAME).setPositiveButton("Done",null).setNeutralButton("Privacy",(d,w)->openDocument("privacy")).setNegativeButton("Licenses",(d,w)->openDocument("licenses")).show()));
     }
     private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 

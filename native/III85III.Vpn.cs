@@ -1304,6 +1304,7 @@ namespace III85III.Vpn {
             actionRow.Controls.Add(quickBtn);
             actionRow.Controls.Add(antigravityBtn);
             actionRow.Controls.Add(verifyBtn);
+            actionRow.Visible=false;
             p.Controls.Add(actionRow);
 
             selectedLocationCard.Size = new Size(440, 60);
@@ -1327,7 +1328,7 @@ namespace III85III.Vpn {
             speedStats.AutoSize = true;
             metricsPanel.Controls.Add(speedStats);
 
-            accountBadge.Text = "Your account will appear here";
+            accountBadge.Text = "No account added";
             accountBadge.Font = Theme.Font(8.5f);
             accountBadge.ForeColor = Theme.TextSecondary;
             accountBadge.Location = new Point(18, 42);
@@ -1343,6 +1344,7 @@ namespace III85III.Vpn {
             p.Controls.Add(metricsPanel);
 
             noticeLabel.Text = "Accounts stay on this device.";
+            noticeLabel.Visible=false;
             noticeLabel.Font = Theme.Font(9f);
             noticeLabel.ForeColor = Theme.TextSubtle;
             noticeLabel.TextAlign = ContentAlignment.MiddleCenter;
@@ -1667,34 +1669,23 @@ namespace III85III.Vpn {
             };
             minimizeToggle.Location = new Point(14, 10);
             minimizeToggle.AccessibleName="Keep running in the notification tray when closed";
-            var trayLabel = new Label { Text = "Keep running in notification tray when window is closed", Font = Theme.Font(9.5f), ForeColor = Theme.TextPrimary, Location = new Point(66, 12), AutoSize = true };
+            var trayLabel = new Label { Text = "Keep running when the window closes", Font = Theme.Font(9.5f), ForeColor = Theme.TextPrimary, Location = new Point(66, 12), AutoSize = true };
             trayRow.Controls.Add(minimizeToggle); trayRow.Controls.Add(trayLabel);
             p.Controls.Add(trayRow);
 
-            var sec3 = new Label { Text = "Resources", Name = "resourcesHeading", Font = Theme.Font(9f, FontStyle.Bold), ForeColor = Theme.TextSubtle, AutoSize = true, Location = new Point(0, 388) };
+            var sec3 = new Label { Text = "App", Name = "resourcesHeading", Font = Theme.Font(9f, FontStyle.Bold), ForeColor = Theme.TextSubtle, AutoSize = true, Location = new Point(0, 388) };
             p.Controls.Add(sec3);
 
             var btnRow = new FlowLayoutPanel { Location = new Point(0, 410), Size = new Size(700, 44), WrapContents = true, Name = "resourceButtons" };
-            var openFolderBtn = new LuxuryButton { Text = "Open Data Folder", Width = 140 };
-            var docsBtn = new LuxuryButton { Text = "User Guide", Width = 110 };
-            var dashBtn = new LuxuryButton { Text = "Repair VPN service", Width = 160 };
+            var aboutBtn = new LuxuryButton { Text = "About", Width = 110 };
             var updateBtn=new LuxuryButton{Text="Check for updates",Width=160};appUpdateButton=updateBtn;updateBtn.Click+=async delegate{await CheckForUpdates(true);};
 
-            openFolderBtn.Click += delegate { Process.Start(new ProcessStartInfo(engine.DataDir) { UseShellExecute = true }); };
-            docsBtn.Click += delegate { Process.Start(new ProcessStartInfo(Path.Combine(engine.Root, "docs", "guide.html")) { UseShellExecute = true }); };
-            dashBtn.Click += async delegate {
-                if(!ConfirmRepair())return;
-                await Run(async delegate {
-                    await engine.Api("POST","/api/power",new{on=false});await engine.InstallTun();
-                    ShowNotice("Ready to connect","The VPN service is repaired. Try Whole computer again.","Your saved accounts have been kept.",false);
-                });
-            };
-
-            btnRow.Controls.Add(updateBtn);btnRow.Controls.Add(openFolderBtn); btnRow.Controls.Add(docsBtn); btnRow.Controls.Add(dashBtn);
+            aboutBtn.Click += delegate {ShowAbout();};
+            btnRow.Controls.Add(updateBtn);btnRow.Controls.Add(aboutBtn);
             p.Controls.Add(btnRow);
 
             var legal = new Label {
-                Text = "III85III VPN · Windows desktop client\nComponent licenses and acknowledgements are included in the application folder.",
+                Text = "", Visible=false,
                 Font = Theme.Font(8f), ForeColor = Theme.TextSubtle, Location = new Point(0, 470), AutoSize = false, Name = "sourceNotice"
             };
             p.Controls.Add(legal);
@@ -1720,11 +1711,13 @@ namespace III85III.Vpn {
             exitInfoLabel.AutoSize = true;
             p.Controls.Add(exitInfoLabel);
 
-            var btnRow = new FlowLayoutPanel { Location = new Point(0, 58), Size = new Size(600, 42), WrapContents = false };
+            var btnRow = new FlowLayoutPanel { Location = new Point(0, 58), Size = new Size(600, 90), WrapContents = true };
             diagTestBtn.Size = new Size(130, 36);
             diagPingBtn.Size = new Size(130, 36);
             copyLogsBtn.Size = new Size(110, 36);
             btnRow.Controls.Add(diagTestBtn); btnRow.Controls.Add(diagPingBtn); btnRow.Controls.Add(copyLogsBtn);
+            var repair=new LuxuryButton{Text="Repair VPN",Width=120,Height=36};repair.Click+=async delegate{if(!ConfirmRepair())return;await Run(async delegate{await engine.Api("POST","/api/power",new{on=false});await engine.InstallTun();ShowNotice("VPN is ready","Try connecting again.","",false);});};btnRow.Controls.Add(repair);
+            var guide=new LuxuryButton{Text="Guide",Width=90,Height=36};guide.Click+=delegate{Process.Start(new ProcessStartInfo(Path.Combine(engine.Root,"docs","guide.html")){UseShellExecute=true});};btnRow.Controls.Add(guide);
             p.Controls.Add(btnRow);
 
             logsBox.Location = new Point(0, 106);
@@ -1798,23 +1791,23 @@ namespace III85III.Vpn {
 
                 // A quiet, centered connection page with bounded cards.
                 var home = pages[0];
-                home.AutoScroll = home.ClientSize.Height < 632;
-                home.AutoScrollMinSize = home.AutoScroll ? new Size(0, 632) : Size.Empty;
+                home.AutoScroll = home.ClientSize.Height < 560;
+                home.AutoScrollMinSize = home.AutoScroll ? new Size(0, 560) : Size.Empty;
                 int w = Math.Max(100, home.ClientSize.Width - (home.AutoScroll ? 20 : 4));
-                int cx = w / 2, y = Math.Max(8, (home.ClientSize.Height - 600) / 2);
+                int cx = w / 2, y = Math.Max(8, (home.ClientSize.Height - 524) / 2);
                 LabelBox(dialAction, 0, y, w, 42);
                 LabelBox(dialSubtext, 0, y + 48, w, 42);
                 statusPill.SetBounds(cx - 95, y + 104, 190, 32);
                 dial.SetBounds(cx - 58, y + 148, 116, 116);
                 connectBtn.SetBounds(cx - 92, y + 280, 184, 44);
                 var actions = home.Controls["connectionActions"];
-                actions.AutoSize = false; actions.SetBounds(Math.Max(0, (w - 490) / 2), y + 338, Math.Min(w, 490), 46);
+                actions.AutoSize = false; actions.SetBounds(Math.Max(0, (w - 490) / 2), y + 330, Math.Min(w, 490), 0);
                 quickBtn.SetBounds(0, 0, 138, 38); antigravityBtn.SetBounds(0, 0, 166, 38); verifyBtn.SetBounds(0, 0, 164, 38);
-                selectedLocationCard.SetBounds(Math.Max(0, (w - 520) / 2), y + 400, Math.Min(520, w), 72);
+                selectedLocationCard.SetBounds(Math.Max(0, (w - 520) / 2), y + 344, Math.Min(520, w), 72);
                 var metrics = home.Controls["connectionMetrics"];
-                metrics.SetBounds(Math.Max(0, (w - 520) / 2), y + 484, Math.Min(520, w), 80);
+                metrics.SetBounds(Math.Max(0, (w - 520) / 2), y + 430, Math.Min(520, w), 80);
                 LabelBox(accountBadge, 18, 43, metrics.Width - 110, 24); eyeBtn.SetBounds(metrics.Width - 76, 39, 64, 28);
-                LabelBox(noticeLabel, Math.Max(0, (w - 520) / 2), y + 576, Math.Min(520, w), 40);
+                LabelBox(noticeLabel, Math.Max(0, (w - 520) / 2), y + 520, Math.Min(520, w), 20);
 
                 // Search/action rows wrap before they can overlap one another.
                 foreach (int pageIndex in new[] { 1, 2 }) {
@@ -1865,8 +1858,8 @@ namespace III85III.Vpn {
 
                 var diagnostics = pages[5]; int dw = Math.Max(100, diagnostics.ClientSize.Width - 10);
                 LabelBox(exitInfoLabel, 0, 34, dw, 28);
-                var diagRow = diagTestBtn.Parent; diagRow.SetBounds(0, 76, dw, 46);
-                logsBox.SetBounds(0, 136, dw, Math.Max(100, diagnostics.ClientSize.Height - 142));
+                var diagRow = diagTestBtn.Parent; diagRow.SetBounds(0, 76, dw, 104);
+                logsBox.SetBounds(0, 198, dw, Math.Max(100, diagnostics.ClientSize.Height - 204));
             } finally { arranging = false; }
         }
 
@@ -1901,6 +1894,15 @@ namespace III85III.Vpn {
             splitBrowse.Enabled = enabled;
         }
 
+        private void ShowAbout(){
+            using(var dialog=new Form{Text="III85III VPN",BackColor=Theme.Bg,ForeColor=Theme.TextPrimary,ClientSize=new Size(480,230),FormBorderStyle=FormBorderStyle.None,StartPosition=FormStartPosition.CenterParent}){
+                dialog.Controls.Add(new Label{Text="III85III VPN",Font=Theme.Display(24f),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(24,24,432,44)});
+                dialog.Controls.Add(new Label{Text="Version "+Application.ProductVersion,Font=Theme.Font(11f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(24,82,432,30)});
+                var privacy=new LuxuryButton{Text="Privacy",Bounds=new Rectangle(24,154,132,40)};privacy.Click+=delegate{Process.Start(new ProcessStartInfo(new Uri(Path.Combine(engine.Root,"docs","guide.html")).AbsoluteUri+"#privacy"){UseShellExecute=true});};
+                var licenses=new LuxuryButton{Text="Licenses",Bounds=new Rectangle(168,154,132,40)};licenses.Click+=delegate{Process.Start(new ProcessStartInfo(Path.Combine(engine.Root,"licenses")){UseShellExecute=true});};
+                var close=new LuxuryButton{Text="Done",Variant=ButtonVariant.Primary,Bounds=new Rectangle(312,154,144,40),DialogResult=DialogResult.OK};dialog.Controls.AddRange(new Control[]{privacy,licenses,close});dialog.AcceptButton=close;dialog.CancelButton=close;dialog.ShowDialog(this);
+            }
+        }
         private bool ConfirmRepair() {return ConfirmAction("Repair VPN service","This disconnects VPN and asks for Windows administrator approval. Your accounts stay saved.","Repair");}
         internal bool ConfirmAction(string title,string message,string action) {
             using(var dialog=new Form{Text="III85III VPN",BackColor=Theme.Bg,ForeColor=Theme.TextPrimary,ClientSize=new Size(480,200),StartPosition=FormStartPosition.CenterParent,FormBorderStyle=FormBorderStyle.None,MaximizeBox=false,MinimizeBox=false,ShowInTaskbar=false}){
@@ -2041,7 +2043,7 @@ namespace III85III.Vpn {
             var acct = Json.Child(lastStatus, "active_account");
             var usage = Json.Child(acct, "usage");
             string email = Json.Str(acct, "email");
-            accountBadge.Text = acct.Count == 0 ? (ConnectionState.HasAccounts(lastStatus)?"Account saved · connect to check your balance":"Add an account to see your balance") :
+            accountBadge.Text = acct.Count == 0 ? (ConnectionState.HasAccounts(lastStatus)?"Account saved":"No account added") :
                 MaskEmail(email) + " · " + (Json.Bool(usage, "unlimited") ? "Unlimited" : Theme.Bytes(Json.Num(usage, "remaining_bytes")) + " remaining");
         }
 

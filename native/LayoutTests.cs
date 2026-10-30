@@ -30,6 +30,9 @@ namespace III85III.Vpn {
                     Check(!VerificationForm.NeedsCode("done"),"finished login cannot request another code");
                 }
                 form.Show();
+                Check(!((Control)Field(form,"quickBtn")).Visible&&!((Control)Field(form,"antigravityBtn")).Visible,"home avoids duplicate connection and country shortcuts");
+                var settingsPanel=((Panel[])Field(form,"pages"))[4];
+                Check(settingsPanel.Controls["resourceButtons"].Controls.Count==2,"settings keeps updates and About without technical shortcuts");
                 var shortcut=form.GetType().GetMethod("ProcessCmdKey",BindingFlags.Instance|BindingFlags.NonPublic);
                 for(int page=0;page<6;page++){
                     object[] keyArgs={new Message(),Keys.Control|(Keys)((int)Keys.D1+page)};

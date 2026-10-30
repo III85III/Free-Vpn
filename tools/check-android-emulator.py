@@ -130,6 +130,7 @@ try:
     (output/'after-cancel.txt').write_bytes(adb('shell','dumpsys','activity','top'))
     tap('Settings')
     screenshot('settings')
+    tap('About')
     tap('Privacy')
     time.sleep(.7)
     if not any('Privacy' in node.get('text','') for node in hierarchy().iter('node')):

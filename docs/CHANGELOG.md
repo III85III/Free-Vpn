@@ -2,6 +2,10 @@
 
 ## Windows 2.2.3 / Android 2.3.3
 
+- Simplify Home to the main connection control, server selection and account/traffic status. Move supporting options into Help and About.
+- Show a one-time account reminder on an empty first installation. It only has Got it; sign-in and verification remain unchanged.
+- Download updates inside the app. Windows replaces the existing installation and reopens without repeated setup questions; Android moves directly from verification to its required system installation confirmation.
+
 - Make detected newer app releases mandatory: Update or Exit, with no Later action.
 - Block VPN use while a required update is pending and remember the requirement across reopening.
 - Keep retry available after a failed check, download or installation. User confirmation from the operating system is still required.
