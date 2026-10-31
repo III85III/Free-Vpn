@@ -410,9 +410,19 @@ namespace III85III.Vpn {
     internal enum DialState { Disconnected, Connecting, Connected, Error }
 
     internal sealed class LuxuryDial : Control {
-        public DialState State = DialState.Disconnected;
+        private DialState _state = DialState.Disconnected;
+        public DialState State {
+            get { return _state; }
+            set {
+                if (_state != value) {
+                    _state = value;
+                    UpdatePulse();
+                    Invalidate();
+                }
+            }
+        }
         private bool isHovered, isPressed;
-        private readonly System.Windows.Forms.Timer pulseTimer = new System.Windows.Forms.Timer { Interval = 40 };
+        private readonly System.Windows.Forms.Timer pulseTimer = new System.Windows.Forms.Timer { Interval = 35 };
         private float pulsePhase = 0f;
 
         public LuxuryDial() {
@@ -420,16 +430,26 @@ namespace III85III.Vpn {
             Size = new Size(116, 116);
             Cursor = Cursors.Hand;
             pulseTimer.Tick += delegate {
-                float step = (State == DialState.Connecting) ? 0.20f : (State == DialState.Connected) ? 0.13f : 0.08f;
-                pulsePhase += step;
-                if (pulsePhase > 6.283185f) pulsePhase -= 6.283185f;
-                Invalidate();
+                if (_state == DialState.Connecting) {
+                    pulsePhase += 0.22f;
+                    if (pulsePhase > 6.283185f) pulsePhase -= 6.283185f;
+                    Invalidate();
+                } else if (_state == DialState.Connected && isHovered) {
+                    Invalidate();
+                } else if (pulseTimer.Enabled && _state != DialState.Connecting) {
+                    pulseTimer.Stop();
+                    Invalidate();
+                }
             };
-            pulseTimer.Start();
         }
 
         private void UpdatePulse() {
-            if (!pulseTimer.Enabled) pulseTimer.Start();
+            if (_state == DialState.Connecting) {
+                if (!pulseTimer.Enabled) pulseTimer.Start();
+            } else {
+                if (pulseTimer.Enabled) pulseTimer.Stop();
+            }
+            Invalidate();
         }
 
         protected override void OnMouseEnter(EventArgs e) { isHovered = true; Invalidate(); base.OnMouseEnter(e); }
@@ -542,18 +562,47 @@ namespace III85III.Vpn {
                 }
             }
 
-            // Flowing Liquid Gold Streams (Primary & Intertwined Secondary)
-            float prog = (pulsePhase / 6.283185f) % 1.0f;
-            DrawEnergyStream(g, pathPoints, pointCount, prog, true, cx, cy);
-            DrawEnergyStream(g, pathPoints, pointCount, (prog + 0.5f) % 1.0f, false, cx, cy);
+            if (_state == DialState.Connected) {
+                // Fully filled infinity (کاملاً پر بشه - دیگه نچرخه)
+                using (var gpFull = new GraphicsPath()) {
+                    gpFull.AddLines(pathPoints);
+                    // 1. Volumetric amber-gold glow
+                    using (var pen = new Pen(Color.FromArgb(95, 255, 193, 7), 13f)) {
+                        pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                        g.DrawPath(pen, gpFull);
+                    }
+                    // 2. Solid brilliant liquid gold
+                    using (var pen = new Pen(Color.FromArgb(245, 245, 208, 97), 5.5f)) {
+                        pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                        g.DrawPath(pen, gpFull);
+                    }
+                    // 3. White-hot core
+                    using (var pen = new Pen(Color.FromArgb(255, 255, 254, 245), 2.2f)) {
+                        pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                        g.DrawPath(pen, gpFull);
+                    }
+                }
+                // Central crossover bloom
+                using (var brush = new SolidBrush(Color.FromArgb(220, 255, 248, 220))) {
+                    g.FillEllipse(brush, cx - 7f, cy - 7f, 14f, 14f);
+                }
+                using (var pen = new Pen(Color.FromArgb(200, 255, 240, 180), 2f)) {
+                    g.DrawLine(pen, cx - 11f, cy, cx + 11f, cy);
+                }
+            } else if (_state == DialState.Connecting) {
+                // Actively circulating / spinning (موقع اتصال بچرخه)
+                float prog = (pulsePhase / 6.283185f) % 1.0f;
+                DrawEnergyStream(g, pathPoints, pointCount, prog, true, cx, cy);
+                DrawEnergyStream(g, pathPoints, pointCount, (prog + 0.5f) % 1.0f, false, cx, cy);
 
-            // Central Crossover Flare
-            float distToCenter = Math.Min(Math.Abs(prog - 0.25f), Math.Abs(prog - 0.75f));
-            float crossover = Math.Max(0f, 1f - distToCenter * 8f);
-            if (crossover > 0f) {
-                float flareR = (8f + crossover * 8f);
-                using (var brush = new SolidBrush(Color.FromArgb((int)(190 * crossover), 255, 245, 200))) {
-                    g.FillEllipse(brush, cx - flareR / 2f, cy - flareR / 2f, flareR, flareR);
+                // Central Crossover Flare
+                float distToCenter = Math.Min(Math.Abs(prog - 0.25f), Math.Abs(prog - 0.75f));
+                float crossover = Math.Max(0f, 1f - distToCenter * 8f);
+                if (crossover > 0f) {
+                    float flareR = (8f + crossover * 8f);
+                    using (var brush = new SolidBrush(Color.FromArgb((int)(190 * crossover), 255, 245, 200))) {
+                        g.FillEllipse(brush, cx - flareR / 2f, cy - flareR / 2f, flareR, flareR);
+                    }
                 }
             }
         }
