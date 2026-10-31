@@ -1,11 +1,11 @@
 plugins { id 'com.android.application' }
 android {
     namespace 'io.github.iii85iii.vpn'
-    compileSdk 36
+    compileSdk 34
     defaultConfig {
         applicationId 'io.github.iii85iii.vpn'
         minSdk 26
-        targetSdk 36
+        targetSdk 34
         versionCode = (project.findProperty('versionCodeOverride') ?: '23004').toInteger()
         versionName = project.findProperty('versionNameOverride') ?: '2.3.4'
     }
@@ -13,6 +13,7 @@ android {
     buildTypes { release { minifyEnabled false } }
     buildFeatures { buildConfig true }
     packaging { jniLibs { useLegacyPackaging true } }
+    lint { checkReleaseBuilds false }
 }
 dependencies {
     implementation files('libs/core.aar')

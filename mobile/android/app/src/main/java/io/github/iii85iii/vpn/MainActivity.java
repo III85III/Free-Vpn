@@ -1,5 +1,7 @@
 package io.github.iii85iii.vpn;
 
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.*;
 import android.content.*;
 import android.content.pm.ApplicationInfo;
@@ -11,25 +13,32 @@ import android.os.*;
 import android.text.*;
 import android.text.method.PasswordTransformationMethod;
 import android.view.*;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.*;
 import org.json.*;
 import java.util.*;
 import mobile.Mobile;
 
 public final class MainActivity extends Activity {
-    private final int BG=Color.rgb(16,19,25),SURFACE=Color.rgb(27,32,40),GOLD=Color.rgb(217,189,131),TEXT=Color.rgb(239,239,234),MUTED=Color.rgb(159,167,180);
+    private final int BG=Color.rgb(16,19,25),SURFACE=Color.rgb(27,32,40),GOLD=Color.rgb(217,189,131),TEXT=Color.rgb(239,239,234),MUTED=Color.rgb(159,167,180),GREEN=Color.rgb(46,213,115),AMBER=Color.rgb(255,165,2);
     private final Handler main=new Handler(Looper.getMainLooper());
     private LinearLayout content,nav;
-    private TextView statusText,detailText,speedText,feedback;
-    private Button power,server;
+    private TextView statusText,detailText,speedText,feedback,server;
+    private Button power;
+    private ImageView heroInfinity;
+    private View statusDot;
+    private LinearLayout updateBanner;
+    private ObjectAnimator pulseAnim;
     private int page;
     private boolean ready,visible,polling,pinging;
     private boolean warming;
     private boolean checkingAccount;
     private boolean checkingAccountIntro,accountIntroShowing;
+    private boolean checkingUpdate;
     private int connectAttempt;
     private long nextWarmup;
-    private final Runnable updateAgain=new Runnable(){public void run(){if(isDestroyed()||!visible)return;UpdateActivity.notifyAvailable(MainActivity.this);main.postDelayed(this,300000);}};
+    private UpdateActivity.Info latestAvailable;
+    private final Runnable updateAgain=new Runnable(){public void run(){if(isDestroyed()||!visible)return;checkForUpdates(false);main.postDelayed(this,300000);}};
     private JSONObject status=new JSONObject();
     private JSONArray locations=new JSONArray();
     private Typeface body=Typeface.create("sans-serif",Typeface.NORMAL);
@@ -41,26 +50,97 @@ public final class MainActivity extends Activity {
         if(!(BuildConfig.DEBUG&&getIntent().getBooleanExtra("qa_screenshots",false)))getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
         try{body=Typeface.createFromAsset(getAssets(),"fonts/Lato-Regular.ttf");}catch(Exception ignored){}
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);root.setPadding(dp(18),dp(12),dp(18),0);
-        TextView brand=label("III85III  /  VPN",21,GOLD);brand.setPadding(0,dp(10),0,dp(16));
-        LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));
-        TextView contact=label("Telegram",13,GOLD);contact.setPadding(dp(12),dp(10),0,dp(16));contact.setContentDescription("Telegram support");contact.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});header.addView(contact);root.addView(header);
+
+        LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);
+        TextView brand=label("III85III",20,GOLD);brand.setTypeface(body,Typeface.BOLD);brand.setLetterSpacing(0.06f);
+        TextView vpnBadge=label("VPN",11,BG);vpnBadge.setTypeface(body,Typeface.BOLD);vpnBadge.setBackground(cardBackground(GOLD,6));vpnBadge.setPadding(dp(7),dp(3),dp(7),dp(3));
+        LinearLayout brandBox=new LinearLayout(this);brandBox.setGravity(Gravity.CENTER_VERTICAL);brandBox.setPadding(0,dp(6),0,dp(12));
+        brandBox.addView(brand);
+        LinearLayout.LayoutParams vpnLp=new LinearLayout.LayoutParams(-2,-2);vpnLp.setMargins(dp(10),0,0,0);brandBox.addView(vpnBadge,vpnLp);
+        header.addView(brandBox,new LinearLayout.LayoutParams(0,-2,1));
+
+        TextView contact=label("Support ↗",13,GOLD);contact.setPadding(dp(12),dp(6),0,dp(12));contact.setContentDescription("Telegram support");contact.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});header.addView(contact);root.addView(header);
         nav=new LinearLayout(this);
-        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(0,dp(24),0,dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        feedback=label("Starting your local engine…",13,MUTED);feedback.setPadding(0,dp(8),0,dp(10));root.addView(feedback);root.addView(nav);setContentView(root);
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(0,dp(10),0,dp(16));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        feedback=label("Starting your local engine…",13,MUTED);feedback.setPadding(0,dp(6),0,dp(8));root.addView(feedback);root.addView(nav);setContentView(root);
         WindowLayout.apply(this,root);
         showPage(state==null?0:state.getInt("page",0));
         startTunnelCheck(getIntent());
-        CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible){poll();showAccountIntro();}});}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
+        CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible){poll();showAccountIntro();checkForUpdates(false);}});}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
     }
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
     private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null){if(intent.getBooleanExtra("qa_tun",false)){Intent permission=VpnService.prepare(this);if(permission==null)startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));else startActivityForResult(permission,185);}if(intent.getBooleanExtra("qa_update",false))startActivity(new Intent(this,UpdateActivity.class).putExtra("qa_update",true));}}
     @Override protected void onStart(){super.onStart();if(UpdateActivity.isRequired(this)){visible=false;UpdateActivity.openRequired(this);return;}visible=true;if(ready){poll();showAccountIntro();}main.postDelayed(updateAgain,1500);}
-    @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);main.removeCallbacks(updateAgain);super.onStop();}
-    @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
+    @Override protected void onStop(){visible=false;stopInfinityBreathing();main.removeCallbacks(pollAgain);main.removeCallbacks(updateAgain);super.onStop();}
+    @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();stopInfinityBreathing();main.removeCallbacksAndMessages(null);super.onDestroy();}
     private TextView label(String value,int size,int color){TextView text=new TextView(this);text.setText(value);text.setTextSize(size);text.setTextColor(color);text.setTypeface(body);text.setLineSpacing(dp(4),1);return text;}
-    private GradientDrawable background(int color){GradientDrawable shape=new GradientDrawable();shape.setColor(color);shape.setCornerRadius(dp(15));return shape;}
-    private Button button(String title,Runnable action){Button b=new Button(this);b.setText(title);b.setAllCaps(false);b.setTextSize(15);b.setTypeface(body);b.setTextColor(TEXT);b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33D9BD83),background(SURFACE),background(Color.WHITE)));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(54));p.setMargins(0,dp(7),0,dp(7));b.setLayoutParams(p);b.setOnClickListener(v->action.run());return b;}
+    private GradientDrawable background(int color){GradientDrawable shape=new GradientDrawable();shape.setColor(color);shape.setCornerRadius(dp(16));return shape;}
+    private GradientDrawable cardBackground(int color,int radiusDp){GradientDrawable shape=new GradientDrawable();shape.setColor(color);shape.setCornerRadius(dp(radiusDp));return shape;}
+    private GradientDrawable pillBackground(int strokeColor,int fillColor,int radiusDp,int strokeWidthDp){GradientDrawable shape=new GradientDrawable();shape.setColor(fillColor);shape.setCornerRadius(dp(radiusDp));if(strokeWidthDp>0)shape.setStroke(dp(strokeWidthDp),strokeColor);return shape;}
+    private Button button(String title,Runnable action){Button b=new Button(this);b.setText(title);b.setAllCaps(false);b.setTextSize(15);b.setTypeface(body);b.setTextColor(TEXT);b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33D9BD83),background(SURFACE),background(Color.WHITE)));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(52));p.setMargins(0,dp(6),0,dp(6));b.setLayoutParams(p);b.setOnClickListener(v->action.run());return b;}
+    private void startInfinityBreathing(){
+        if(heroInfinity==null)return;
+        if(pulseAnim!=null&&pulseAnim.isRunning())return;
+        pulseAnim=ObjectAnimator.ofFloat(heroInfinity,"scaleX",1f,1.045f,1f);
+        pulseAnim.setDuration(2400);
+        pulseAnim.setRepeatCount(ValueAnimator.INFINITE);
+        pulseAnim.setInterpolator(new AccelerateDecelerateInterpolator());
+        pulseAnim.addUpdateListener(anim->{if(heroInfinity!=null)heroInfinity.setScaleY((Float)anim.getAnimatedValue());});
+        pulseAnim.start();
+    }
+    private void stopInfinityBreathing(){
+        if(pulseAnim!=null){pulseAnim.cancel();pulseAnim=null;}
+        if(heroInfinity!=null){heroInfinity.setScaleX(1f);heroInfinity.setScaleY(1f);}
+    }
+    private void updateUpdateBanner(){
+        if(updateBanner==null)return;
+        updateBanner.removeAllViews();
+        if(latestAvailable==null||latestAvailable.code<=BuildConfig.VERSION_CODE){updateBanner.setVisibility(View.GONE);return;}
+        updateBanner.setVisibility(View.VISIBLE);
+        updateBanner.setBackground(pillBackground(GOLD,0x22D9BD83,14,1));
+        updateBanner.setPadding(dp(16),dp(10),dp(16),dp(10));
+        TextView msg=label("⚡ Update available: v"+latestAvailable.version,13,GOLD);
+        msg.setTypeface(body,Typeface.BOLD);
+        updateBanner.addView(msg,new LinearLayout.LayoutParams(0,-2,1));
+        TextView act=label("Install Now ›",13,TEXT);
+        act.setTypeface(body,Typeface.BOLD);
+        updateBanner.addView(act);
+        updateBanner.setOnClickListener(v->startActivity(new Intent(this,UpdateActivity.class)));
+    }
+    private void checkForUpdates(boolean manual){
+        if(checkingUpdate)return;
+        checkingUpdate=true;
+        if(manual)feedback.setText("Checking for updates…");
+        CoreRuntime.IO.execute(()->{
+            try{
+                UpdateActivity.Info info=UpdateActivity.latest();
+                main.post(()->{
+                    checkingUpdate=false;
+                    if(isDestroyed())return;
+                    if(info.code>BuildConfig.VERSION_CODE){
+                        latestAvailable=info;
+                        updateUpdateBanner();
+                        if(manual){
+                            new AlertDialog.Builder(this)
+                                .setTitle("Update Available")
+                                .setMessage("III85III VPN v"+info.version+" is available.\nWould you like to install it now?")
+                                .setPositiveButton("Update Now",(d,w)->startActivity(new Intent(this,UpdateActivity.class)))
+                                .setNegativeButton("Later",null)
+                                .show();
+                        }
+                    }else{
+                        if(manual)feedback.setText("You are on the latest version (v"+BuildConfig.VERSION_NAME+").");
+                    }
+                });
+            }catch(Exception err){
+                main.post(()->{
+                    checkingUpdate=false;
+                    if(manual&&!isDestroyed())showError("Unable to check for updates: "+err.getMessage());
+                });
+            }
+        });
+    }
     private void showError(String detail){
         if(isDestroyed()||isFinishing())return;
         String message=detail==null?"":detail;
@@ -76,8 +156,8 @@ public final class MainActivity extends Activity {
         };
         feedback.setOnClickListener(v->display.run());display.run();
     }
-    private void heading(String title,String subtitle){TextView h=label(title,27,TEXT);h.setPadding(0,0,0,dp(12));content.addView(h);if(subtitle.isEmpty())return;TextView sub=label(subtitle,14,MUTED);sub.setPadding(0,dp(8),0,dp(20));content.addView(sub);}
-    private void note(String text){if(text.isEmpty())return;TextView view=label(text,14,MUTED);view.setPadding(0,dp(8),0,dp(12));content.addView(view);}
+    private void heading(String title,String subtitle){TextView h=label(title,24,TEXT);h.setTypeface(body,Typeface.BOLD);h.setPadding(0,0,0,dp(8));content.addView(h);if(subtitle.isEmpty())return;TextView sub=label(subtitle,13,MUTED);sub.setPadding(0,dp(4),0,dp(16));content.addView(sub);}
+    private void note(String text){if(text.isEmpty())return;TextView view=label(text,13,MUTED);view.setPadding(0,dp(6),0,dp(10));content.addView(view);}
     private void api(String method,String path,JSONObject body,int timeout,Reply reply){
         if(!ready){feedback.setText("Your local engine is starting.");return;}
         feedback.setText("Working…");
@@ -85,19 +165,126 @@ public final class MainActivity extends Activity {
     }
     private JSONObject object(String key,Object value){JSONObject obj=new JSONObject();try{obj.put(key,value);}catch(JSONException impossible){throw new IllegalStateException(impossible);}return obj;}
     private void showPage(int target){
-        page=target;nav.removeAllViews();String[] names={"VPN","Locations","Settings"};int[] tabs={0,1,4};
-        for(int i=0;i<names.length;i++){final int tab=tabs[i];boolean selected=tab==page||(tab==4&&page>=2);Button item=button(names[i],()->showPage(tab));item.setTextColor(selected?BG:MUTED);item.setBackground(background(selected?GOLD:BG));LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,dp(54),1);params.setMargins(0,dp(4),dp(4),dp(4));item.setLayoutParams(params);nav.addView(item);}
-        content.removeAllViews();statusText=detailText=speedText=null;power=null;
+        page=target;nav.removeAllViews();String[] names={"VPN","Servers","Settings"};int[] tabs={0,1,4};
+        for(int i=0;i<names.length;i++){
+            final int tab=tabs[i];boolean selected=tab==page||(tab==4&&page>=2);
+            Button item=button(names[i],()->showPage(tab));
+            item.setTextColor(selected?BG:MUTED);
+            item.setTypeface(body,selected?Typeface.BOLD:Typeface.NORMAL);
+            item.setBackground(background(selected?GOLD:BG));
+            LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,dp(48),1);
+            params.setMargins(dp(3),dp(4),dp(3),dp(4));
+            item.setLayoutParams(params);
+            nav.addView(item);
+        }
+        content.removeAllViews();statusText=detailText=speedText=server=null;power=null;heroInfinity=null;statusDot=null;updateBanner=null;
         switch(page){case 0:home();break;case 1:locationPage();break;case 2:appRules();break;case 3:accounts();break;case 4:settings();break;default:help();}
     }
     private void home(){
-        heading("VPN","");
-        statusText=label("Ready to connect",28,GOLD);statusText.setGravity(Gravity.CENTER);statusText.setPadding(0,dp(34),0,dp(16));content.addView(statusText);
-        detailText=label("Add your account to connect.",14,MUTED);detailText.setGravity(Gravity.CENTER);content.addView(detailText);
-        power=button("Connect",this::toggleConnection);power.setTextColor(BG);power.setBackground(background(GOLD));content.addView(power);
-        server=button("Server · Automatic",()->showPage(1));content.addView(server);
-        speedText=label("↓ 0 B/s      ↑ 0 B/s",16,TEXT);speedText.setGravity(Gravity.CENTER);speedText.setPadding(0,dp(24),0,dp(20));content.addView(speedText);
-        note("");updateHome();
+        updateBanner=new LinearLayout(this);
+        updateBanner.setOrientation(LinearLayout.HORIZONTAL);
+        updateBanner.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams ubParams=new LinearLayout.LayoutParams(-1,-2);
+        ubParams.setMargins(0,0,0,dp(14));
+        updateBanner.setLayoutParams(ubParams);
+        content.addView(updateBanner);
+        updateUpdateBanner();
+
+        heroInfinity=new ImageView(this);
+        heroInfinity.setImageResource(R.drawable.infinity_loop);
+        heroInfinity.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        heroInfinity.setAdjustViewBounds(true);
+        LinearLayout.LayoutParams imgParams=new LinearLayout.LayoutParams(dp(220),dp(130));
+        imgParams.gravity=Gravity.CENTER_HORIZONTAL;
+        imgParams.setMargins(0,dp(6),0,dp(18));
+        heroInfinity.setLayoutParams(imgParams);
+        content.addView(heroInfinity);
+
+        LinearLayout statusCapsule=new LinearLayout(this);
+        statusCapsule.setOrientation(LinearLayout.HORIZONTAL);
+        statusCapsule.setGravity(Gravity.CENTER);
+        statusCapsule.setPadding(dp(18),dp(7),dp(18),dp(7));
+        statusCapsule.setBackground(pillBackground(0x339FA7B4,0x1A1B2028,20,1));
+        LinearLayout.LayoutParams capParams=new LinearLayout.LayoutParams(-2,-2);
+        capParams.gravity=Gravity.CENTER_HORIZONTAL;
+        capParams.setMargins(0,0,0,dp(12));
+        statusCapsule.setLayoutParams(capParams);
+
+        statusDot=new View(this);
+        GradientDrawable dotBg=new GradientDrawable();
+        dotBg.setShape(GradientDrawable.OVAL);
+        dotBg.setColor(MUTED);
+        statusDot.setBackground(dotBg);
+        LinearLayout.LayoutParams dotParams=new LinearLayout.LayoutParams(dp(8),dp(8));
+        dotParams.setMargins(0,0,dp(8),0);
+        statusDot.setLayoutParams(dotParams);
+        statusCapsule.addView(statusDot);
+
+        statusText=label("DISCONNECTED",13,MUTED);
+        statusText.setTypeface(body,Typeface.BOLD);
+        statusText.setLetterSpacing(0.06f);
+        statusCapsule.addView(statusText);
+        content.addView(statusCapsule);
+
+        detailText=label("",12,MUTED);
+        detailText.setGravity(Gravity.CENTER);
+        detailText.setPadding(0,0,0,dp(12));
+        detailText.setVisibility(View.GONE);
+        content.addView(detailText);
+
+        power=new Button(this);
+        power.setText("CONNECT");
+        power.setAllCaps(false);
+        power.setTextSize(16);
+        power.setTypeface(body,Typeface.BOLD);
+        power.setTextColor(BG);
+        power.setBackground(background(GOLD));
+        LinearLayout.LayoutParams pwrParams=new LinearLayout.LayoutParams(-1,dp(56));
+        pwrParams.setMargins(0,dp(4),0,dp(14));
+        power.setLayoutParams(pwrParams);
+        power.setOnClickListener(v->toggleConnection());
+        content.addView(power);
+
+        LinearLayout locationCard=new LinearLayout(this);
+        locationCard.setOrientation(LinearLayout.HORIZONTAL);
+        locationCard.setGravity(Gravity.CENTER_VERTICAL);
+        locationCard.setPadding(dp(18),dp(14),dp(18),dp(14));
+        locationCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),cardBackground(SURFACE,16),background(Color.WHITE)));
+        LinearLayout.LayoutParams locCardParams=new LinearLayout.LayoutParams(-1,-2);
+        locCardParams.setMargins(0,0,0,dp(12));
+        locationCard.setLayoutParams(locCardParams);
+
+        LinearLayout locCol=new LinearLayout(this);
+        locCol.setOrientation(LinearLayout.VERTICAL);
+        TextView locTitle=label("LOCATION",11,GOLD);
+        locTitle.setTypeface(body,Typeface.BOLD);
+        locTitle.setLetterSpacing(0.06f);
+        server=label("Automatic",15,TEXT);
+        server.setTypeface(body,Typeface.BOLD);
+        locCol.addView(locTitle);
+        locCol.addView(server);
+        locationCard.addView(locCol,new LinearLayout.LayoutParams(0,-2,1));
+
+        TextView changeAction=label("Change ›",13,MUTED);
+        locationCard.addView(changeAction);
+        locationCard.setOnClickListener(v->showPage(1));
+        content.addView(locationCard);
+
+        LinearLayout speedCard=new LinearLayout(this);
+        speedCard.setOrientation(LinearLayout.HORIZONTAL);
+        speedCard.setGravity(Gravity.CENTER);
+        speedCard.setPadding(dp(18),dp(12),dp(18),dp(12));
+        speedCard.setBackground(cardBackground(SURFACE,14));
+        LinearLayout.LayoutParams speedCardParams=new LinearLayout.LayoutParams(-1,-2);
+        speedCardParams.setMargins(0,0,0,dp(10));
+        speedCard.setLayoutParams(speedCardParams);
+
+        speedText=label("↓ 0 B/s      ↑ 0 B/s",13,TEXT);
+        speedText.setTypeface(body);
+        speedCard.addView(speedText);
+        content.addView(speedCard);
+
+        updateHome();
     }
     private void toggleConnection(){
         if(UpdateActivity.isRequired(this)){UpdateActivity.openRequired(this);return;}
@@ -148,16 +335,82 @@ public final class MainActivity extends Activity {
         JSONObject state=status.optJSONObject("state"),test=status.optJSONObject("last_test");
         String phase=state==null?"off":state.optString("phase","off");
         boolean verified=verified();
-        String selected=status.optString("selection_name");if(server!=null)server.setText("Server · "+(selected.isEmpty()?"Automatic":selected));
+        String selected=status.optString("selection_name");
+        if(server!=null)server.setText(selected.isEmpty()?"Automatic":selected);
         String problem=connectionProblem(status);
         VpnLifecycle.Phase transition=TunnelService.lifecycle.phase();
-        statusText.setText(checkingAccount?"Checking your account…":verified?"Connected":!problem.isEmpty()?"Needs attention":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":TunnelService.active||transition==VpnLifecycle.Phase.STARTING?"Connecting…":"Disconnected");
-        String detail=!TunnelService.error.isEmpty()?TunnelService.error:problem;
-        detailText.setText(verified?"VPN is on.":!detail.isEmpty()?"Connection failed · Tap for details":"Choose a server, then connect.");
-        detailText.setOnClickListener(detail.isEmpty()?null:v->showError(detail));
-        power.setText(checkingAccount||transition==VpnLifecycle.Phase.STARTING?"Cancel connection":transition==VpnLifecycle.Phase.STOPPING?"Disconnecting…":TunnelService.active?"Disconnect":"Connect");
+
+        GradientDrawable dotBg=new GradientDrawable();
+        dotBg.setShape(GradientDrawable.OVAL);
+
+        if(checkingAccount){
+            statusText.setText("CHECKING ACCOUNT…");
+            statusText.setTextColor(GOLD);
+            dotBg.setColor(GOLD);
+            if(statusDot!=null)statusDot.setBackground(dotBg);
+            detailText.setVisibility(View.GONE);
+            power.setText("CANCEL");
+            power.setTextColor(GOLD);
+            power.setBackground(pillBackground(GOLD,SURFACE,28,2));
+            startInfinityBreathing();
+        }else if(verified){
+            statusText.setText("PROTECTED");
+            statusText.setTextColor(GREEN);
+            dotBg.setColor(GREEN);
+            if(statusDot!=null)statusDot.setBackground(dotBg);
+            detailText.setVisibility(View.GONE);
+            power.setText("DISCONNECT");
+            power.setTextColor(GOLD);
+            power.setBackground(pillBackground(GOLD,SURFACE,28,2));
+            startInfinityBreathing();
+        }else if(!problem.isEmpty()){
+            statusText.setText("ATTENTION REQUIRED");
+            statusText.setTextColor(AMBER);
+            dotBg.setColor(AMBER);
+            if(statusDot!=null)statusDot.setBackground(dotBg);
+            detailText.setText(problem+"  ·  Tap for details");
+            detailText.setVisibility(View.VISIBLE);
+            detailText.setOnClickListener(v->showError(problem));
+            power.setText("RECONNECT");
+            power.setTextColor(BG);
+            power.setBackground(background(GOLD));
+            stopInfinityBreathing();
+        }else if(transition==VpnLifecycle.Phase.STOPPING){
+            statusText.setText("DISCONNECTING…");
+            statusText.setTextColor(MUTED);
+            dotBg.setColor(MUTED);
+            if(statusDot!=null)statusDot.setBackground(dotBg);
+            detailText.setVisibility(View.GONE);
+            power.setText("DISCONNECTING…");
+            power.setTextColor(MUTED);
+            power.setBackground(background(SURFACE));
+            stopInfinityBreathing();
+        }else if(TunnelService.active||transition==VpnLifecycle.Phase.STARTING){
+            statusText.setText("CONNECTING…");
+            statusText.setTextColor(GOLD);
+            dotBg.setColor(GOLD);
+            if(statusDot!=null)statusDot.setBackground(dotBg);
+            detailText.setVisibility(View.GONE);
+            power.setText("CANCEL");
+            power.setTextColor(GOLD);
+            power.setBackground(pillBackground(GOLD,SURFACE,28,2));
+            startInfinityBreathing();
+        }else{
+            statusText.setText("DISCONNECTED");
+            statusText.setTextColor(MUTED);
+            dotBg.setColor(MUTED);
+            if(statusDot!=null)statusDot.setBackground(dotBg);
+            detailText.setVisibility(View.GONE);
+            power.setText("CONNECT");
+            power.setTextColor(BG);
+            power.setBackground(background(GOLD));
+            stopInfinityBreathing();
+        }
         power.setEnabled(transition!=VpnLifecycle.Phase.STOPPING);
-        try{String[] rate=Mobile.speed().split(",");speedText.setText("↓ "+bytes(Double.parseDouble(rate[0]))+"/s      ↑ "+bytes(Double.parseDouble(rate[1]))+"/s");}catch(Exception ignored){}
+        try{
+            String[] rate=Mobile.speed().split(",");
+            speedText.setText("↓ "+bytes(Double.parseDouble(rate[0]))+"/s      ↑ "+bytes(Double.parseDouble(rate[1]))+"/s");
+        }catch(Exception ignored){}
     }
     private String bytes(double amount){String[] unit={"B","KB","MB","GB"};int n=0;while(amount>=1000&&n<3){amount/=1000;n++;}return String.format(Locale.US,n==0?"%.0f %s":"%.1f %s",amount,unit[n]);}
     static String connectionProblem(JSONObject value){
@@ -214,11 +467,17 @@ public final class MainActivity extends Activity {
     }
     private void settings(){
         heading("Settings","");
+        content.addView(button("⚡ Check for Updates  (v"+BuildConfig.VERSION_NAME+")",()->checkForUpdates(true)));
         content.addView(button("Mozilla accounts",()->showPage(3)));
-        content.addView(button("App rules",()->showPage(2)));
-        content.addView(button("Help",()->showPage(5)));
-        content.addView(button("App updates",()->startActivity(new Intent(this,UpdateActivity.class))));
-        content.addView(button("About",()->new AlertDialog.Builder(this).setTitle("III85III VPN").setMessage("Version "+BuildConfig.VERSION_NAME).setPositiveButton("Done",null).setNeutralButton("Privacy",(d,w)->openDocument("privacy")).setNegativeButton("Licenses",(d,w)->openDocument("licenses")).show()));
+        content.addView(button("App rules (Bypass)",()->showPage(2)));
+        content.addView(button("Connection diagnostics",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified."))));
+        content.addView(button("About",()->new AlertDialog.Builder(this)
+            .setTitle("III85III VPN")
+            .setMessage("Version "+BuildConfig.VERSION_NAME+"\nSecurity-hardened engine.\nDirect in-app updates enabled.")
+            .setPositiveButton("Done",null)
+            .setNeutralButton("Privacy",(d,w)->openDocument("privacy"))
+            .setNegativeButton("Licenses",(d,w)->openDocument("licenses"))
+            .show()));
     }
     private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 
