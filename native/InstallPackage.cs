@@ -62,9 +62,37 @@ internal static class InstallPackage {
     }
     internal static void Promote(string stage,string root,string backup,Action<string,string> move){
         bool movedOld=Directory.Exists(root);
-        if(movedOld)move(root,backup);
-        try{move(stage,root);}
-        catch{if(movedOld)move(backup,root);throw;}
+        if(movedOld){
+            if(move == (Action<string,string>)Directory.Move){
+                int retries = 0;
+                while(true){
+                    try{move(root,backup);break;}
+                    catch(IOException){
+                        retries++;
+                        if(retries>=10)throw;
+                        System.Threading.Thread.Sleep(250);
+                    }
+                }
+            } else {
+                move(root,backup);
+            }
+        }
+        try{
+            if(move == (Action<string,string>)Directory.Move){
+                int retries = 0;
+                while(true){
+                    try{move(stage,root);break;}
+                    catch(IOException){
+                        retries++;
+                        if(retries>=10)throw;
+                        System.Threading.Thread.Sleep(250);
+                    }
+                }
+            } else {
+                move(stage,root);
+            }
+        }
+        catch{if(movedOld)try{move(backup,root);}catch{}throw;}
     }
     static void TryDelete(string path){try{if(Directory.Exists(path))Directory.Delete(path,true);}catch(IOException){}catch(UnauthorizedAccessException){}}
 }

@@ -240,7 +240,7 @@ namespace III85III.Vpn {
             await Task.Run(delegate { process.WaitForExit(12000); });
             if (!process.HasExited) throw new IOException("The VPN engine is still shutting down. Please wait before restarting.");
         }
-        public void Dispose() { if (process != null) { try { process.StandardInput.Close(); } catch { } process.Dispose(); } http.Dispose(); }
+        public void Dispose() { if (process != null) { try { process.StandardInput.Close(); } catch { } try { if (!process.HasExited) { process.Kill(); process.WaitForExit(1500); } } catch { } process.Dispose(); } http.Dispose(); }
     }
 
     internal static class NativeMethods {
@@ -1013,7 +1013,7 @@ namespace III85III.Vpn {
             if(requiredUpdateButton!=null)requiredUpdateButton.Enabled=false;
             if(requiredUpdateStatus!=null)requiredUpdateStatus.Text="Checking for updates…";
             if(appUpdateButton!=null)appUpdateButton.Text="Checking…";
-            try{await AppUpdates.Check(this,text=>{if(!closing&&appUpdateButton!=null)appUpdateButton.Text=text;if(requiredUpdateStatus!=null)requiredUpdateStatus.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-update -wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true});allowClose=true;Close();},manual);}finally{updating=false;if(!closing&&appUpdateButton!=null)appUpdateButton.Text="Check for updates";if(requiredUpdateButton!=null){requiredUpdateButton.Enabled=true;requiredUpdateButton.Text="Update";}}
+            try{await AppUpdates.Check(this,text=>{if(!closing&&appUpdateButton!=null)appUpdateButton.Text=text;if(requiredUpdateStatus!=null)requiredUpdateStatus.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-update -wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true,WorkingDirectory=Path.GetTempPath()});allowClose=true;Close();},manual);}finally{updating=false;if(!closing&&appUpdateButton!=null)appUpdateButton.Text="Check for updates";if(requiredUpdateButton!=null){requiredUpdateButton.Enabled=true;requiredUpdateButton.Text="Update";}}
         }
         readonly LuxuryTitleBar titleBar;
         readonly Panel sidebar = new Panel();
