@@ -23,6 +23,7 @@ public final class MainActivity extends Activity {
     private final int BG=Color.rgb(16,19,25),SURFACE=Color.rgb(27,32,40),GOLD=Color.rgb(217,189,131),TEXT=Color.rgb(239,239,234),MUTED=Color.rgb(159,167,180),GREEN=Color.rgb(46,213,115),AMBER=Color.rgb(255,165,2);
     private final Handler main=new Handler(Looper.getMainLooper());
     private LinearLayout content,nav;
+    private FrameLayout adContainer;
     private TextView statusText,detailText,speedText,feedback,server;
     private Button power;
     private InfinityLoopView heroInfinity;
@@ -61,7 +62,14 @@ public final class MainActivity extends Activity {
         TextView contact=label("Support ↗",13,GOLD);contact.setPadding(dp(12),dp(6),0,dp(12));contact.setContentDescription("Telegram support");contact.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});header.addView(contact);root.addView(header);
         nav=new LinearLayout(this);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(0,dp(10),0,dp(16));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        feedback=label("Starting your local engine…",13,MUTED);feedback.setPadding(0,dp(6),0,dp(8));root.addView(feedback);root.addView(nav);setContentView(root);
+        feedback=label("Starting your local engine…",13,MUTED);feedback.setPadding(0,dp(6),0,dp(8));root.addView(feedback);
+        adContainer=new FrameLayout(this);
+        LinearLayout.LayoutParams adLp=new LinearLayout.LayoutParams(-1,-2);
+        adLp.setMargins(0,dp(2),0,dp(6));
+        adContainer.setLayoutParams(adLp);
+        root.addView(adContainer);
+        AdManager.attachBanner(this,adContainer);
+        root.addView(nav);setContentView(root);
         WindowLayout.apply(this,root);
         showPage(state==null?0:state.getInt("page",0));
         startTunnelCheck(getIntent());
@@ -274,6 +282,7 @@ public final class MainActivity extends Activity {
     private void toggleConnection(){
         if(UpdateActivity.isRequired(this)){UpdateActivity.openRequired(this);return;}
         if(!ready){feedback.setText("Your local engine is starting.");return;}
+        AdManager.maybeShowInterstitial(this);
         if(checkingAccount){checkingAccount=false;connectAttempt++;updateHome();feedback.setText("Connection cancelled.");return;}
         if(TunnelService.lifecycle.canCancel()){startService(new Intent(this,TunnelService.class).setAction(TunnelService.STOP));statusText.setText("Disconnecting…");power.setText("Disconnecting…");main.postDelayed(this::poll,100);return;}
         if(TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING){feedback.setText("Finishing the previous connection. Try again in a moment.");return;}
@@ -513,5 +522,96 @@ public final class MainActivity extends Activity {
         void fetch(){if(closed||pending)return;pending=true;CoreRuntime.IO.execute(()->{try{JSONObject state=CoreRuntime.request("GET","/api/signin/"+session,null,5000);main.post(()->{pending=false;apply(state);});}catch(Exception error){main.post(()->{pending=false;if(!closed){feedback.setText("Sign-in status could not refresh. You can cancel and retry.");main.postDelayed(pollFlow,2500);}});}});}
         void cancelSession(String id){if(id.isEmpty())return;CoreRuntime.IO.execute(()->{try{CoreRuntime.request("DELETE","/api/signin/"+id,null,3000);}catch(Exception ignored){}});}
         void cancel(){if(closed)return;closed=true;main.removeCallbacks(pollFlow);if(password!=null)password.getText().clear();if(dialog!=null)dialog.dismiss();cancelSession(session);}
+    }
+
+    public static final class AdConfig {
+        // Replace with your real Google AdMob IDs before Google Play production rollout:
+        public static final String ADMOB_APP_ID = "ca-app-pub-3940256099942544~3347511713";
+        public static final String BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111";
+        public static final String INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712";
+        public static final long INTERSTITIAL_COOLDOWN_MS = 180_000L; // 3-minute cooldown compliant with Google Play Better Ads Policy
+    }
+
+    public static final class AdManager {
+        private static boolean initialized = false;
+        private static long lastInterstitialShownAt = 0L;
+        private static Object loadedInterstitial = null;
+
+        public static void init(Context context) {
+            if (initialized) return;
+            try {
+                Class<?> mobileAds = Class.forName("com.google.android.gms.ads.MobileAds");
+                mobileAds.getMethod("initialize", Context.class).invoke(null, context.getApplicationContext());
+                initialized = true;
+            } catch (Throwable ignored) {}
+        }
+
+        public static void attachBanner(Activity activity, ViewGroup container) {
+            init(activity);
+            try {
+                Class<?> adViewClass = Class.forName("com.google.android.gms.ads.AdView");
+                Class<?> adSizeClass = Class.forName("com.google.android.gms.ads.AdSize");
+                Class<?> adRequestClass = Class.forName("com.google.android.gms.ads.AdRequest$Builder");
+
+                Object adView = adViewClass.getConstructor(Context.class).newInstance(activity);
+                Object bannerSize = adSizeClass.getField("BANNER").get(null);
+                adViewClass.getMethod("setAdSize", adSizeClass).invoke(adView, bannerSize);
+                adViewClass.getMethod("setAdUnitId", String.class).invoke(adView, AdConfig.BANNER_AD_UNIT_ID);
+
+                Object reqBuilder = adRequestClass.getConstructor().newInstance();
+                Object req = adRequestClass.getMethod("build").invoke(reqBuilder);
+                adViewClass.getMethod("loadAd", Class.forName("com.google.android.gms.ads.AdRequest")).invoke(adView, req);
+                container.removeAllViews();
+                container.addView((View) adView);
+                return;
+            } catch (Throwable ignored) {}
+
+            // Resilient Luxury Sponsor Banner (Obsidian Jet-Black & Liquid Gold Theme)
+            LinearLayout luxuryBanner = new LinearLayout(activity);
+            luxuryBanner.setOrientation(LinearLayout.HORIZONTAL);
+            luxuryBanner.setGravity(Gravity.CENTER_VERTICAL);
+            int dp12 = Math.round(12 * activity.getResources().getDisplayMetrics().density);
+            int dp6 = Math.round(6 * activity.getResources().getDisplayMetrics().density);
+            int dp8 = Math.round(8 * activity.getResources().getDisplayMetrics().density);
+            luxuryBanner.setPadding(dp12, dp6, dp12, dp6);
+
+            android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+            bg.setColor(0x181B2028);
+            bg.setCornerRadius(dp12);
+            bg.setStroke(Math.round(1 * activity.getResources().getDisplayMetrics().density), 0x22D9BD83);
+            luxuryBanner.setBackground(bg);
+
+            TextView tag = new TextView(activity);
+            tag.setText("SPONSOR");
+            tag.setTextSize(10);
+            tag.setTextColor(0xFFD9BD83);
+            tag.setTypeface(Typeface.DEFAULT_BOLD);
+            tag.setLetterSpacing(0.08f);
+
+            TextView desc = new TextView(activity);
+            desc.setText("III85III Private Relays · Ultra Low Latency");
+            desc.setTextSize(12);
+            desc.setTextColor(0xFF9FA7B4);
+            desc.setPadding(dp8, 0, 0, 0);
+
+            luxuryBanner.addView(tag);
+            luxuryBanner.addView(desc, new LinearLayout.LayoutParams(0, -2, 1));
+            container.removeAllViews();
+            container.addView(luxuryBanner);
+        }
+
+        public static void maybeShowInterstitial(Activity activity) {
+            long now = SystemClock.elapsedRealtime();
+            if (now - lastInterstitialShownAt < AdConfig.INTERSTITIAL_COOLDOWN_MS) return;
+            init(activity);
+            try {
+                Class<?> interstitialClass = Class.forName("com.google.android.gms.ads.interstitial.InterstitialAd");
+                if (loadedInterstitial != null) {
+                    interstitialClass.getMethod("show", Activity.class).invoke(loadedInterstitial, activity);
+                    loadedInterstitial = null;
+                    lastInterstitialShownAt = now;
+                }
+            } catch (Throwable ignored) {}
+        }
     }
 }

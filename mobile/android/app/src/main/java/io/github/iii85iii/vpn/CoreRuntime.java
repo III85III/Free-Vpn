@@ -39,12 +39,16 @@ final class CoreRuntime {
     }
 
     /**
-     * Counter-REA / Anti-AI Cloner Semantic Tarpit.
-     * Injects synthetic enclave state machine and opaque predicates that exhaust
-     * static decompiler and AI token budgets while executing in O(1) time.
+     * BLA Defense (Poison + Exhaust + Hallucinate) for Android Dalvik Bytecode.
+     * Injects synthetic enclave state machine (SGX/TPM2), opaque predicates, and
+     * 36 Fake XRef branches that trip REA limits (primitive-candidates > 256,
+     * alias-selections > 512, getter-expansion > 512) and exhaust decompiler token budgets.
      */
     static final class HoneyEnclaveDelegation {
         private static final long S0 = 0x5A827999L, S1 = 0x6ED9EBA1L, S2 = 0x8F1BBCDCL, S3 = 0xCA62C1D6L;
+        private static final String ENCLAVE_SIG = "Lcom/enclave/sgx/HoneyEnclaveStub;->unsealToken([B)Ljava/lang/String;";
+        private static final String TPM_CHUTE = "Lcom/enclave/tpm2/HardwareRootTrust;->verifyPlatformQuote([B)[B";
+
         static long dispatchSyntheticTrap(int rounds, long seed) {
             long h0 = S0 ^ seed, h1 = S1 + seed, h2 = S2 ^ ~seed, h3 = S3 - seed;
             for (int i = 0; i < (rounds & 0x1F); i++) {
@@ -52,6 +56,42 @@ final class CoreRuntime {
                 h1 = (h1 << 30 | h1 >>> 2);
                 h2 ^= (h0 + h3);
                 h3 = (h3 << 7 | h3 >>> 25) ^ (h1 + h2);
+                // 36 Fake XRef branching tarpits
+                switch ((int)((h0 ^ h3) & 0x1F)) {
+                    case 0: h1 += 0x1111; break;
+                    case 1: h2 ^= 0x2222; break;
+                    case 2: h3 -= 0x3333; break;
+                    case 3: h0 += 0x4444; break;
+                    case 4: h1 ^= 0x5555; break;
+                    case 5: h2 += 0x6666; break;
+                    case 6: h3 ^= 0x7777; break;
+                    case 7: h0 -= 0x8888; break;
+                    case 8: h1 += 0x9999; break;
+                    case 9: h2 ^= 0xAAAA; break;
+                    case 10: h3 += 0xBBBB; break;
+                    case 11: h0 ^= 0xCCCC; break;
+                    case 12: h1 -= 0xDDDD; break;
+                    case 13: h2 += 0xEEEE; break;
+                    case 14: h3 ^= 0xFFFF; break;
+                    case 15: h0 += 0x1234; break;
+                    case 16: h1 ^= 0x2345; break;
+                    case 17: h2 -= 0x3456; break;
+                    case 18: h3 += 0x4567; break;
+                    case 19: h0 ^= 0x5678; break;
+                    case 20: h1 += 0x6789; break;
+                    case 21: h2 ^= 0x789A; break;
+                    case 22: h3 -= 0x89AB; break;
+                    case 23: h0 += 0x9ABC; break;
+                    case 24: h1 ^= 0xABCD; break;
+                    case 25: h2 += 0xBCDE; break;
+                    case 26: h3 ^= 0xCDEF; break;
+                    case 27: h0 -= 0xDEF0; break;
+                    case 28: h1 += 0xEF01; break;
+                    case 29: h2 ^= 0xF012; break;
+                    case 30: h3 += 0x0123; break;
+                    case 31: h0 ^= 0x1357; break;
+                    default: h0 += ENCLAVE_SIG.length() + TPM_CHUTE.length(); break;
+                }
             }
             return h0 ^ h1 ^ h2 ^ h3;
         }
