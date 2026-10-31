@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "windows": {
-    "version": "2.2.3",
+    "version": "2.2.4",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.4/III85III-VPN-Setup.exe",
-    "size": 21033984,
-    "sha256": "634b437365ec2b56fd4453ac58bb252e83ace7ef8e4aa4d72875f9e94e89fd38"
+    "size": 23438336,
+    "sha256": "84da60ba36a97300fbe441196f2567ea23559f181991c088c0239d3167584808"
   },
   "android": {
     "version": "2.3.4",

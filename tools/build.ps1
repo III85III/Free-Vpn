@@ -1,4 +1,4 @@
-﻿param([string]$OutputDirectory,[string]$EngineDirectory)
+param([string]$OutputDirectory,[string]$EngineDirectory)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $out = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $root '.build\app' }
@@ -56,7 +56,7 @@ Set-Content -LiteralPath "$out\core\manifest.json" -Value $manifestJson -Encodin
 Write-Output "Compiling C# UI..."
 $compiler = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 $refs = @('/reference:System.dll','/reference:System.Core.dll','/reference:System.Drawing.dll','/reference:System.Windows.Forms.dll','/reference:System.Net.Http.dll','/reference:System.Web.Extensions.dll','/reference:Accessibility.dll')
-& $compiler /nologo /codepage:65001 /utf8output /platform:x64 /target:winexe /optimize+ "/out:$out\III85III VPN.exe" "/win32icon:$root\native\assets\brand\iii85iii-luxury.ico" "/win32manifest:$root\native\app.manifest" @refs "$root\native\III85III.Vpn.cs" "$root\native\SignInForm.cs" "$root\native\VerificationForm.cs" "$root\native\Updates.cs"
+& $compiler /nologo /codepage:65001 /utf8output /platform:x64 /target:winexe /optimize+ "/out:$out\III85III VPN.exe" "/win32icon:$root\native\assets\brand\iii85iii-luxury.ico" "/win32manifest:$root\native\app.manifest" "/resource:$root\native\assets\brand\infinity_loop.png,infinity_loop" @refs "$root\native\III85III.Vpn.cs" "$root\native\SignInForm.cs" "$root\native\VerificationForm.cs" "$root\native\Updates.cs"
 if ($LASTEXITCODE -ne 0) { throw 'Application compilation failed.' }
 
 # 3. Copy Assets & Docs

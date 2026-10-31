@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.2.3.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.2.3.0")]
+[assembly: System.Reflection.AssemblyVersion("2.2.4.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.2.4.0")]
 
 namespace III85III.Vpn {
     internal sealed class AppBypass {
@@ -412,63 +412,133 @@ namespace III85III.Vpn {
     internal sealed class LuxuryDial : Control {
         public DialState State = DialState.Disconnected;
         private bool isHovered, isPressed;
+        private static Image infinityImage;
+        private static bool infinityAttempted;
+        private readonly System.Windows.Forms.Timer pulseTimer = new System.Windows.Forms.Timer { Interval = 45 };
+        private float pulsePhase = 0f;
 
         public LuxuryDial() {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             Size = new Size(116, 116);
             Cursor = Cursors.Hand;
+            pulseTimer.Tick += delegate {
+                pulsePhase += 0.12f;
+                if (pulsePhase > 6.283f) pulsePhase -= 6.283f;
+                Invalidate();
+            };
         }
 
-        protected override void OnMouseEnter(EventArgs e) { isHovered = true; Invalidate(); base.OnMouseEnter(e); }
-        protected override void OnMouseLeave(EventArgs e) { isHovered = false; isPressed = false; Invalidate(); base.OnMouseLeave(e); }
+        private void UpdatePulse() {
+            bool shouldPulse = (State == DialState.Connecting) || isHovered;
+            if (shouldPulse && !pulseTimer.Enabled) pulseTimer.Start();
+            else if (!shouldPulse && pulseTimer.Enabled) { pulseTimer.Stop(); pulsePhase = 0f; Invalidate(); }
+        }
+
+        protected override void OnMouseEnter(EventArgs e) { isHovered = true; UpdatePulse(); Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { isHovered = false; isPressed = false; UpdatePulse(); Invalidate(); base.OnMouseLeave(e); }
         protected override void OnMouseDown(MouseEventArgs e) { if (e.Button == MouseButtons.Left) isPressed = true; Invalidate(); base.OnMouseDown(e); }
         protected override void OnMouseUp(MouseEventArgs e) { isPressed = false; Invalidate(); base.OnMouseUp(e); }
+
+        protected override void Dispose(bool disposing) {
+            if (disposing) { pulseTimer.Stop(); pulseTimer.Dispose(); }
+            base.Dispose(disposing);
+        }
+
+        public static Image GetInfinityImage() {
+            if (infinityAttempted) return infinityImage;
+            infinityAttempted = true;
+            try {
+                var asm = typeof(MainForm).Assembly;
+                using (var stream = asm.GetManifestResourceStream("infinity_loop")) {
+                    if (stream != null) {
+                        infinityImage = Image.FromStream(stream);
+                        return infinityImage;
+                    }
+                }
+            } catch { }
+            try {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string[] paths = new[] {
+                    Path.Combine(baseDir, "assets", "brand", "infinity_loop.png"),
+                    Path.Combine(baseDir, "..", "native", "assets", "brand", "infinity_loop.png"),
+                    Path.Combine(baseDir, "..", "..", "native", "assets", "brand", "infinity_loop.png"),
+                    @"D:\ai\Free-Vpn\native\assets\brand\infinity_loop.png"
+                };
+                foreach (var p in paths) {
+                    if (File.Exists(p)) {
+                        infinityImage = Image.FromFile(p);
+                        return infinityImage;
+                    }
+                }
+            } catch { }
+            return null;
+        }
 
         protected override void OnPaint(PaintEventArgs e) {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
             int cx = Width / 2;
             int cy = Height / 2;
-            int radius = Math.Min(Width, Height) / 2 - 4;
+            int radius = Math.Min(Width, Height) / 2 - 5;
             var r = new Rectangle(cx - radius, cy - radius, radius * 2, radius * 2);
 
             Color surfaceColor = isPressed ? Theme.AccentActive : isHovered ? Theme.AccentHover : Theme.Accent;
             Color ringColor = Theme.Accent;
-            Color glyphColor = Theme.Bg;
+            Color glowColor = Color.FromArgb(70, 212, 175, 55);
 
             switch (State) {
                 case DialState.Connected:
                     surfaceColor = isPressed ? Color.FromArgb(20, 36, 30) : isHovered ? Color.FromArgb(28, 48, 40) : Color.FromArgb(22, 40, 34);
                     ringColor = Theme.Success;
-                    glyphColor = Theme.Success;
+                    glowColor = Color.FromArgb(80, 56, 180, 110);
                     break;
                 case DialState.Connecting:
                     surfaceColor = isPressed ? Color.FromArgb(36, 30, 20) : isHovered ? Color.FromArgb(46, 38, 24) : Color.FromArgb(38, 32, 22);
                     ringColor = Theme.Warning;
-                    glyphColor = Theme.Warning;
+                    glowColor = Color.FromArgb(100, 240, 180, 50);
                     break;
                 case DialState.Error:
                     surfaceColor = isPressed ? Color.FromArgb(40, 24, 24) : isHovered ? Color.FromArgb(48, 28, 28) : Color.FromArgb(36, 22, 22);
                     ringColor = Theme.Danger;
-                    glyphColor = Theme.Danger;
+                    glowColor = Color.FromArgb(80, 220, 70, 70);
                     break;
                 case DialState.Disconnected:
                 default:
-                    if (isHovered) ringColor = Theme.AccentHover;
+                    if (isHovered) {
+                        ringColor = Theme.AccentHover;
+                        glowColor = Color.FromArgb(120, 212, 175, 55);
+                    }
                     break;
             }
 
-            using (var brush = new SolidBrush(surfaceColor)) g.FillEllipse(brush, r);
-            using (var pen = new Pen(ringColor, State == DialState.Connected ? 2f : 1f)) g.DrawEllipse(pen, r);
+            // Subtle animated breathing pulse
+            float breath = (float)((Math.Sin(pulsePhase) + 1.0) / 2.0);
+            int glowSpread = 2 + (int)(breath * 3.5f);
+            var glowRect = new Rectangle(r.X - glowSpread, r.Y - glowSpread, r.Width + glowSpread * 2, r.Height + glowSpread * 2);
+            using (var glowPen = new Pen(Color.FromArgb((int)(glowColor.A * (0.6f + 0.4f * breath)), glowColor), 2.5f)) {
+                g.DrawEllipse(glowPen, glowRect);
+            }
 
-            // Clean geometric power glyph
-            int arcRadius = 23;
-            using (var pen = new Pen(glyphColor, 3.2f)) {
-                pen.StartCap = LineCap.Round;
-                pen.EndCap = LineCap.Round;
-                g.DrawArc(pen, cx - arcRadius, cy - arcRadius + 2, arcRadius * 2, arcRadius * 2, -45, 270);
-                g.DrawLine(pen, cx, cy - arcRadius - 4, cx, cy - 1);
+            using (var brush = new SolidBrush(surfaceColor)) g.FillEllipse(brush, r);
+            using (var pen = new Pen(ringColor, State == DialState.Connected ? 2.5f : 1.5f)) g.DrawEllipse(pen, r);
+
+            var img = GetInfinityImage();
+            if (img != null) {
+                int imgPad = isPressed ? 14 : isHovered ? 10 : 12;
+                var imgRect = new Rectangle(cx - radius + imgPad, cy - radius + imgPad, (radius - imgPad) * 2, (radius - imgPad) * 2);
+                g.DrawImage(img, imgRect);
+            } else {
+                Color glyphColor = (State == DialState.Connected) ? Theme.Success : (State == DialState.Connecting) ? Theme.Warning : (State == DialState.Error) ? Theme.Danger : Theme.Bg;
+                int arcRadius = 23;
+                using (var pen = new Pen(glyphColor, 3.2f)) {
+                    pen.StartCap = LineCap.Round;
+                    pen.EndCap = LineCap.Round;
+                    g.DrawArc(pen, cx - arcRadius, cy - arcRadius + 2, arcRadius * 2, arcRadius * 2, -45, 270);
+                    g.DrawLine(pen, cx, cy - arcRadius - 4, cx, cy - 1);
+                }
             }
         }
     }
@@ -1925,8 +1995,8 @@ namespace III85III.Vpn {
         private void ShowFailure(string detail) {
             dialSubtext.Text=FriendlyFailure(detail)+"  ·  Click for details";
             dialSubtext.Cursor=Cursors.Hand;
-            dial.State=DialState.Error;statusPill.State=DialState.Error;statusPill.StatusText="Needs attention";
-            dialAction.Text="Connection problem";dial.Invalidate();statusPill.Invalidate();
+            dial.State=DialState.Error;statusPill.State=DialState.Error;statusPill.StatusText="NEEDS ATTENTION";
+            dialAction.Text="Attention required";dial.Invalidate();statusPill.Invalidate();
             ShowNotice("Connection problem",FriendlyFailure(detail),detail,true);
         }
         internal void ShowNotice(string title,string message,string detail,bool repair) {
@@ -1959,7 +2029,7 @@ namespace III85III.Vpn {
             var accounts=Json.Child(lastStatus,"accounts");
             if(phase=="off"&&Json.Get(accounts,"total")!=null&&Json.Num(accounts,"total")==0&&accountsList.Items.Count==0&&!requiredUpdate){SwitchPage(3);loginBtn.PerformClick();return;}
             dial.State=DialState.Connecting;statusPill.State=DialState.Connecting;
-            statusPill.StatusText=phase=="off"?"Connecting":"Disconnecting";
+            statusPill.StatusText=phase=="off"?"CONNECTING…":"DISCONNECTING…";
             dialAction.Text=phase=="off"?"Connecting…":"Disconnecting…";
             dial.Invalidate();statusPill.Invalidate();dialAction.Update();
             await Run(TogglePower);
@@ -2125,19 +2195,21 @@ namespace III85III.Vpn {
                 dial.Invalidate();
 
                 statusPill.State = dial.State;
-                statusPill.StatusText = phase == "off" ? "Not connected" :
-                                        connected ? "Connected" :
-                                        failure!="" ? "Needs attention" :
-                                        phase == "running" ? "Connecting" :
-                                        phase == "waiting" ? "Waiting" : "Connecting";
+                statusPill.StatusText = phase == "off" ? "DISCONNECTED" :
+                                        connected ? "PROTECTED" :
+                                        failure!="" ? "NEEDS ATTENTION" :
+                                        phase == "running" ? "CONNECTING…" :
+                                        phase == "waiting" ? "WAITING…" : "CONNECTING…";
                 statusPill.Invalidate();
 
                 bool needsAccount = !ConnectionState.HasAccounts(lastStatus) && (phase == "off" || phase == "waiting");
-                dialAction.Text = needsAccount ? "Add your account" : connected ? "Connected" : failure!="" ? "Connection problem" : phase == "off" ? "Ready to connect" : "Connecting…";
+                dialAction.Text = needsAccount ? "Add your account" : connected ? "Protected" : failure!="" ? "Attention required" : phase == "off" ? "Ready to connect" : "Connecting…";
                 connectBtn.Text = needsAccount ? "Add account" : phase == "off" ? "Connect" : connected ? "Disconnect" : phase == "error" ? "Reset connection" : "Cancel connection";
+                connectBtn.Variant = connected ? ButtonVariant.Secondary : ButtonVariant.Primary;
+                connectBtn.Invalidate();
                 dialSubtext.Text = needsAccount ? "Sign in with Mozilla to connect." :
-                    failure!="" ? FriendlyFailure(failure)+"  ·  Click for details" : phase == "off" ? "Choose a server, then connect." :
-                    connected ? "VPN is on." : Json.Str(state, "message");
+                    failure!="" ? FriendlyFailure(failure)+"  ·  Click for details" : phase == "off" ? "Choose a location and connect whenever you're ready." :
+                    connected ? "Encrypted connection is active." : Json.Str(state, "message");
 
                 // Update metrics
                 dialSubtext.Cursor=failure!=""?Cursors.Hand:Cursors.Default;
