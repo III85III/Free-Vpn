@@ -412,9 +412,7 @@ namespace III85III.Vpn {
     internal sealed class LuxuryDial : Control {
         public DialState State = DialState.Disconnected;
         private bool isHovered, isPressed;
-        private static Image infinityImage;
-        private static bool infinityAttempted;
-        private readonly System.Windows.Forms.Timer pulseTimer = new System.Windows.Forms.Timer { Interval = 45 };
+        private readonly System.Windows.Forms.Timer pulseTimer = new System.Windows.Forms.Timer { Interval = 40 };
         private float pulsePhase = 0f;
 
         public LuxuryDial() {
@@ -422,56 +420,26 @@ namespace III85III.Vpn {
             Size = new Size(116, 116);
             Cursor = Cursors.Hand;
             pulseTimer.Tick += delegate {
-                pulsePhase += 0.12f;
-                if (pulsePhase > 6.283f) pulsePhase -= 6.283f;
+                float step = (State == DialState.Connecting) ? 0.20f : (State == DialState.Connected) ? 0.13f : 0.08f;
+                pulsePhase += step;
+                if (pulsePhase > 6.283185f) pulsePhase -= 6.283185f;
                 Invalidate();
             };
+            pulseTimer.Start();
         }
 
         private void UpdatePulse() {
-            bool shouldPulse = (State == DialState.Connecting) || isHovered;
-            if (shouldPulse && !pulseTimer.Enabled) pulseTimer.Start();
-            else if (!shouldPulse && pulseTimer.Enabled) { pulseTimer.Stop(); pulsePhase = 0f; Invalidate(); }
+            if (!pulseTimer.Enabled) pulseTimer.Start();
         }
 
-        protected override void OnMouseEnter(EventArgs e) { isHovered = true; UpdatePulse(); Invalidate(); base.OnMouseEnter(e); }
-        protected override void OnMouseLeave(EventArgs e) { isHovered = false; isPressed = false; UpdatePulse(); Invalidate(); base.OnMouseLeave(e); }
+        protected override void OnMouseEnter(EventArgs e) { isHovered = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { isHovered = false; isPressed = false; Invalidate(); base.OnMouseLeave(e); }
         protected override void OnMouseDown(MouseEventArgs e) { if (e.Button == MouseButtons.Left) isPressed = true; Invalidate(); base.OnMouseDown(e); }
         protected override void OnMouseUp(MouseEventArgs e) { isPressed = false; Invalidate(); base.OnMouseUp(e); }
 
         protected override void Dispose(bool disposing) {
             if (disposing) { pulseTimer.Stop(); pulseTimer.Dispose(); }
             base.Dispose(disposing);
-        }
-
-        public static Image GetInfinityImage() {
-            if (infinityAttempted) return infinityImage;
-            infinityAttempted = true;
-            try {
-                var asm = typeof(MainForm).Assembly;
-                using (var stream = asm.GetManifestResourceStream("infinity_loop")) {
-                    if (stream != null) {
-                        infinityImage = Image.FromStream(stream);
-                        return infinityImage;
-                    }
-                }
-            } catch { }
-            try {
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string[] paths = new[] {
-                    Path.Combine(baseDir, "assets", "brand", "infinity_loop.png"),
-                    Path.Combine(baseDir, "..", "native", "assets", "brand", "infinity_loop.png"),
-                    Path.Combine(baseDir, "..", "..", "native", "assets", "brand", "infinity_loop.png"),
-                    @"D:\ai\Free-Vpn\native\assets\brand\infinity_loop.png"
-                };
-                foreach (var p in paths) {
-                    if (File.Exists(p)) {
-                        infinityImage = Image.FromFile(p);
-                        return infinityImage;
-                    }
-                }
-            } catch { }
-            return null;
         }
 
         protected override void OnPaint(PaintEventArgs e) {
@@ -525,20 +493,114 @@ namespace III85III.Vpn {
             using (var brush = new SolidBrush(surfaceColor)) g.FillEllipse(brush, r);
             using (var pen = new Pen(ringColor, State == DialState.Connected ? 2.5f : 1.5f)) g.DrawEllipse(pen, r);
 
-            var img = GetInfinityImage();
-            if (img != null) {
-                int imgPad = isPressed ? 14 : isHovered ? 10 : 12;
-                var imgRect = new Rectangle(cx - radius + imgPad, cy - radius + imgPad, (radius - imgPad) * 2, (radius - imgPad) * 2);
-                g.DrawImage(img, imgRect);
-            } else {
-                Color glyphColor = (State == DialState.Connected) ? Theme.Success : (State == DialState.Connecting) ? Theme.Warning : (State == DialState.Error) ? Theme.Danger : Theme.Bg;
-                int arcRadius = 23;
-                using (var pen = new Pen(glyphColor, 3.2f)) {
-                    pen.StartCap = LineCap.Round;
-                    pen.EndCap = LineCap.Round;
-                    g.DrawArc(pen, cx - arcRadius, cy - arcRadius + 2, arcRadius * 2, arcRadius * 2, -45, 270);
-                    g.DrawLine(pen, cx, cy - arcRadius - 4, cx, cy - 1);
+            // 3D Sci-Fi Infinity Loop with continuous flowing liquid gold energy
+            DrawInfinityLoop(g, cx, cy, radius);
+        }
+
+        private void DrawInfinityLoop(Graphics g, int cx, int cy, int radius) {
+            float scaleX = radius * 0.58f;
+            float scaleY = radius * 1.30f;
+            int pointCount = 120;
+            var pathPoints = new PointF[pointCount + 1];
+            for (int i = 0; i <= pointCount; i++) {
+                double t = i * 2.0 * Math.PI / pointCount;
+                double sinT = Math.Sin(t);
+                double cosT = Math.Cos(t);
+                double denom = 1.0 + sinT * sinT;
+                pathPoints[i] = new PointF(
+                    cx + (float)(scaleX * cosT / denom),
+                    cy + (float)(scaleY * sinT * cosT / denom)
+                );
+            }
+
+            using (var gp = new GraphicsPath()) {
+                gp.AddLines(pathPoints);
+
+                // 1. Ambient drop shadow
+                using (var pen = new Pen(Color.FromArgb(50, 0, 0, 0), 12f)) {
+                    pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                    g.DrawPath(pen, gp);
                 }
+                // 2. Outer Sculpted Dark Ceramic/Silver Armor Ribbon
+                using (var pen = new Pen(Color.FromArgb(255, 26, 32, 42), 10f)) {
+                    pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                    g.DrawPath(pen, gp);
+                }
+                // 3. Beveled Pearl-Silver Outer Rim
+                using (var pen = new Pen(Color.FromArgb(65, 203, 213, 225), 11f)) {
+                    pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                    g.DrawPath(pen, gp);
+                }
+                // 4. Inner Jet-Black Mechanical Channel
+                using (var pen = new Pen(Color.FromArgb(255, 8, 11, 16), 4.8f)) {
+                    pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                    g.DrawPath(pen, gp);
+                }
+                // 5. Gold Channel Guide Rails
+                using (var pen = new Pen(Color.FromArgb(45, 212, 175, 55), 5.5f)) {
+                    g.DrawPath(pen, gp);
+                }
+            }
+
+            // Flowing Liquid Gold Streams (Primary & Intertwined Secondary)
+            float prog = (pulsePhase / 6.283185f) % 1.0f;
+            DrawEnergyStream(g, pathPoints, pointCount, prog, true, cx, cy);
+            DrawEnergyStream(g, pathPoints, pointCount, (prog + 0.5f) % 1.0f, false, cx, cy);
+
+            // Central Crossover Flare
+            float distToCenter = Math.Min(Math.Abs(prog - 0.25f), Math.Abs(prog - 0.75f));
+            float crossover = Math.Max(0f, 1f - distToCenter * 8f);
+            if (crossover > 0f) {
+                float flareR = (8f + crossover * 8f);
+                using (var brush = new SolidBrush(Color.FromArgb((int)(190 * crossover), 255, 245, 200))) {
+                    g.FillEllipse(brush, cx - flareR / 2f, cy - flareR / 2f, flareR, flareR);
+                }
+            }
+        }
+
+        private void DrawEnergyStream(Graphics g, PointF[] pts, int pointCount, float prog, bool isPrimary, int cx, int cy) {
+            int streamLen = (int)(pointCount * ((State == DialState.Connecting) ? 0.40f : (State == DialState.Connected) ? 0.38f : 0.32f));
+            int headIdx = (int)(prog * pointCount) % pointCount;
+
+            var segPts = new List<PointF>();
+            for (int i = streamLen; i >= 0; i--) {
+                int idx = (headIdx - i + pointCount) % pointCount;
+                segPts.Add(pts[idx]);
+            }
+            if (segPts.Count < 2) return;
+
+            using (var gp = new GraphicsPath()) {
+                gp.AddLines(segPts.ToArray());
+
+                Color glowC = (State == DialState.Connected) ? Color.FromArgb(90, 255, 193, 7) : (State == DialState.Connecting) ? Color.FromArgb(100, 255, 179, 0) : Color.FromArgb(65, 212, 175, 55);
+                Color midC = (State == DialState.Connected) ? Color.FromArgb(245, 245, 208, 97) : (State == DialState.Connecting) ? Color.FromArgb(255, 255, 202, 40) : Color.FromArgb(235, 245, 192, 66);
+                Color coreC = Color.FromArgb(255, 255, 253, 245);
+
+                // Volumetric ambient gold glow
+                using (var pen = new Pen(glowC, isPrimary ? 11f : 8f)) {
+                    pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                    g.DrawPath(pen, gp);
+                }
+                // Dense liquid gold body
+                using (var pen = new Pen(midC, isPrimary ? 4.5f : 3.5f)) {
+                    pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                    g.DrawPath(pen, gp);
+                }
+                // White-hot core filament
+                using (var pen = new Pen(coreC, isPrimary ? 1.8f : 1.4f)) {
+                    pen.StartCap = LineCap.Round; pen.EndCap = LineCap.Round;
+                    g.DrawPath(pen, gp);
+                }
+            }
+
+            // Leading spark
+            PointF headPt = pts[headIdx];
+            float sparkR = isPrimary ? 5.5f : 4f;
+            using (var brush = new SolidBrush(Color.FromArgb(180, 255, 215, 0))) {
+                g.FillEllipse(brush, headPt.X - sparkR, headPt.Y - sparkR, sparkR * 2, sparkR * 2);
+            }
+            using (var brush = new SolidBrush(Color.White)) {
+                g.FillEllipse(brush, headPt.X - sparkR * 0.5f, headPt.Y - sparkR * 0.5f, sparkR, sparkR);
             }
         }
     }

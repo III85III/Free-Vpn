@@ -25,10 +25,9 @@ public final class MainActivity extends Activity {
     private LinearLayout content,nav;
     private TextView statusText,detailText,speedText,feedback,server;
     private Button power;
-    private ImageView heroInfinity;
+    private InfinityLoopView heroInfinity;
     private View statusDot;
     private LinearLayout updateBanner;
-    private ObjectAnimator pulseAnim;
     private int page;
     private boolean ready,visible,polling,pinging;
     private boolean warming;
@@ -72,26 +71,15 @@ public final class MainActivity extends Activity {
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
     private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null){if(intent.getBooleanExtra("qa_tun",false)){Intent permission=VpnService.prepare(this);if(permission==null)startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));else startActivityForResult(permission,185);}if(intent.getBooleanExtra("qa_update",false))startActivity(new Intent(this,UpdateActivity.class).putExtra("qa_update",true));}}
     @Override protected void onStart(){super.onStart();if(UpdateActivity.isRequired(this)){visible=false;UpdateActivity.openRequired(this);return;}visible=true;if(ready){poll();showAccountIntro();}main.postDelayed(updateAgain,1500);}
-    @Override protected void onStop(){visible=false;stopInfinityBreathing();main.removeCallbacks(pollAgain);main.removeCallbacks(updateAgain);super.onStop();}
-    @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();stopInfinityBreathing();main.removeCallbacksAndMessages(null);super.onDestroy();}
+    @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);main.removeCallbacks(updateAgain);super.onStop();}
+    @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
     private TextView label(String value,int size,int color){TextView text=new TextView(this);text.setText(value);text.setTextSize(size);text.setTextColor(color);text.setTypeface(body);text.setLineSpacing(dp(4),1);return text;}
     private GradientDrawable background(int color){GradientDrawable shape=new GradientDrawable();shape.setColor(color);shape.setCornerRadius(dp(16));return shape;}
     private GradientDrawable cardBackground(int color,int radiusDp){GradientDrawable shape=new GradientDrawable();shape.setColor(color);shape.setCornerRadius(dp(radiusDp));return shape;}
     private GradientDrawable pillBackground(int strokeColor,int fillColor,int radiusDp,int strokeWidthDp){GradientDrawable shape=new GradientDrawable();shape.setColor(fillColor);shape.setCornerRadius(dp(radiusDp));if(strokeWidthDp>0)shape.setStroke(dp(strokeWidthDp),strokeColor);return shape;}
     private Button button(String title,Runnable action){Button b=new Button(this);b.setText(title);b.setAllCaps(false);b.setTextSize(15);b.setTypeface(body);b.setTextColor(TEXT);b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33D9BD83),background(SURFACE),background(Color.WHITE)));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(52));p.setMargins(0,dp(6),0,dp(6));b.setLayoutParams(p);b.setOnClickListener(v->action.run());return b;}
-    private void startInfinityBreathing(){
-        if(heroInfinity==null)return;
-        if(pulseAnim!=null&&pulseAnim.isRunning())return;
-        pulseAnim=ObjectAnimator.ofFloat(heroInfinity,"scaleX",1f,1.045f,1f);
-        pulseAnim.setDuration(2400);
-        pulseAnim.setRepeatCount(ValueAnimator.INFINITE);
-        pulseAnim.setInterpolator(new AccelerateDecelerateInterpolator());
-        pulseAnim.addUpdateListener(anim->{if(heroInfinity!=null)heroInfinity.setScaleY((Float)anim.getAnimatedValue());});
-        pulseAnim.start();
-    }
-    private void stopInfinityBreathing(){
-        if(pulseAnim!=null){pulseAnim.cancel();pulseAnim=null;}
-        if(heroInfinity!=null){heroInfinity.setScaleX(1f);heroInfinity.setScaleY(1f);}
+    private void setInfinityState(int state){
+        if(heroInfinity!=null)heroInfinity.setState(state);
     }
     private void updateUpdateBanner(){
         if(updateBanner==null)return;
@@ -190,11 +178,8 @@ public final class MainActivity extends Activity {
         content.addView(updateBanner);
         updateUpdateBanner();
 
-        heroInfinity=new ImageView(this);
-        heroInfinity.setImageResource(R.drawable.infinity_loop);
-        heroInfinity.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        heroInfinity.setAdjustViewBounds(true);
-        LinearLayout.LayoutParams imgParams=new LinearLayout.LayoutParams(dp(220),dp(130));
+        heroInfinity=new InfinityLoopView(this);
+        LinearLayout.LayoutParams imgParams=new LinearLayout.LayoutParams(dp(260),dp(140));
         imgParams.gravity=Gravity.CENTER_HORIZONTAL;
         imgParams.setMargins(0,dp(6),0,dp(18));
         heroInfinity.setLayoutParams(imgParams);
@@ -352,7 +337,7 @@ public final class MainActivity extends Activity {
             power.setText("CANCEL");
             power.setTextColor(GOLD);
             power.setBackground(pillBackground(GOLD,SURFACE,28,2));
-            startInfinityBreathing();
+            setInfinityState(InfinityLoopView.STATE_CONNECTING);
         }else if(verified){
             statusText.setText("PROTECTED");
             statusText.setTextColor(GREEN);
@@ -362,7 +347,7 @@ public final class MainActivity extends Activity {
             power.setText("DISCONNECT");
             power.setTextColor(GOLD);
             power.setBackground(pillBackground(GOLD,SURFACE,28,2));
-            startInfinityBreathing();
+            setInfinityState(InfinityLoopView.STATE_CONNECTED);
         }else if(!problem.isEmpty()){
             statusText.setText("ATTENTION REQUIRED");
             statusText.setTextColor(AMBER);
@@ -374,7 +359,7 @@ public final class MainActivity extends Activity {
             power.setText("RECONNECT");
             power.setTextColor(BG);
             power.setBackground(background(GOLD));
-            stopInfinityBreathing();
+            setInfinityState(InfinityLoopView.STATE_ERROR);
         }else if(transition==VpnLifecycle.Phase.STOPPING){
             statusText.setText("DISCONNECTING…");
             statusText.setTextColor(MUTED);
@@ -384,7 +369,7 @@ public final class MainActivity extends Activity {
             power.setText("DISCONNECTING…");
             power.setTextColor(MUTED);
             power.setBackground(background(SURFACE));
-            stopInfinityBreathing();
+            setInfinityState(InfinityLoopView.STATE_DISCONNECTED);
         }else if(TunnelService.active||transition==VpnLifecycle.Phase.STARTING){
             statusText.setText("CONNECTING…");
             statusText.setTextColor(GOLD);
@@ -394,7 +379,7 @@ public final class MainActivity extends Activity {
             power.setText("CANCEL");
             power.setTextColor(GOLD);
             power.setBackground(pillBackground(GOLD,SURFACE,28,2));
-            startInfinityBreathing();
+            setInfinityState(InfinityLoopView.STATE_CONNECTING);
         }else{
             statusText.setText("DISCONNECTED");
             statusText.setTextColor(MUTED);
@@ -404,7 +389,7 @@ public final class MainActivity extends Activity {
             power.setText("CONNECT");
             power.setTextColor(BG);
             power.setBackground(background(GOLD));
-            stopInfinityBreathing();
+            setInfinityState(InfinityLoopView.STATE_DISCONNECTED);
         }
         power.setEnabled(transition!=VpnLifecycle.Phase.STOPPING);
         try{
