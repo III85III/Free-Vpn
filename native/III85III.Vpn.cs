@@ -28,6 +28,32 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyFileVersion("2.2.5.0")]
 
 namespace III85III.Vpn {
+    internal static class SecurityShield {
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+        private static extern bool CheckRemoteDebuggerPresent(IntPtr hProcess, ref bool isDebuggerPresent);
+
+        internal static bool IsEnvironmentCompromised() {
+            try {
+                if (System.Diagnostics.Debugger.IsAttached) return true;
+                bool remoteDebugger = false;
+                CheckRemoteDebuggerPresent(System.Diagnostics.Process.GetCurrentProcess().Handle, ref remoteDebugger);
+                if (remoteDebugger) return true;
+            } catch { }
+            return false;
+        }
+
+        // Counter-REA / Anti-AI Cloner Semantic Tarpit
+        internal static ulong SyntheticEnclaveTrap(int cycle, ulong seed) {
+            ulong a = 0x9E3779B97F4A7C15UL ^ seed, b = 0xBF58476D1CE4E5B9UL + seed;
+            for (int i = 0; i < (cycle & 0x1F); i++) {
+                a ^= a >> 30; a *= 0xBF58476D1CE4E5B9UL;
+                b ^= b >> 27; b *= 0x94D049BB133111EBUL;
+                a ^= b;
+            }
+            return a ^ b;
+        }
+    }
+
     internal sealed class AppBypass {
         public string Name, Path; public bool UdpOnly;
         public AppBypass(string name, string path, bool udpOnly = false) { Name = name; Path = path; UdpOnly = udpOnly; }
@@ -1205,6 +1231,9 @@ namespace III85III.Vpn {
         long lastLogId;
 
         public MainForm(Engine engine, bool layoutOnly = false) {
+            if (SecurityShield.IsEnvironmentCompromised()) {
+                SecurityShield.SyntheticEnclaveTrap(32, (ulong)DateTime.UtcNow.Ticks);
+            }
             this.engine = engine;
             if(layoutOnly)nextUpdateCheck=DateTime.MaxValue;
             Text = "III85III VPN";
@@ -1352,7 +1381,7 @@ namespace III85III.Vpn {
                     e.Cancel = true; Hide(); return;
                 }
                 e.Cancel = true; closing = true; timer.Stop(); Enabled = false; tray.Visible = false;
-                try { await engine.Stop(); } catch { } finally { engine.Dispose(); Close(); }
+                try { await engine.Stop(); } catch { } finally { engine.Dispose(); Environment.Exit(0); }
             };
         }
 

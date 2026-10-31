@@ -16,14 +16,27 @@ internal static class Installer {
         try { Environment.CurrentDirectory = Path.GetTempPath(); } catch { }
         int previous;try{previous=InstallPackage.UpdateParent(Environment.GetCommandLineArgs());}catch(IOException){return 1;}
         if(previous>0){
-            try{using(var app=Process.GetProcessById(previous)){if(app.ProcessName!="III85III VPN"||app.SessionId!=Process.GetCurrentProcess().SessionId)return 1;app.WaitForExit(60000);}}catch(ArgumentException){}
+            try{
+                using(var app=Process.GetProcessById(previous)){
+                    if(app.ProcessName!="III85III VPN"||app.SessionId!=Process.GetCurrentProcess().SessionId)return 1;
+                    if(!app.WaitForExit(10000)){
+                        try{app.Kill();app.WaitForExit(3000);}catch{}
+                    }
+                }
+            }catch(ArgumentException){}
         }
         string root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","III85III VPN");
         bool update=previous>0&&File.Exists(Path.Combine(root,"III85III VPN.exe"));
         TerminateLingeringProcesses();
         if(Process.GetProcessesByName("III85III VPN").Length>0){
             for(int i=0;i<10&&Process.GetProcessesByName("III85III VPN").Length>0;i++)System.Threading.Thread.Sleep(300);
-            if(Process.GetProcessesByName("III85III VPN").Length>0){MessageBox.Show("Close III85III VPN from the notification tray before installing this update, then run Setup again. Your accounts will be kept.","III85III VPN Setup",MessageBoxButtons.OK,MessageBoxIcon.Information);return 1;}
+            if(Process.GetProcessesByName("III85III VPN").Length>0){
+                if(update){
+                    foreach(var p in Process.GetProcessesByName("III85III VPN")){try{p.Kill();p.WaitForExit(2000);}catch{}finally{p.Dispose();}}
+                }else{
+                    MessageBox.Show("Close III85III VPN from the notification tray before installing this update, then run Setup again. Your accounts will be kept.","III85III VPN Setup",MessageBoxButtons.OK,MessageBoxIcon.Information);return 1;
+                }
+            }
         }
         if(!update&&MessageBox.Show("Install III85III VPN for this Windows user?\n\nEnglish is the default language. Your account data is kept separately.\n\nThe package includes the required components and licenses.","III85III VPN Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 0;
         try{

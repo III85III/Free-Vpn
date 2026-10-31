@@ -67,9 +67,10 @@ internal static class InstallPackage {
                 int retries = 0;
                 while(true){
                     try{move(root,backup);break;}
-                    catch(IOException){
+                    catch(Exception ex){
+                        if(!(ex is IOException || ex is UnauthorizedAccessException))throw;
                         retries++;
-                        if(retries>=10)throw;
+                        if(retries>=20)throw;
                         System.Threading.Thread.Sleep(250);
                     }
                 }
@@ -82,9 +83,10 @@ internal static class InstallPackage {
                 int retries = 0;
                 while(true){
                     try{move(stage,root);break;}
-                    catch(IOException){
+                    catch(Exception ex){
+                        if(!(ex is IOException || ex is UnauthorizedAccessException))throw;
                         retries++;
-                        if(retries>=10)throw;
+                        if(retries>=20)throw;
                         System.Threading.Thread.Sleep(250);
                     }
                 }
