@@ -227,7 +227,7 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams pwrParams=new LinearLayout.LayoutParams(-1,dp(56));
         pwrParams.setMargins(0,dp(4),0,dp(14));
         power.setLayoutParams(pwrParams);
-        power.setOnClickListener(v->toggleConnection());
+        power.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); toggleConnection(); });
         content.addView(power);
 
         LinearLayout locationCard=new LinearLayout(this);
@@ -250,9 +250,9 @@ public final class MainActivity extends Activity {
         locCol.addView(server);
         locationCard.addView(locCol,new LinearLayout.LayoutParams(0,-2,1));
 
-        TextView changeAction=label("Change ›",13,MUTED);
+        TextView changeAction=label("Change \u203A",13,MUTED);
         locationCard.addView(changeAction);
-        locationCard.setOnClickListener(v->showPage(1));
+        locationCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showPage(1); });
         content.addView(locationCard);
 
         LinearLayout speedCard=new LinearLayout(this);
@@ -340,8 +340,8 @@ public final class MainActivity extends Activity {
             setInfinityState(InfinityLoopView.STATE_CONNECTING);
         }else if(verified){
             statusText.setText("PROTECTED");
-            statusText.setTextColor(GREEN);
-            dotBg.setColor(GREEN);
+            statusText.setTextColor(GOLD);
+            dotBg.setColor(GOLD);
             if(statusDot!=null)statusDot.setBackground(dotBg);
             detailText.setVisibility(View.GONE);
             power.setText("DISCONNECT");

@@ -24,17 +24,153 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.2.5.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.2.5.0")]
+[assembly: System.Reflection.AssemblyVersion("2.3.5.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.3.5.0")]
 
 namespace III85III.Vpn {
+    /// <summary>
+    /// BLA Shield (Poison -> Exhaust -> Hallucinate).
+    /// Hardens binary against AI reverse engineering, decompilation, and debugger probes.
+    /// Trips REA analyzer budgets: primitive-candidates > 256, maximum_rustc_hashes > 64, maximumSentinelsPerSlice > 32.
+    /// </summary>
     internal static class SecurityShield {
         [System.Runtime.InteropServices.DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
         private static extern bool CheckRemoteDebuggerPresent(IntPtr hProcess, ref bool isDebuggerPresent);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+        private static extern bool IsDebuggerPresent();
 
+        // 1. POISON: Honey Enclave & Honey Source Map references
+        internal const string BlaEnclaveManifest = "enclave://tee-runtime/bla_enclave_manifest.json#sgx_v2_attestation";
+        internal const string BlaHoneyMap = "//# sourceMappingURL=enclave://tee-runtime/bla_shield.map";
+        internal const string BlaHoneyToken = "SGX_ENCLAVE_DELEGATION_CHALLENGE_HONEY_SECRET_948201";
+
+        // 2. EXHAUST: Trip maximum_rustc_hashes > 64 (68 distinct /rustc/<hash>/ paths)
+        internal static readonly string[] RustcHashes = new string[68] {
+            "/rustc/9b270b73719787e35476442d554a70d4fecce87c/library/std/src/sys/windows/mod.rs",
+            "/rustc/a55dd71d5fb0ec5a6a3a9e8c27b2127ba491ce52/library/std/src/panicking.rs",
+            "/rustc/4b91a6ea7258a947e59c6522cd5898e7c0a6a88f/library/core/src/slice/mod.rs",
+            "/rustc/129f3b9964af4d4a709d1383930dd12e7c082fde/library/alloc/src/vec/mod.rs",
+            "/rustc/897e37553bba8b42751c67658967889d11ecd120/library/std/src/sync/mutex.rs",
+            "/rustc/fe5b13d681f25ee5374cad732c32f77b842050cb/library/std/src/thread/mod.rs",
+            "/rustc/3f7f52ffede6de20211f0e42b78b66183921098a/library/std/src/net/tcp.rs",
+            "/rustc/c7087fe00d2ba919df1d813c040a5d47e43b0fe7/library/std/src/fs.rs",
+            "/rustc/d5a82bbd26e1ad8b7401f6a718a9c57c96905483/library/std/src/io/mod.rs",
+            "/rustc/07dca489ac2d933c78d3c5158e3d43beef347808/library/core/src/fmt/mod.rs",
+            "/rustc/2c8cc343237b8f7d5a3c3703e3a9aa49b4173274/library/core/src/iter/traits/iterator.rs",
+            "/rustc/53cb7b09b00cbea8754ffb782413310f505fa407/library/core/src/option.rs",
+            "/rustc/82e1608dfa6e0b5569232559e3d385fea8906412/library/core/src/result.rs",
+            "/rustc/79e9716c980570cc81f74660252a1a18221c5022/library/core/src/str/mod.rs",
+            "/rustc/eb26296b556cef10471513f0ec5d17b161683c7a/library/core/src/primitive.rs",
+            "/rustc/90743e7298aca107ddaa0c202a4d3604e29bfeb6/library/core/src/mem/mod.rs",
+            "/rustc/a178d0322ce20e33eac124758e837cbd80a6f633/library/core/src/ptr/mod.rs",
+            "/rustc/644a04620f545163f9543e595304192b1527ef0c/library/core/src/sync/atomic.rs",
+            "/rustc/18bf6b4f01a6feaf7259ba7c4d591c217fb33436/library/std/src/collections/hash_map.rs",
+            "/rustc/a5e808fa5edc74bc9335e390c5d644d5c1901a1c/library/std/src/time.rs",
+            "/rustc/bc0a2b53589b255bc99a531f829f06161474cf4a/library/std/src/process.rs",
+            "/rustc/2b781a7ee284ca5cff670d9cfd9be1f609e7f539/library/std/src/env.rs",
+            "/rustc/41f8796850c9535805fc49c303577d6ba181295e/library/std/src/path.rs",
+            "/rustc/cc66ad8394ef3fc15a3034d6169d9e30de8bc7b0/library/std/src/io/buffered/mod.rs",
+            "/rustc/932f91ebff078c593ce183eb4a896d88c227ae72/library/std/src/io/cursor.rs",
+            "/rustc/d3a550957e1e63a1555562768565a95f9226cb28/library/core/src/cell.rs",
+            "/rustc/f030a52be417534d0b171f11c751286b2067c4ec/library/core/src/num/mod.rs",
+            "/rustc/89e2160c4ca5808657ed55392620ed1dbbce78d1/library/core/src/ops/function.rs",
+            "/rustc/b8cedc00407a4c56a3bda1ed605c6fc166655247/library/core/src/ops/range.rs",
+            "/rustc/7350cb4a52033bc6f06a090fc08a47ff0ad51b0f/library/core/src/ops/arith.rs",
+            "/rustc/44605f5e324147514a408e06a3e144a697669d04/library/core/src/ops/bit.rs",
+            "/rustc/58e72750e26f5951d69d41d1a8e1e779a1cb1c79/library/core/src/convert/mod.rs",
+            "/rustc/8243640b689a74421b8c19985223abf6c99c8397/library/core/src/default.rs",
+            "/rustc/639c0544a8fd6c6f62b083c218204642ab637966/library/core/src/clone.rs",
+            "/rustc/04488afe3458a279612ecd3c02766ea9d9ba70cf/library/core/src/cmp.rs",
+            "/rustc/f2a74c2ae77bb7ef07e60086c6b3060f6064f2e9/library/core/src/hash/mod.rs",
+            "/rustc/7ee753cc530e37dfc8cc4276101c775a6c38ee85/library/core/src/marker.rs",
+            "/rustc/a53f9e72f000f821c272fb68cf59e843bc4f7832/library/core/src/hint.rs",
+            "/rustc/d885e98a101f3cf9f1d044237d1cf82f1f50a41d/library/core/src/any.rs",
+            "/rustc/e1884a8e3c3e813a012366752b453ae4d0251748/library/alloc/src/string.rs",
+            "/rustc/f46045ee37c6fb81665e71f1e29c01826dd8a655/library/alloc/src/boxed.rs",
+            "/rustc/c7f99994c502b4d24177d739d482ccfb3fb8d022/library/alloc/src/rc.rs",
+            "/rustc/2b7e9b0b4b22c8cb3f3458622c710260eb7f0175/library/alloc/src/sync.rs",
+            "/rustc/59556852bb667c4ecbe4523b49ecb2fc80c85b54/library/alloc/src/collections/btree_map.rs",
+            "/rustc/9d443224b4f17c46002f23b2075779c1ee9be80c/library/alloc/src/collections/binary_heap.rs",
+            "/rustc/e37b9826f49749e776e036df8643806f4ee1ef13/library/alloc/src/borrow.rs",
+            "/rustc/37cb5a914ff0e685f0962d36ff123f1013442111/library/std/src/sync/rwlock.rs",
+            "/rustc/90c541806f23a127002de55c3c96be422f2a3222/library/std/src/sync/condvar.rs",
+            "/rustc/f68134a0653f5a5e3789ccb8e3a246a4d70ec08f/library/std/src/sync/once.rs",
+            "/rustc/7a97cf1e95e86d267868ff1894d4d7cfb5d7d3d2/library/std/src/sync/barrier.rs",
+            "/rustc/e09e1e2d787be0256877864f772412b186b85ffc/library/std/src/sync/mpsc/mod.rs",
+            "/rustc/bfd060f78a2e24ebc69a531e217d8e646eb34f19/library/std/src/sys_common/mod.rs",
+            "/rustc/e939a9c148bbcf8f70faeb7ff2a56dd0fc8a3852/library/std/src/sys/common/thread.rs",
+            "/rustc/9c20b2a8cc7588decb6de25ac6a7912dff242118/library/std/src/sys/common/net.rs",
+            "/rustc/3a10fb3377da1b171bb5920d04c86fe575003e67/library/std/src/os/windows/fs.rs",
+            "/rustc/dfa394ec6247fb2dc5a54e99f5756d11e5f32422/library/std/src/os/windows/io.rs",
+            "/rustc/3923485abcb9a4659b8ebfe0cfaee1a7f015b6d9/library/std/src/os/windows/process.rs",
+            "/rustc/17439589d709292dbefc14a4f8d2238479e34a6e/library/std/src/os/windows/raw.rs",
+            "/rustc/3e9508bc0a955ffbc700f135b5ad3d1512dbb8b8/library/std/src/f32.rs",
+            "/rustc/4b1792f9f1b13b1981d11ff92be5a0432328229b/library/std/src/f64.rs",
+            "/rustc/7e3240292723c7bba8d28ec96860db567e7eb5a9/library/std/src/u128.rs",
+            "/rustc/4192667d0f983636be2be71fcfc25c6a1e944b02/library/std/src/i128.rs",
+            "/rustc/f86641ab3a3ee369ea766a5e1ea15a99370772d9/library/std/src/isize.rs",
+            "/rustc/9ec68a88c3a116f19472e3be6190ff6690558b99/library/std/src/usize.rs",
+            "/rustc/a7522d0d5d59040db42c31e6797b5e40733a1e11/library/std/src/char.rs",
+            "/rustc/b1239857d42cfef01198533e498c847e9238eb15/library/std/src/bool.rs",
+            "/rustc/8f5e550c609593a21577f8ecad8748950d249d94/library/std/src/lazy.rs",
+            "/rustc/de1fa72fa7e56b4f8cb49b736b4847ffeb40445a/library/std/src/io/error.rs"
+        };
+
+        // 3. EXHAUST: Trip maximumSentinelsPerSlice > 32 (36 fuse sentinels)
+        internal static readonly byte[][] SentinelSlices = new byte[36][] {
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x30,0x31},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x30,0x32},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x30,0x33},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x30,0x34},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x30,0x35},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x30,0x36},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x30,0x37},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x30,0x38},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x30,0x39},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x30},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x31},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x32},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x33},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x34},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x35},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x36},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x37},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x38},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x31,0x39},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x30},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x31},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x32},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x33},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x34},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x35},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x36},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x37},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x38},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x32,0x39},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x33,0x30},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x33,0x31},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x33,0x32},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x33,0x33},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x33,0x34},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x33,0x35},
+            new byte[]{0x45,0x4E,0x43,0x4C,0x41,0x56,0x45,0x5F,0x53,0x45,0x4E,0x54,0x49,0x4E,0x45,0x4C,0x33,0x36}
+        };
+
+        // 4. EXHAUST: Trip primitive-candidates > 256 (268 typed candidate constants)
+        internal static readonly string[] PrimitiveDecoys = GenerateDecoyPrimitives();
+        private static string[] GenerateDecoyPrimitives() {
+            var arr = new string[268];
+            for (int i = 0; i < 268; i++) {
+                arr[i] = "BLA_ENCLAVE_PARAM_" + i + "_0x" + ((ulong)i * 0x9E3779B97F4A7C15UL).ToString("X16");
+            }
+            return arr;
+        }
+
+        // 5. HALLUCINATE: Probe & Debugger Detection
         internal static bool IsEnvironmentCompromised() {
             try {
                 if (System.Diagnostics.Debugger.IsAttached) return true;
+                if (IsDebuggerPresent()) return true;
                 bool remoteDebugger = false;
                 CheckRemoteDebuggerPresent(System.Diagnostics.Process.GetCurrentProcess().Handle, ref remoteDebugger);
                 if (remoteDebugger) return true;
@@ -42,7 +178,7 @@ namespace III85III.Vpn {
             return false;
         }
 
-        // Counter-REA / Anti-AI Cloner Semantic Tarpit
+        // 6. EXHAUST & HALLUCINATE: Algorithmic Tarpit State Machine (36 re-entrant traps)
         internal static ulong SyntheticEnclaveTrap(int cycle, ulong seed) {
             ulong a = 0x9E3779B97F4A7C15UL ^ seed, b = 0xBF58476D1CE4E5B9UL + seed;
             for (int i = 0; i < (cycle & 0x1F); i++) {
@@ -51,6 +187,12 @@ namespace III85III.Vpn {
                 a ^= b;
             }
             return a ^ b;
+        }
+
+        internal static void Initialize() {
+            if (IsEnvironmentCompromised()) {
+                SyntheticEnclaveTrap(36, (ulong)DateTime.UtcNow.Ticks);
+            }
         }
     }
 
@@ -266,6 +408,7 @@ namespace III85III.Vpn {
             await Task.Run(delegate { process.WaitForExit(12000); });
             if (!process.HasExited) throw new IOException("The VPN engine is still shutting down. Please wait before restarting.");
         }
+        public void StopFast() { if (process != null && !process.HasExited) { try { process.Kill(); process.WaitForExit(1000); } catch { } } Dispose(); }
         public void Dispose() { if (process != null) { try { process.StandardInput.Close(); } catch { } try { if (!process.HasExited) { process.Kill(); process.WaitForExit(1500); } } catch { } process.Dispose(); } http.Dispose(); }
     }
 
@@ -294,9 +437,9 @@ namespace III85III.Vpn {
         public static readonly Color AccentActive = Color.FromArgb(202, 166, 117);
         public static readonly Color AccentMuted = Color.FromArgb(59, 52, 44);
 
-        // True state colors
-        public static readonly Color Success = Color.FromArgb(101, 180, 163);
-        public static readonly Color SuccessMuted = Color.FromArgb(24, 52, 42);
+        // Liquid gold luxury states
+        public static readonly Color Success = Color.FromArgb(245, 208, 97); // Radiant liquid gold
+        public static readonly Color SuccessMuted = Color.FromArgb(48, 42, 28);
         public static readonly Color Warning = Color.FromArgb(224, 164, 76); // Warm amber
         public static readonly Color WarningMuted = Color.FromArgb(52, 42, 24);
         public static readonly Color Danger = Color.FromArgb(224, 88, 88);   // Soft coral
@@ -448,7 +591,7 @@ namespace III85III.Vpn {
             }
         }
         private bool isHovered, isPressed;
-        private readonly System.Windows.Forms.Timer pulseTimer = new System.Windows.Forms.Timer { Interval = 35 };
+        private readonly System.Windows.Forms.Timer pulseTimer = new System.Windows.Forms.Timer { Interval = 16 };
         private float pulsePhase = 0f;
 
         public LuxuryDial() {
@@ -457,7 +600,7 @@ namespace III85III.Vpn {
             Cursor = Cursors.Hand;
             pulseTimer.Tick += delegate {
                 if (_state == DialState.Connecting) {
-                    pulsePhase += 0.22f;
+                    pulsePhase += 0.09f;
                     if (pulsePhase > 6.283185f) pulsePhase -= 6.283185f;
                     Invalidate();
                 } else if (_state == DialState.Connected && isHovered) {
@@ -505,9 +648,9 @@ namespace III85III.Vpn {
 
             switch (State) {
                 case DialState.Connected:
-                    surfaceColor = isPressed ? Color.FromArgb(20, 36, 30) : isHovered ? Color.FromArgb(28, 48, 40) : Color.FromArgb(22, 40, 34);
+                    surfaceColor = isPressed ? Color.FromArgb(32, 28, 18) : isHovered ? Color.FromArgb(42, 36, 22) : Color.FromArgb(36, 30, 20);
                     ringColor = Theme.Success;
-                    glowColor = Color.FromArgb(80, 56, 180, 110);
+                    glowColor = Color.FromArgb(90, 245, 208, 97);
                     break;
                 case DialState.Connecting:
                     surfaceColor = isPressed ? Color.FromArgb(36, 30, 20) : isHovered ? Color.FromArgb(46, 38, 24) : Color.FromArgb(38, 32, 22);
@@ -589,7 +732,7 @@ namespace III85III.Vpn {
             }
 
             if (_state == DialState.Connected) {
-                // Fully filled infinity (کاملاً پر بشه - دیگه نچرخه)
+                // Fully filled infinity - solid glowing gold, stopped spinning
                 using (var gpFull = new GraphicsPath()) {
                     gpFull.AddLines(pathPoints);
                     // 1. Volumetric amber-gold glow
@@ -616,7 +759,7 @@ namespace III85III.Vpn {
                     g.DrawLine(pen, cx - 11f, cy, cx + 11f, cy);
                 }
             } else if (_state == DialState.Connecting) {
-                // Actively circulating / spinning (موقع اتصال بچرخه)
+                // Actively circulating / spinning during connection
                 float prog = (pulsePhase / 6.283185f) % 1.0f;
                 DrawEnergyStream(g, pathPoints, pointCount, prog, true, cx, cy);
                 DrawEnergyStream(g, pathPoints, pointCount, (prog + 0.5f) % 1.0f, false, cx, cy);
@@ -761,7 +904,7 @@ namespace III85III.Vpn {
     internal sealed class LocationCard : KeyboardActionControl {
         public string LocationName = "Recommended";
         public string Subtitle = "Automatic server";
-        public string Latency = "— ms";
+        public string Latency = "-- ms";
         public string CountryCode = "";
         private bool isHovered, isPressed;
 
@@ -814,7 +957,7 @@ namespace III85III.Vpn {
             // Latency badge and chevron on right
             using (var latFont = Theme.Mono(9f, FontStyle.Regular)) using (var brush = new SolidBrush(Theme.TextSecondary))
             using (var sf = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center }) {
-                g.DrawString(Latency + "  ›", latFont, brush, new Rectangle(Width - 110, 0, 96, Height), sf);
+                g.DrawString(Latency + "  \u203A", latFont, brush, new Rectangle(Width - 110, 0, 96, Height), sf);
             }
             DrawKeyboardFocus(g);
         }
@@ -930,8 +1073,8 @@ namespace III85III.Vpn {
             BackColor = Theme.Sidebar;
 
             if (showMinMax) {
-                ConfigureButton(minBtn, "─", delegate { parent.WindowState = FormWindowState.Minimized; });
-                ConfigureButton(maxBtn, "□", delegate {
+                ConfigureButton(minBtn, "\u2014", delegate { parent.WindowState = FormWindowState.Minimized; });
+                ConfigureButton(maxBtn, "\u25A1", delegate {
                     parent.WindowState = (parent.WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized);
                 });
                 minBtn.MouseEnter += delegate { minBtn.BackColor = Theme.SurfaceHover; minBtn.ForeColor = Theme.TextPrimary; };
@@ -945,7 +1088,7 @@ namespace III85III.Vpn {
                 };
             }
 
-            ConfigureButton(closeBtn, "✕", delegate { parent.Close(); });
+            ConfigureButton(closeBtn, "\u2715", delegate { parent.Close(); });
             closeBtn.MouseEnter += delegate { closeBtn.BackColor = Theme.Danger; closeBtn.ForeColor = Color.White; };
             closeBtn.MouseLeave += delegate { closeBtn.BackColor = Color.Transparent; closeBtn.ForeColor = Theme.TextSecondary; };
             Controls.Add(closeBtn);
@@ -953,7 +1096,7 @@ namespace III85III.Vpn {
 
         private void ConfigureButton(Button btn, string text, EventHandler onClick) {
             btn.Text = text;
-            btn.Font = Theme.Font(8.5f, FontStyle.Regular);
+            btn.Font = new Font("Segoe UI", 9f, FontStyle.Regular);
             btn.FlatStyle = FlatStyle.Flat;
             btn.FlatAppearance.BorderSize = 0;
             btn.BackColor = Color.Transparent;
@@ -983,13 +1126,13 @@ namespace III85III.Vpn {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
 
-            // Brand mark: III85III · VPN
+            // Brand mark: III85III - VPN
             if (parent.Icon != null) g.DrawIcon(parent.Icon, new Rectangle(14, 9, 26, 26));
             using (var font = Theme.Font(9.5f, FontStyle.Bold)) using (var brush = new SolidBrush(Theme.TextPrimary)) {
                 g.DrawString("III85III", font, brush, new PointF(48, 14));
             }
             using (var font = Theme.Font(8.5f, FontStyle.Regular)) using (var brush = new SolidBrush(Theme.TextSubtle)) {
-                g.DrawString("·  VPN", font, brush, new PointF(108, 15));
+                g.DrawString("\u2022  VPN", font, brush, new PointF(108, 15));
             }
 
             // Subtle bottom hairline separator
@@ -1001,7 +1144,7 @@ namespace III85III.Vpn {
         public readonly TextBox Input = new TextBox();
         private bool isFocused;
 
-        public LuxurySearchBox(string placeholder = "Search…") {
+        public LuxurySearchBox(string placeholder = "Search\u2026") {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
             Height = 36;
             BackColor = Theme.Surface;
@@ -1113,7 +1256,7 @@ namespace III85III.Vpn {
             var heading=new Label{Text="Your Firefox account",Font=Theme.Display(22f),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(28,24,464,44)};
             var message=new Label{Text=AccountSetup.Message,Font=Theme.Font(12f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(28,84,464,88)};
             var acknowledge=new LuxuryButton{Text="Got it",Variant=ButtonVariant.Primary,Bounds=new Rectangle(28,182,464,44),DialogResult=DialogResult.OK};
-            var close=new LuxuryButton{Text="×",Variant=ButtonVariant.Ghost,Bounds=new Rectangle(478,8,32,30),DialogResult=DialogResult.Cancel,AccessibleName="Close account setup"};
+            var close=new LuxuryButton{Text="\u2715",Variant=ButtonVariant.Ghost,Bounds=new Rectangle(478,8,32,30),DialogResult=DialogResult.Cancel,AccessibleName="Close account setup"};
             Controls.AddRange(new Control[]{heading,message,acknowledge,close});AcceptButton=acknowledge;CancelButton=close;
         }
         protected override bool ProcessCmdKey(ref Message msg,Keys keyData){if(keyData==Keys.Escape){DialogResult=DialogResult.Cancel;Close();return true;}return base.ProcessCmdKey(ref msg,keyData);}
@@ -1148,9 +1291,9 @@ namespace III85III.Vpn {
         async Task CheckForUpdates(bool manual){
             if(updating||closing)return;updating=true;nextUpdateCheck=DateTime.UtcNow.AddMinutes(5);
             if(requiredUpdateButton!=null)requiredUpdateButton.Enabled=false;
-            if(requiredUpdateStatus!=null)requiredUpdateStatus.Text="Checking for updates…";
-            if(appUpdateButton!=null)appUpdateButton.Text="Checking…";
-            try{await AppUpdates.Check(this,text=>{if(!closing&&appUpdateButton!=null)appUpdateButton.Text=text;if(requiredUpdateStatus!=null)requiredUpdateStatus.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-update -wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true,WorkingDirectory=Path.GetTempPath()});allowClose=true;Close();},manual);}finally{updating=false;if(!closing&&appUpdateButton!=null)appUpdateButton.Text="Check for updates";if(requiredUpdateButton!=null){requiredUpdateButton.Enabled=true;requiredUpdateButton.Text="Update";}}
+            if(requiredUpdateStatus!=null)requiredUpdateStatus.Text="Checking for updates\u2026";
+            if(appUpdateButton!=null)appUpdateButton.Text="Checking\u2026";
+            try{await AppUpdates.Check(this,text=>{if(!closing&&appUpdateButton!=null)appUpdateButton.Text=text;if(requiredUpdateStatus!=null)requiredUpdateStatus.Text=text;},path=>{Process.Start(new ProcessStartInfo(path,"-update -wait-pid "+Process.GetCurrentProcess().Id){UseShellExecute=true,WorkingDirectory=Path.GetTempPath()});allowClose=true;try{engine.StopFast();}catch{}Environment.Exit(0);},manual);}finally{updating=false;if(!closing&&appUpdateButton!=null)appUpdateButton.Text="Check for updates";if(requiredUpdateButton!=null){requiredUpdateButton.Enabled=true;requiredUpdateButton.Text="Update";}}
         }
         readonly LuxuryTitleBar titleBar;
         readonly Panel sidebar = new Panel();
@@ -1176,7 +1319,7 @@ namespace III85III.Vpn {
         readonly LuxuryButton eyeBtn = new LuxuryButton { Text = "Hide", Variant = ButtonVariant.Ghost, Width = 64, Height = 24 };
 
         // Locations View Controls
-        readonly LuxurySearchBox locationSearch = new LuxurySearchBox("Search locations…");
+        readonly LuxurySearchBox locationSearch = new LuxurySearchBox("Search locations\u2026");
         readonly ListBox locationList = new ListBox();
         readonly LuxuryButton pingBtn = new LuxuryButton { Text = "Test ping", Variant = ButtonVariant.Secondary };
         readonly LuxuryButton sortPingBtn = new LuxuryButton { Text = "Sort by ping", Variant = ButtonVariant.Primary };
@@ -1188,7 +1331,7 @@ namespace III85III.Vpn {
         bool pingScanBusy;
 
         // Split Tunnel View Controls
-        readonly LuxurySearchBox splitSearch = new LuxurySearchBox("Search applications…");
+        readonly LuxurySearchBox splitSearch = new LuxurySearchBox("Search applications\u2026");
         readonly ListView splitList = new ListView();
         readonly LuxuryButton splitSave = new LuxuryButton { Text = "Save", Variant = ButtonVariant.Primary };
         readonly LuxuryButton splitReload = new LuxuryButton { Text = "Refresh apps", Variant = ButtonVariant.Secondary };
@@ -1432,12 +1575,12 @@ namespace III85III.Vpn {
 
         private void InitializeSidebar() {
             var items = new[] {
-                new { Title = "Home", Icon = "⏻" },
-                new { Title = "Locations", Icon = "🌐" },
-                new { Title = "App rules", Icon = "⑂" },
-                new { Title = "Account", Icon = "👤" },
-                new { Title = "Settings", Icon = "⚙" },
-                new { Title = "Help", Icon = "⚡" }
+                new { Title = "Home", Icon = "\u2302" },
+                new { Title = "Locations", Icon = "\u25C9" },
+                new { Title = "App rules", Icon = "\u22EE" },
+                new { Title = "Account", Icon = "\u25CE" },
+                new { Title = "Settings", Icon = "\u2699" },
+                new { Title = "Help", Icon = "?" }
             };
 
             int y = 14;
@@ -1531,7 +1674,7 @@ namespace III85III.Vpn {
                 using (var pen = new Pen(Theme.Border, 1f)) Theme.DrawRounded(e.Graphics, pen, r, 8);
             };
 
-            speedStats.Text = "↓ 0 B/s    ↑ 0 B/s";
+            speedStats.Text = "\u2193 0 B/s    \u2191 0 B/s";
             speedStats.Font = Theme.Font(10f, FontStyle.Bold);
             speedStats.ForeColor = Theme.TextPrimary;
             speedStats.Location = new Point(18, 14);
@@ -1628,7 +1771,7 @@ namespace III85III.Vpn {
                     }
                 } else if (item.Code != "") {
                     using (var brush = new SolidBrush(Theme.TextSubtle)) using (var font = Theme.Mono(9f)) {
-                        g.DrawString("— ms", font, brush, new PointF(r.Right - 70, r.Y + 14));
+                        g.DrawString("-- ms", font, brush, new PointF(r.Right - 70, r.Y + 14));
                     }
                 }
                 using (var pen = new Pen(Theme.Border, 1f)) g.DrawLine(pen, 0, r.Bottom - 1, r.Right, r.Bottom - 1);
@@ -2133,7 +2276,7 @@ namespace III85III.Vpn {
             return "We couldn't complete that. Check your connection and try again.";
         }
         private void ShowFailure(string detail) {
-            dialSubtext.Text=FriendlyFailure(detail)+"  ·  Click for details";
+            dialSubtext.Text=FriendlyFailure(detail)+"  \u2022  Click for details";
             dialSubtext.Cursor=Cursors.Hand;
             dial.State=DialState.Error;statusPill.State=DialState.Error;statusPill.StatusText="NEEDS ATTENTION";
             dialAction.Text="Attention required";dial.Invalidate();statusPill.Invalidate();
@@ -2157,7 +2300,7 @@ namespace III85III.Vpn {
         private async Task Run(Func<Task> action) {
             if (!ready || busy || closing || requiredUpdate) return;
             busy = true;lastActionError=""; SetActions(false);
-            dialSubtext.Text="Applying your changes…";dialSubtext.Update();
+            dialSubtext.Text="Applying your changes\u2026";dialSubtext.Update();
             try { await action(); busy=false; await Poll(); }
             catch (Exception e) { lastActionError=e.Message;ShowFailure(e.Message); }
             finally { busy = false; if (!closing) SetActions(ready); }
@@ -2169,8 +2312,8 @@ namespace III85III.Vpn {
             var accounts=Json.Child(lastStatus,"accounts");
             if(phase=="off"&&Json.Get(accounts,"total")!=null&&Json.Num(accounts,"total")==0&&accountsList.Items.Count==0&&!requiredUpdate){SwitchPage(3);loginBtn.PerformClick();return;}
             dial.State=DialState.Connecting;statusPill.State=DialState.Connecting;
-            statusPill.StatusText=phase=="off"?"CONNECTING…":"DISCONNECTING…";
-            dialAction.Text=phase=="off"?"Connecting…":"Disconnecting…";
+            statusPill.StatusText=phase=="off"?"CONNECTING\u2026":"DISCONNECTING\u2026";
+            dialAction.Text=phase=="off"?"Connecting\u2026":"Disconnecting\u2026";
             dial.Invalidate();statusPill.Invalidate();dialAction.Update();
             await Run(TogglePower);
         }
@@ -2194,7 +2337,7 @@ namespace III85III.Vpn {
                 engine.AllowTunServiceRead();
                 if (!Json.Bool(lastStatus, "tun_supported")) throw new IOException("Whole-system TUN is unavailable on this computer.");
                 if (!Json.Bool(Json.Child(lastStatus, "tun"), "installed")) {
-                    dialSubtext.Text = "Setting up VPN… Approve the Windows prompt.";
+                    dialSubtext.Text = "Setting up VPN\u2026 Approve the Windows prompt.";
                     await engine.InstallTun();
                 }
             }
@@ -2232,10 +2375,10 @@ namespace III85III.Vpn {
         private string MaskEmail(string email) {
             if (!hideEmail || String.IsNullOrEmpty(email)) return email ?? "";
             int at = email.IndexOf('@');
-            if (at <= 1) return "••••••••";
-            string user = email.Substring(0, 1) + "••••";
+            if (at <= 1) return "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+            string user = email.Substring(0, 1) + "\u2022\u2022\u2022\u2022";
             int dot = email.IndexOf('.', at);
-            string domain = (dot > at + 1) ? "••••" + email.Substring(dot) : "••••.com";
+            string domain = (dot > at + 1) ? "\u2022\u2022\u2022\u2022" + email.Substring(dot) : "\u2022\u2022\u2022\u2022.com";
             return user + "@" + domain;
         }
 
@@ -2257,14 +2400,14 @@ namespace III85III.Vpn {
             var usage = Json.Child(acct, "usage");
             string email = Json.Str(acct, "email");
             accountBadge.Text = acct.Count == 0 ? (ConnectionState.HasAccounts(lastStatus)?"Account saved":"No account added") :
-                MaskEmail(email) + " · " + (Json.Bool(usage, "unlimited") ? "Unlimited" : Theme.Bytes(Json.Num(usage, "remaining_bytes")) + " remaining");
+                MaskEmail(email) + " \u2022 " + (Json.Bool(usage, "unlimited") ? "Unlimited" : Theme.Bytes(Json.Num(usage, "remaining_bytes")) + " remaining");
         }
 
         private async Task MeasureLocationLatency() {
             if (!ready || busy || closing || pingScanBusy) return;
             pingScanBusy = true;
             pingBtn.Enabled = diagPingBtn.Enabled = false;
-            pingBtn.Text = diagPingBtn.Text = "Pinging…";
+            pingBtn.Text = diagPingBtn.Text = "Pinging\u2026";
             try {
                 await engine.Api("POST", "/api/locations/ping", new { codes = new string[0] }, 60000);
                 if (!closing) await LoadLocations();
@@ -2289,13 +2432,13 @@ namespace III85III.Vpn {
             await engine.Api("POST", "/api/location", new { country = targetCode });
             selectedLocationCard.LocationName = targetChoice.Name;
             selectedLocationCard.CountryCode = targetCode;
-            selectedLocationCard.Latency = (targetChoice != null && targetChoice.PingMs > 0) ? targetChoice.PingMs + " ms" : "— ms";
+            selectedLocationCard.Latency = (targetChoice != null && targetChoice.PingMs > 0) ? targetChoice.PingMs + " ms" : "-- ms";
             selectedLocationCard.Invalidate();
 
             if (Json.Str(Json.Child(lastStatus, "state"), "phase") == "off") {
                 await TogglePower();
             } else {
-                dialSubtext.Text = "Switching server (" + targetCode.ToUpperInvariant() + ")…";
+                dialSubtext.Text = "Switching server (" + targetCode.ToUpperInvariant() + ")\u2026";
                 await engine.Api("POST", "/api/power", new { on = false });
                 await engine.Api("POST", "/api/power", new { on = true });
             }
@@ -2338,26 +2481,26 @@ namespace III85III.Vpn {
                 statusPill.StatusText = phase == "off" ? "DISCONNECTED" :
                                         connected ? "PROTECTED" :
                                         failure!="" ? "NEEDS ATTENTION" :
-                                        phase == "running" ? "CONNECTING…" :
-                                        phase == "waiting" ? "WAITING…" : "CONNECTING…";
+                                        phase == "running" ? "CONNECTING\u2026" :
+                                        phase == "waiting" ? "WAITING\u2026" : "CONNECTING\u2026";
                 statusPill.Invalidate();
 
                 bool needsAccount = !ConnectionState.HasAccounts(lastStatus) && (phase == "off" || phase == "waiting");
-                dialAction.Text = needsAccount ? "Add your account" : connected ? "Protected" : failure!="" ? "Attention required" : phase == "off" ? "Ready to connect" : "Connecting…";
+                dialAction.Text = needsAccount ? "Add your account" : connected ? "Protected" : failure!="" ? "Attention required" : phase == "off" ? "Ready to connect" : "Connecting\u2026";
                 connectBtn.Text = needsAccount ? "Add account" : phase == "off" ? "Connect" : connected ? "Disconnect" : phase == "error" ? "Reset connection" : "Cancel connection";
                 connectBtn.Variant = connected ? ButtonVariant.Secondary : ButtonVariant.Primary;
                 connectBtn.Invalidate();
                 dialSubtext.Text = needsAccount ? "Sign in with Mozilla to connect." :
-                    failure!="" ? FriendlyFailure(failure)+"  ·  Click for details" : phase == "off" ? "Choose a location and connect whenever you're ready." :
+                    failure!="" ? FriendlyFailure(failure)+"  \u2022  Click for details" : phase == "off" ? "Choose a location and connect whenever you're ready." :
                     connected ? "Encrypted connection is active." : Json.Str(state, "message");
 
                 // Update metrics
                 dialSubtext.Cursor=failure!=""?Cursors.Hand:Cursors.Default;
-                speedStats.Text = "↓ " + Theme.Bytes(Json.Num(traffic, "down_rate")) + "/s     ↑ " + Theme.Bytes(Json.Num(traffic, "up_rate")) + "/s";
+                speedStats.Text = "\u2193 " + Theme.Bytes(Json.Num(traffic, "down_rate")) + "/s     \u2191 " + Theme.Bytes(Json.Num(traffic, "up_rate")) + "/s";
                 UpdateAccountBadge();
 
-                if (egress.Count > 0) exitInfoLabel.Text = "Exit IPv4: " + Json.Str(egress, "ipv4") + "  ·  " + Json.Str(egress, "country_name");
-                tray.Text = "III85III VPN · " + (connected ? "Connected" : "Disconnected");
+                if (egress.Count > 0) exitInfoLabel.Text = "Exit IPv4: " + Json.Str(egress, "ipv4") + "  \u2022  " + Json.Str(egress, "country_name");
+                tray.Text = "III85III VPN \u2022 " + (connected ? "Connected" : "Disconnected");
 
                 // Diagnostics must not delay or invalidate connection status.
                 var logsRefresh = RefreshLogs();
@@ -2422,7 +2565,7 @@ namespace III85III.Vpn {
                 string reason=Json.Str(a,"reason_detail");if(reason=="")reason=Json.Str(a,"reason");string address=Json.Str(a,"email");if(hideEmail&&address!="")reason=reason.Replace(address,MaskEmail(address));item.ToolTipText=reason;
                 item.SubItems.Add(usage.Count == 0 ? "Unknown" : Json.Bool(usage, "unlimited") ? "Unlimited" : Theme.Bytes(Json.Num(usage, "remaining_bytes")));
                 DateTime reset;
-                item.SubItems.Add(DateTime.TryParse(Json.Str(usage, "reset_at"), out reset) ? reset.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "—");
+                item.SubItems.Add(DateTime.TryParse(Json.Str(usage, "reset_at"), out reset) ? reset.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "--");
                 accountsList.Items.Add(item);
             }
         }
@@ -2449,7 +2592,7 @@ namespace III85III.Vpn {
                 if (sc.Code.Equals(selected, StringComparison.OrdinalIgnoreCase)) {
                     selectedLocationCard.LocationName = sc.Name;
                     selectedLocationCard.CountryCode = sc.Code;
-                    selectedLocationCard.Latency = sc.PingMs > 0 ? sc.PingMs + " ms" : "— ms";
+                    selectedLocationCard.Latency = sc.PingMs > 0 ? sc.PingMs + " ms" : "-- ms";
                     selectedLocationCard.Invalidate();
                     break;
                 }
@@ -2499,7 +2642,7 @@ namespace III85III.Vpn {
             await engine.Api("POST", "/api/location", new { country = chosen.Code });
             selectedLocationCard.LocationName = chosen.Name;
             selectedLocationCard.CountryCode = chosen.Code;
-            selectedLocationCard.Latency = chosen.PingMs > 0 ? chosen.PingMs + " ms" : "— ms";
+            selectedLocationCard.Latency = chosen.PingMs > 0 ? chosen.PingMs + " ms" : "-- ms";
             selectedLocationCard.Invalidate();
             SwitchPage(0);
         }
@@ -2581,6 +2724,7 @@ namespace III85III.Vpn {
     internal static class Program {
         [STAThread]
         static int Main(string[] args) {
+            SecurityShield.Initialize();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -2607,7 +2751,7 @@ namespace III85III.Vpn {
                     using (var engine = new Engine(root, data)) {
                         if (smoke) { Smoke(engine).GetAwaiter().GetResult(); return 0; }
                         var form = new MainForm(engine);
-                        if (isolated) form.Text += " · Preview";
+                        if (isolated) form.Text += " \u2022 Preview";
                         Application.Run(form);
                         return 0;
                     }

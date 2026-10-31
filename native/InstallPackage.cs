@@ -1,9 +1,33 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 
 internal static class InstallPackage {
+    internal static void TerminateProcesses(string root){
+        string[] engineNames = new[] { "iii85iii-core", "firefox-vpn-core", "iii85iii-tun", "firefox-vpn-tun", "III85III VPN" };
+        foreach (var name in engineNames) {
+            try {
+                foreach (var p in Process.GetProcessesByName(name)) {
+                    try { p.Kill(); p.WaitForExit(1500); } catch { }
+                    finally { p.Dispose(); }
+                }
+            } catch { }
+        }
+        if(!String.IsNullOrEmpty(root)&&Directory.Exists(root)){
+            try{
+                foreach(var p in Process.GetProcesses()){
+                    try{
+                        if(p.MainModule!=null&&p.MainModule.FileName.StartsWith(root,StringComparison.OrdinalIgnoreCase)){
+                            p.Kill();p.WaitForExit(1000);
+                        }
+                    }catch{}
+                    finally{p.Dispose();}
+                }
+            }catch{}
+        }
+    }
     internal static int UpdateParent(string[] arguments){
         if(arguments.Length==1)return 0;
         int index=Array.IndexOf(arguments,"-wait-pid"),pid;
@@ -70,8 +94,9 @@ internal static class InstallPackage {
                     catch(Exception ex){
                         if(!(ex is IOException || ex is UnauthorizedAccessException))throw;
                         retries++;
-                        if(retries>=20)throw;
-                        System.Threading.Thread.Sleep(250);
+                        if(retries>=30)throw;
+                        TerminateProcesses(root);
+                        System.Threading.Thread.Sleep(300);
                     }
                 }
             } else {
@@ -86,8 +111,9 @@ internal static class InstallPackage {
                     catch(Exception ex){
                         if(!(ex is IOException || ex is UnauthorizedAccessException))throw;
                         retries++;
-                        if(retries>=20)throw;
-                        System.Threading.Thread.Sleep(250);
+                        if(retries>=30)throw;
+                        TerminateProcesses(root);
+                        System.Threading.Thread.Sleep(300);
                     }
                 }
             } else {

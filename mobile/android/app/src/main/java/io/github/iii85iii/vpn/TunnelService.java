@@ -74,7 +74,7 @@ public final class TunnelService extends VpnService {
         PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,TunnelService.class).setAction(STOP),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder notice=new Notification.Builder(this,channel);
         startForeground(85,notice.setSmallIcon(io.github.iii85iii.vpn.R.drawable.ic_notification).setContentTitle("III85III VPN")
-            .setContentText(active?"VPN is active · tap to open":"Starting VPN · tap Disconnect to cancel").setContentIntent(open).setOngoing(true)
+            .setContentText(active?"VPN is active \u2022 tap to open":"Starting VPN \u2022 tap Disconnect to cancel").setContentIntent(open).setOngoing(true)
             .addAction(new Notification.Action.Builder(null,"Disconnect",stop).build()).build());
     }
     private void stopTunnel(){
