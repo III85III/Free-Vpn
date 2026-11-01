@@ -24,7 +24,7 @@ public final class MainActivity extends Activity {
     private final Handler main=new Handler(Looper.getMainLooper());
     private LinearLayout content,nav;
     private FrameLayout adContainer;
-    private TextView statusText,detailText,speedText,feedback,server;
+    private TextView statusText,detailText,speedText,feedback,server,quotaSummary;
     private Button power;
     private InfinityLoopView heroInfinity;
     private View statusDot;
@@ -173,7 +173,7 @@ public final class MainActivity extends Activity {
             item.setLayoutParams(params);
             nav.addView(item);
         }
-        content.removeAllViews();statusText=detailText=speedText=server=null;power=null;heroInfinity=null;statusDot=null;updateBanner=null;
+        content.removeAllViews();statusText=detailText=speedText=server=null;power=null;heroInfinity=null;statusDot=null;updateBanner=null;quotaSummary=null;
         switch(page){case 0:home();break;case 1:locationPage();break;case 2:appRules();break;case 3:accounts();break;case 4:settings();break;default:help();}
     }
     private void home(){
@@ -276,6 +276,31 @@ public final class MainActivity extends Activity {
         speedText.setTypeface(body);
         speedCard.addView(speedText);
         content.addView(speedCard);
+
+        LinearLayout quotaCard=new LinearLayout(this);
+        quotaCard.setOrientation(LinearLayout.HORIZONTAL);
+        quotaCard.setGravity(Gravity.CENTER_VERTICAL);
+        quotaCard.setPadding(dp(18),dp(12),dp(18),dp(12));
+        quotaCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),cardBackground(SURFACE,14),background(Color.WHITE)));
+        LinearLayout.LayoutParams quotaCardParams=new LinearLayout.LayoutParams(-1,-2);
+        quotaCardParams.setMargins(0,0,0,dp(10));
+        quotaCard.setLayoutParams(quotaCardParams);
+
+        LinearLayout quotaCol=new LinearLayout(this);
+        quotaCol.setOrientation(LinearLayout.VERTICAL);
+        TextView quotaTitle=label("ACCOUNT QUOTA",11,GOLD);
+        quotaTitle.setTypeface(body,Typeface.BOLD);
+        quotaTitle.setLetterSpacing(0.06f);
+        quotaSummary=label("Loading quota…",14,TEXT);
+        quotaSummary.setTypeface(body,Typeface.BOLD);
+        quotaCol.addView(quotaTitle);
+        quotaCol.addView(quotaSummary);
+        quotaCard.addView(quotaCol,new LinearLayout.LayoutParams(0,-2,1));
+
+        TextView manageAction=label("Manage ›",13,MUTED);
+        quotaCard.addView(manageAction);
+        quotaCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showPage(3); });
+        content.addView(quotaCard);
 
         updateHome();
     }
@@ -405,6 +430,26 @@ public final class MainActivity extends Activity {
             String[] rate=Mobile.speed().split(",");
             speedText.setText("↓ "+bytes(Double.parseDouble(rate[0]))+"/s      ↑ "+bytes(Double.parseDouble(rate[1]))+"/s");
         }catch(Exception ignored){}
+        if(quotaSummary!=null){
+            JSONObject activeAcc=status.optJSONObject("active_account");
+            if(activeAcc!=null){
+                JSONObject usage=activeAcc.optJSONObject("usage");
+                if(usage!=null){
+                    if(usage.optBoolean("unlimited",false)){
+                        quotaSummary.setText("Unlimited Plan");
+                    }else{
+                        double rem=usage.optDouble("remaining_bytes",0);
+                        double lim=usage.optDouble("limit_bytes",0);
+                        double total=lim>0?lim:(50.0*1024*1024*1024);
+                        quotaSummary.setText(bytes(rem)+" remaining of "+bytes(total));
+                    }
+                }else{
+                    quotaSummary.setText("Monthly 50.0 GB Plan");
+                }
+            }else{
+                quotaSummary.setText("Tap to view accounts & quota");
+            }
+        }
     }
     private String bytes(double amount){String[] unit={"B","KB","MB","GB"};int n=0;while(amount>=1000&&n<3){amount/=1000;n++;}return String.format(Locale.US,n==0?"%.0f %s":"%.1f %s",amount,unit[n]);}
     static String connectionProblem(JSONObject value){
@@ -433,18 +478,152 @@ public final class MainActivity extends Activity {
         api("GET","/api/locations",null,15000,reply->{JSONArray rows=reply.optJSONArray("locations");locations=rows==null?new JSONArray():rows;if(page==1)render.run();});render.run();
     }
     private void accounts(){
-        heading("Accounts","Sign in with Mozilla.");
-        content.addView(button("Add an account",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();}));
+        heading("Accounts","Manage your Mozilla VPN profiles & monthly quota.");
+        content.addView(button("+ Add an account",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();}));
         boolean hidden=getPreferences(MODE_PRIVATE).getBoolean("hide_email",true);
-        content.addView(button(hidden?"Show email addresses":"Hide email addresses",()->{getPreferences(MODE_PRIVATE).edit().putBoolean("hide_email",!hidden).apply();showPage(3);}));
+        content.addView(button(hidden?"Show full email addresses":"Hide email addresses",()->{getPreferences(MODE_PRIVATE).edit().putBoolean("hide_email",!hidden).apply();showPage(3);}));
         LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);content.addView(rows);
-        api("GET","/api/accounts",null,7000,reply->{if(page!=3)return;JSONArray data=reply.optJSONArray("accounts");if(data==null||data.length()==0){note("No accounts yet. Your account session stays in this app's private storage.");return;}
-            for(int i=0;i<data.length();i++){JSONObject account=data.optJSONObject(i);String id=account.optString("id"),email=account.optString("email");JSONObject usage=account.optJSONObject("usage");String quota=usage==null?"Quota not checked":usage.optBoolean("unlimited")?"Unlimited":bytes(usage.optDouble("remaining_bytes",0))+" remaining";String reset=usage==null?"":usage.optString("reset_at");
-                rows.addView(label((hidden?"••••••••":email)+"\n"+account.optString("status")+" · "+quota+(reset.isEmpty()?"":"\nRenews: "+reset),15,TEXT));
-                rows.addView(button("Refresh balance",()->api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);})));
-                String reason=account.optString("reason_detail",account.optString("reason"));if(!reason.isEmpty())rows.addView(label(hidden&&!email.isEmpty()?reason.replace(email,"••••••••"):reason,14,MUTED));
-                rows.addView(button(account.optBoolean("enabled",true)?"Use this account":"Enable and use this account",()->api("POST","/api/accounts/"+id+"/enabled",object("enabled",true),7000,enabled->api("POST","/api/accounts/"+id+"/activate",new JSONObject(),7000,selected->{feedback.setText("Account selected. You can connect from VPN.");showPage(0);} ))));
-                rows.addView(button("Remove account",()->new AlertDialog.Builder(this).setTitle("Remove this account?").setMessage("This removes its stored session from this device.").setNegativeButton("Cancel",null).setPositiveButton("Remove",(d,w)->api("DELETE","/api/accounts/"+id,null,7000,r->{if(page==3)showPage(3);})).show()));
+        api("GET","/api/accounts",null,7000,reply->{
+            if(page!=3)return;
+            JSONArray data=reply.optJSONArray("accounts");
+            if(data==null||data.length()==0){
+                note("No accounts yet. Your account session stays in this app's private storage.");
+                return;
+            }
+            for(int i=0;i<data.length();i++){
+                JSONObject account=data.optJSONObject(i);
+                if(account==null)continue;
+                String id=account.optString("id");
+                String email=account.optString("email");
+                boolean isActive=account.optBoolean("active",false);
+                boolean isEnabled=account.optBoolean("enabled",true);
+                String statusStr=account.optString("status","ready");
+                JSONObject usage=account.optJSONObject("usage");
+
+                LinearLayout card=new LinearLayout(this);
+                card.setOrientation(LinearLayout.VERTICAL);
+                card.setPadding(dp(18),dp(16),dp(18),dp(16));
+                card.setBackground(cardBackground(SURFACE,16));
+                LinearLayout.LayoutParams cardLp=new LinearLayout.LayoutParams(-1,-2);
+                cardLp.setMargins(0,dp(6),0,dp(14));
+                card.setLayoutParams(cardLp);
+
+                // Top row: Email + Status Badge
+                LinearLayout topRow=new LinearLayout(this);
+                topRow.setOrientation(LinearLayout.HORIZONTAL);
+                topRow.setGravity(Gravity.CENTER_VERTICAL);
+
+                TextView emailView=label(hidden?"••••••••":email,15,TEXT);
+                emailView.setTypeface(body,Typeface.BOLD);
+                topRow.addView(emailView,new LinearLayout.LayoutParams(0,-2,1));
+
+                TextView badge=label(isActive?"ACTIVE":statusStr.toUpperCase(Locale.ROOT),10,isActive?BG:TEXT);
+                badge.setTypeface(body,Typeface.BOLD);
+                badge.setPadding(dp(8),dp(3),dp(8),dp(3));
+                badge.setBackground(pillBackground(isActive?GOLD:0x33CBD5E1,isActive?GOLD:0x1ACBD5E1,10,1));
+                topRow.addView(badge);
+                card.addView(topRow);
+
+                // Quota volume box
+                LinearLayout quotaBox=new LinearLayout(this);
+                quotaBox.setOrientation(LinearLayout.VERTICAL);
+                quotaBox.setPadding(0,dp(12),0,dp(8));
+
+                double remBytes=0, limBytes=0;
+                boolean isUnlimited=false;
+                String resetStr="";
+                if(usage!=null){
+                    isUnlimited=usage.optBoolean("unlimited",false);
+                    remBytes=usage.optDouble("remaining_bytes",0);
+                    limBytes=usage.optDouble("limit_bytes",0);
+                    resetStr=usage.optString("reset_at","");
+                }else{
+                    // Automatic background sync if quota not checked yet
+                    api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
+                }
+
+                if(isUnlimited){
+                    TextView remTitle=label("UNLIMITED DATA PLAN",16,GOLD);
+                    remTitle.setTypeface(body,Typeface.BOLD);
+                    quotaBox.addView(remTitle);
+                }else if(limBytes>0||remBytes>0){
+                    double totalLimit=limBytes>0?limBytes:(50.0*1024*1024*1024);
+                    double remaining=remBytes;
+                    double used=Math.max(0,totalLimit-remaining);
+                    double usedPct=totalLimit>0?(used*100.0/totalLimit):0.0;
+
+                    TextView remBig=label(bytes(remaining),22,GOLD);
+                    remBig.setTypeface(body,Typeface.BOLD);
+                    quotaBox.addView(remBig);
+
+                    TextView subDetail=label("Remaining of "+bytes(totalLimit)+"  ·  "+String.format(Locale.US,"%.1f%% used",usedPct),12,MUTED);
+                    subDetail.setPadding(0,dp(2),0,dp(8));
+                    quotaBox.addView(subDetail);
+
+                    // Visual Progress Bar
+                    LinearLayout progressHolder=new LinearLayout(this);
+                    progressHolder.setOrientation(LinearLayout.HORIZONTAL);
+                    progressHolder.setBackground(pillBackground(0,0xFF101319,6,0));
+                    int fillWidthPct=Math.max(2,Math.min(100,(int)Math.round(100-usedPct)));
+                    View fillView=new View(this);
+                    fillView.setBackground(pillBackground(0,GOLD,6,0));
+                    progressHolder.addView(fillView,new LinearLayout.LayoutParams(0,dp(6),(float)fillWidthPct));
+                    View emptyView=new View(this);
+                    progressHolder.addView(emptyView,new LinearLayout.LayoutParams(0,dp(6),(float)(100-fillWidthPct)));
+                    quotaBox.addView(progressHolder);
+                }else{
+                    TextView syncLabel=label("Monthly Plan: 50.0 GB  (Syncing quota with Mozilla…)",13,GOLD);
+                    quotaBox.addView(syncLabel);
+                }
+
+                if(!resetStr.isEmpty()){
+                    String dateDisplay=resetStr.contains("T")?resetStr.substring(0,resetStr.indexOf('T')):resetStr;
+                    TextView resetView=label("↻ Renews on: "+dateDisplay,11,MUTED);
+                    resetView.setPadding(0,dp(6),0,0);
+                    quotaBox.addView(resetView);
+                }
+                card.addView(quotaBox);
+
+                String reason=account.optString("reason_detail",account.optString("reason"));
+                if(!reason.isEmpty()){
+                    TextView reasonView=label(hidden&&!email.isEmpty()?reason.replace(email,"••••••••"):reason,12,AMBER);
+                    reasonView.setPadding(0,0,0,dp(8));
+                    card.addView(reasonView);
+                }
+
+                // Action buttons inside card
+                LinearLayout actionsRow=new LinearLayout(this);
+                actionsRow.setOrientation(LinearLayout.HORIZONTAL);
+                actionsRow.setGravity(Gravity.CENTER_VERTICAL);
+                actionsRow.setPadding(0,dp(6),0,0);
+
+                if(!isActive){
+                    Button useBtn=button(isEnabled?"Use This Account":"Enable & Use",()->api("POST","/api/accounts/"+id+"/enabled",object("enabled",true),7000,enabled->api("POST","/api/accounts/"+id+"/activate",new JSONObject(),7000,selected->{feedback.setText("Account selected. You can connect from VPN.");showPage(0);})));
+                    useBtn.setTextColor(BG);
+                    useBtn.setBackground(background(GOLD));
+                    LinearLayout.LayoutParams useLp=new LinearLayout.LayoutParams(0,dp(42),1);
+                    useLp.setMargins(0,0,dp(6),0);
+                    useBtn.setLayoutParams(useLp);
+                    actionsRow.addView(useBtn);
+                }
+
+                Button refreshBtn=button("Refresh ⟳",()->{
+                    feedback.setText("Refreshing quota…");
+                    api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
+                });
+                LinearLayout.LayoutParams refLp=new LinearLayout.LayoutParams(isActive?0:-2,dp(42),isActive?1:0);
+                refLp.setMargins(0,0,dp(6),0);
+                refreshBtn.setLayoutParams(refLp);
+                actionsRow.addView(refreshBtn);
+
+                Button removeBtn=button("Remove",()->new AlertDialog.Builder(this).setTitle("Remove this account?").setMessage("This removes its stored session from this device.").setNegativeButton("Cancel",null).setPositiveButton("Remove",(d,w)->api("DELETE","/api/accounts/"+id,null,7000,r->{if(page==3)showPage(3);})).show());
+                removeBtn.setTextColor(Color.rgb(255,100,100));
+                LinearLayout.LayoutParams remLp=new LinearLayout.LayoutParams(-2,dp(42));
+                removeBtn.setLayoutParams(remLp);
+                actionsRow.addView(removeBtn);
+
+                card.addView(actionsRow);
+                rows.addView(card);
             }
         });
     }
@@ -492,7 +671,18 @@ public final class MainActivity extends Activity {
         void apply(JSONObject state){
             if(closed)return;String step=state.optString("step");
             if(step.startsWith("need_")&&!answeredStamp.isEmpty()&&answeredStamp.equals(state.optString("updated"))){dialog.dismiss();verification();main.removeCallbacks(pollFlow);main.postDelayed(pollFlow,400);return;}
-            if(step.equals("done")){closed=true;main.removeCallbacks(pollFlow);dialog.dismiss();feedback.setText("Account added.");if(page==3)showPage(3);return;}
+            if(step.equals("done")){
+                closed=true;
+                main.removeCallbacks(pollFlow);
+                dialog.dismiss();
+                feedback.setText("Account added! Syncing quota…");
+                String addedId=state.optString("account_id");
+                if(!addedId.isEmpty()){
+                    api("POST","/api/accounts/"+addedId+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
+                }
+                showPage(3);
+                return;
+            }
             if(step.equals("error")||step.equals("failed")||step.equals("cancelled")){feedback.setText(state.optString("error",state.optString("message","Sign-in could not finish.")));cancel();return;}
             boolean code=step.equals("need_email_code")||step.equals("need_totp")||step.equals("need_unblock_code")||step.equals("need_captcha");
             if(code){

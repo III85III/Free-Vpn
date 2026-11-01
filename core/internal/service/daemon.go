@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"context"
@@ -903,6 +903,17 @@ func (d *Daemon) refreshAccountUsage(id string) error {
 		return err
 	}
 	usage, err := guardian.FetchProxyUsage(ctx, d.config().Network.GuardianEndpoint, auth.Token.AccessToken)
+	if errors.Is(err, guardian.ErrNotEntitled) {
+		logx.Info("Guardian reports no proxy entitlement for this account; activating account=%s", logx.Email(acc.Name()))
+		activateCtx, cancelAct := context.WithTimeout(ctx, proxy.APIRequestTimeout)
+		_, activateErr := guardian.Activate(activateCtx, d.config().Network.GuardianEndpoint, auth.Token.AccessToken)
+		cancelAct()
+		if activateErr == nil {
+			usage, err = guardian.FetchProxyUsage(ctx, d.config().Network.GuardianEndpoint, auth.Token.AccessToken)
+		} else {
+			logx.Warn("activating Guardian account failed: %s", logx.Err(activateErr))
+		}
+	}
 	if err != nil {
 		return err
 	}
