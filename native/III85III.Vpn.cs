@@ -1334,6 +1334,9 @@ namespace III85III.Vpn {
         readonly LocationCard selectedLocationCard = new LocationCard();
         readonly Label speedStats = new Label(), accountBadge = new Label(), noticeLabel = new Label();
         readonly LuxuryButton eyeBtn = new LuxuryButton { Text = "Hide", Variant = ButtonVariant.Ghost, Width = 64, Height = 24 };
+        readonly Panel announcementBar = new Panel();
+        readonly Label announcementText = new Label();
+        readonly LuxuryButton announcementClose = new LuxuryButton { Text = "\u2715", Variant = ButtonVariant.Ghost };
 
         // Locations View Controls
         readonly LuxurySearchBox locationSearch = new LuxurySearchBox("Search locations\u2026");
@@ -1434,6 +1437,30 @@ namespace III85III.Vpn {
             resizeGrip.MouseDown += delegate(object sender, MouseEventArgs e) {
                 if (e.Button == MouseButtons.Left) { NativeMethods.ReleaseCapture(); NativeMethods.SendMessage(Handle, 0xA1, 17, 0); }
             };
+            announcementBar.Visible = DateTime.UtcNow < new DateTime(2026, 11, 2, 23, 59, 59, DateTimeKind.Utc) && !File.Exists(Path.Combine(engine.DataDir, "adblock_ann_dismissed.txt"));
+            announcementBar.BackColor = Color.FromArgb(28, 46, 213, 115);
+            announcementBar.Paint += delegate (object s, PaintEventArgs e) {
+                var r = new Rectangle(0, 0, announcementBar.Width - 1, announcementBar.Height - 1);
+                using (var pen = new Pen(Color.FromArgb(90, 46, 213, 115), 1f)) Theme.DrawRounded(e.Graphics, pen, r, 6);
+            };
+
+            announcementText.Text = "\uD83D\uDEE1\uFE0F AdBlocker \u0641\u0639\u0627\u0644 \u0634\u062F: \u062A\u0628\u0644\u06CC\u063A\u0627\u062A \u0627\u0633\u067E\u0627\u062A\u06CC\u0641\u0627\u06CC\u060C \u0628\u0631\u0646\u0627\u0645\u0647\u200C\u0647\u0627 \u0648 \u0628\u0627\u0632\u06CC\u200C\u0647\u0627 \u062F\u0631 \u062A\u0645\u0627\u0645 \u0633\u0631\u0648\u0631\u0647\u0627 \u0645\u0633\u062F\u0648\u062F \u0634\u062F\u0646\u062F";
+            announcementText.Font = Theme.Font(8.5f, FontStyle.Bold);
+            announcementText.ForeColor = Theme.TextPrimary;
+            announcementText.TextAlign = ContentAlignment.MiddleLeft;
+            announcementText.AutoEllipsis = true;
+
+            announcementClose.Font = Theme.Font(8f);
+            announcementClose.ForeColor = Theme.TextSecondary;
+            announcementClose.Click += delegate {
+                announcementBar.Visible = false;
+                try { File.WriteAllText(Path.Combine(engine.DataDir, "adblock_ann_dismissed.txt"), "1"); } catch { }
+            };
+
+            announcementBar.Controls.Add(announcementText);
+            announcementBar.Controls.Add(announcementClose);
+            Controls.Add(announcementBar);
+
             Controls.Add(resizeGrip);
             titleBar.Dock = sidebar.Dock = contentArea.Dock = DockStyle.None;
             Resize += delegate { ArrangeResponsive(); };
@@ -2162,6 +2189,16 @@ namespace III85III.Vpn {
                 sidebar.SetBounds(0, header, compact ? ClientSize.Width : side, compact ? navHeight : Math.Max(1, ClientSize.Height - header));
                 contentArea.Padding = compact ? new Padding(18, 14, 18, 14) : new Padding(26, 20, 26, 20);
                 contentArea.SetBounds(side, header + navHeight, Math.Max(1, ClientSize.Width - side), Math.Max(1, ClientSize.Height - header - navHeight));
+                if (announcementBar.Visible) {
+                    int bannerWidth = Math.Min(640, contentArea.Width - 24);
+                    int bannerHeight = 30;
+                    int bannerX = side + (contentArea.Width - bannerWidth) / 2;
+                    int bannerY = header + navHeight + 4;
+                    announcementBar.SetBounds(bannerX, bannerY, bannerWidth, bannerHeight);
+                    announcementText.SetBounds(10, 0, bannerWidth - 36, bannerHeight);
+                    announcementClose.SetBounds(bannerWidth - 26, 2, 24, 26);
+                    announcementBar.BringToFront();
+                }
                 for (int i = 0; i < navButtons.Count; i++) {
                     var nav = navButtons[i]; nav.Compact = compact;
                     nav.SetBounds(compact ? 8 + i * ((sidebar.Width - 16) / 6) : 10, compact ? 8 : 16 + i * 46,

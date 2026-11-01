@@ -67,6 +67,32 @@ public final class MainActivity extends Activity {
         contact.setContentDescription("Telegram support");
         contact.setOnClickListener(v->{v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});
         header.addView(contact);root.addView(header);
+
+        long annExpiry = 1793664000000L;
+        boolean annDismissed = getSharedPreferences("prefs", MODE_PRIVATE).getBoolean("adblock_ann_dismissed", false);
+        if (System.currentTimeMillis() < annExpiry && !annDismissed) {
+            LinearLayout annBar = new LinearLayout(this);
+            annBar.setOrientation(LinearLayout.HORIZONTAL);
+            annBar.setGravity(Gravity.CENTER_VERTICAL);
+            annBar.setBackground(pillBackground(0x442ED175, 0x1F2ED175, 12, 1));
+            annBar.setPadding(dp(12), dp(6), dp(10), dp(6));
+            LinearLayout.LayoutParams annLp = new LinearLayout.LayoutParams(-1, -2);
+            annLp.setMargins(0, dp(2), 0, dp(6));
+            annBar.setLayoutParams(annLp);
+
+            TextView annText = label("\uD83D\uDEE1\uFE0F AdBlocker \u0641\u0639\u0627\u0644 \u0634\u062F: \u062A\u0628\u0644\u06CC\u063A\u0627\u062A \u0627\u0633\u067E\u0627\u062A\u06CC\u0641\u0627\u06CC \u0648 \u0628\u0631\u0646\u0627\u0645\u0647\u200C\u0647\u0627 \u0645\u0633\u062F\u0648\u062F \u0634\u062F\u0646\u062F", 12, TEXT);
+            annText.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1f));
+            annBar.addView(annText);
+
+            TextView annClose = label(" \u2715 ", 13, MUTED);
+            annClose.setPadding(dp(6), dp(4), dp(4), dp(4));
+            annClose.setOnClickListener(v -> {
+                annBar.setVisibility(View.GONE);
+                getSharedPreferences("prefs", MODE_PRIVATE).edit().putBoolean("adblock_ann_dismissed", true).apply();
+            });
+            annBar.addView(annClose);
+            root.addView(annBar);
+        }
         nav=new LinearLayout(this);
         nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.setGravity(Gravity.CENTER);

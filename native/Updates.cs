@@ -28,12 +28,18 @@ namespace III85III.Vpn {
     internal static class AppUpdates {
         static void Notice(Form owner,string title,string message){var window=owner as MainForm;if(window!=null)window.ShowNotice(title,message,"",false);}
         const string Feed="https://raw.githubusercontent.com/III85III/Free-Vpn/main/docs/updates.json";
-        static HttpClient Client(){var c=new HttpClient(new HttpClientHandler{UseProxy=true});c.Timeout=TimeSpan.FromMinutes(5);c.DefaultRequestHeaders.UserAgent.ParseAdd("III85III-VPN/"+Assembly.GetExecutingAssembly().GetName().Version);return c;}
+        static HttpClient Client(bool useProxy){var c=new HttpClient(new HttpClientHandler{UseProxy=useProxy});c.Timeout=TimeSpan.FromMinutes(5);c.DefaultRequestHeaders.UserAgent.ParseAdd("III85III-VPN/"+Assembly.GetExecutingAssembly().GetName().Version);return c;}
+        static async Task<HttpResponseMessage> GetResponse(string url){
+            HttpResponseMessage r=null;Exception err=null;
+            try{var c=Client(true);r=await c.GetAsync(url,HttpCompletionOption.ResponseHeadersRead);r.EnsureSuccessStatusCode();}catch(Exception e){err=e;}
+            if(err!=null){var c=Client(false);r=await c.GetAsync(url,HttpCompletionOption.ResponseHeadersRead);r.EnsureSuccessStatusCode();}
+            return r;
+        }
         internal static async Task Check(Form owner,Action<string> report,Action<string> install,bool manual){
             try{
                 AppUpdate update;
-                using(var client=Client())using(var response=await client.GetAsync(Feed,HttpCompletionOption.ResponseHeadersRead)){
-                    response.EnsureSuccessStatusCode();if(response.Content.Headers.ContentLength>32768)throw new IOException("Update information is too large.");
+                using(var response=await GetResponse(Feed)){
+                    if(response.Content.Headers.ContentLength>32768)throw new IOException("Update information is too large.");
                     using(var stream=await response.Content.ReadAsStreamAsync())using(var data=new MemoryStream()){
                         var buffer=new byte[4096];int count;while((count=await stream.ReadAsync(buffer,0,buffer.Length))>0){if(data.Length+count>32768)throw new IOException("Update information is too large.");data.Write(buffer,0,count);}
                         update=AppUpdate.Read(Json.Decode(System.Text.Encoding.UTF8.GetString(data.ToArray())),"windows");
@@ -51,8 +57,8 @@ namespace III85III.Vpn {
                 Engine.PrivateDirectory(directory);
                 string temporary=Path.Combine(directory,Guid.NewGuid().ToString("N")+".part"),target=Path.Combine(directory,"III85III-VPN-Setup.exe");
                 try{
-                    using(var client=Client())using(var response=await client.GetAsync(update.Url,HttpCompletionOption.ResponseHeadersRead)){
-                        response.EnsureSuccessStatusCode();if(response.Content.Headers.ContentLength.HasValue&&response.Content.Headers.ContentLength.Value!=update.Size)throw new IOException("The update size does not match.");
+                    using(var response=await GetResponse(update.Url)){
+                        if(response.Content.Headers.ContentLength.HasValue&&response.Content.Headers.ContentLength.Value!=update.Size)throw new IOException("The update size does not match.");
                         var location=response.RequestMessage.RequestUri;if(location.Scheme!="https"||(location.Host!="github.com"&&!location.Host.EndsWith(".githubusercontent.com",StringComparison.Ordinal)))throw new IOException("Untrusted update destination.");
                         using(var source=await response.Content.ReadAsStreamAsync())using(var file=new FileStream(temporary,FileMode.CreateNew,FileAccess.Write,FileShare.None,65536,true)){
                             byte[] buffer=new byte[65536];long total=0;int count;while((count=await source.ReadAsync(buffer,0,buffer.Length))>0){total+=count;if(total>update.Size)throw new IOException("The update is larger than expected.");await file.WriteAsync(buffer,0,count);if(!owner.IsDisposed)report("Downloading update… "+(total*100/update.Size)+"%");}if(total!=update.Size)throw new IOException("The download was interrupted.");

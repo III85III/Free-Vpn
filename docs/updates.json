@@ -1,17 +1,22 @@
 {
   "schema": 1,
+  "announcement": {
+    "id": "adblock_live_20261101",
+    "message": "🛡️ AdBlocker فعال شد: از این پس تبلیغات اسپاتیفای و سایر برنامه‌ها در تمام لوکیشن‌ها مسدود هستند.",
+    "expires_at": "2026-11-02T23:59:59Z"
+  },
   "windows": {
     "version": "2.3.7",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.7/III85III-VPN-Setup.exe",
-    "size": 23469056,
-    "sha256": "65513d868631e9e62ef5c055074213d43f12888e32012fcc19a5ac3eb253839d"
+    "size": 23470592,
+    "sha256": "b191fc314049c6b11922f8c52ef4251b9a867ec6bab5db4aa20f09541b43a760"
   },
   "android": {
     "version": "2.3.7",
     "version_code": 23007,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.7/III85III-VPN.apk",
     "size": 13549150,
-    "sha256": "842a14f89333996a499ca4eb8a27a7122b45233f7d0251893ee8f7774d17992a"
+    "sha256": "d814f53b131b46059054d0a325f38fe949206171709cc0290a0d528fb1652b90"
   }
 }
 
