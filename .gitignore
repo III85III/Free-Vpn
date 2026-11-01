@@ -1,4 +1,6 @@
-dist/
+dist/*
+!dist/provision/
+!dist/provision/**
 .build/
 vendor/
 node_modules/

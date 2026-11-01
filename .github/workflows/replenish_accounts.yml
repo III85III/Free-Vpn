@@ -1,0 +1,50 @@
+name: Auto Replenish Account Pool
+
+on:
+  schedule:
+    # Run once daily at 03:00 UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Number of accounts to generate'
+        required: false
+        default: '3'
+
+permissions:
+  contents: write
+
+jobs:
+  replenish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Generate Accounts
+        run: |
+          cd core
+          COUNT="${{ github.event.inputs.count || '3' }}"
+          go run ./cmd/pool-gen -count "$COUNT" -pool ../dist/provision/pool.json
+          # Also copy to android assets so next local APK builds have the freshest pool
+          cp ../dist/provision/pool.json ../mobile/android/app/src/main/assets/accounts_pool.json
+
+      - name: Commit and push updated pool
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add dist/provision/pool.json mobile/android/app/src/main/assets/accounts_pool.json
+          if git diff --staged --quiet; then
+            echo "No new accounts to commit."
+          else
+            git commit -m "chore(pool): auto-replenish 50GB accounts pool [skip ci]"
+            git push origin main
+          fi

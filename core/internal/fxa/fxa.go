@@ -1,4 +1,4 @@
-﻿// Package fxa implements the Firefox Accounts client: password login with
+// Package fxa implements the Firefox Accounts client: password login with
 // HAWK-authenticated session calls, sign-in verification, OAuth token
 // issuance and refresh, the Fastly anti-bot challenge that guards the
 // account API, and the local OAuth token cache.
@@ -414,8 +414,82 @@ func Login(ctx context.Context, email, password string) (*LoginResponse, error) 
 	return fxaLogin(ctx, email, password, "")
 }
 
+// CreateAccount creates a new unverified Firefox Account. FxA emails a
+// 6-digit verification code to email, which should be verified with
+// VerifySession.
+func CreateAccount(ctx context.Context, email, password string) (*LoginResponse, error) {
+	authPW, err := deriveAuthPW(email, password)
+	if err != nil {
+		return nil, fmt.Errorf("deriving authPW: %w", err)
+	}
+
+	body := map[string]any{
+		"email":   email,
+		"authPW":  hex.EncodeToString(authPW),
+		"service": firefoxClientID,
+	}
+	bodyJSON, _ := json.Marshal(body)
+
+	createURL := fxaAuthServer + "/account/create"
+	resp, err := fxaDo(ctx, func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, createURL, strings.NewReader(string(bodyJSON)))
+		if err != nil {
+			return nil, fmt.Errorf("creating create request: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		controlplane.ApplyFirefoxHeaders(req)
+		return req, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("account create request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, newFxaAPIError(resp.StatusCode, data)
+	}
+
+	var loginResp LoginResponse
+	if err := json.Unmarshal(data, &loginResp); err != nil {
+		return nil, fmt.Errorf("parsing create response: %w", err)
+	}
+	loginResp.Email = email
+	return &loginResp, nil
+}
+
 func VerifySession(ctx context.Context, sessionToken, code string) error {
 	return fxaVerifySession(ctx, sessionToken, NormalizeCode(code))
+}
+
+// VerifyAccountEmail verifies an unverified account created by CreateAccount
+// using the 32-hex verification code sent in the confirmation email link.
+func VerifyAccountEmail(ctx context.Context, uid, code string) error {
+	body, _ := json.Marshal(map[string]string{
+		"uid":  uid,
+		"code": code,
+	})
+	verifyURL := fxaAuthServer + "/recovery_email/verify_code"
+
+	resp, err := fxaDo(ctx, func() (*http.Request, error) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, verifyURL, strings.NewReader(string(body)))
+		if err != nil {
+			return nil, fmt.Errorf("creating recovery_email verify request: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		controlplane.ApplyFirefoxHeaders(req)
+		return req, nil
+	})
+	if err != nil {
+		return fmt.Errorf("verify email request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		data, _ := io.ReadAll(resp.Body)
+		return newFxaAPIError(resp.StatusCode, data)
+	}
+	return nil
 }
 
 func OAuthToken(ctx context.Context, sessionToken string) (*TokenResponse, error) {
