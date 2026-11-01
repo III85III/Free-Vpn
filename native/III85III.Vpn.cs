@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.3.12.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.3.12.0")]
+[assembly: System.Reflection.AssemblyVersion("2.3.13.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.3.13.0")]
 
 namespace III85III.Vpn {
     /// <summary>

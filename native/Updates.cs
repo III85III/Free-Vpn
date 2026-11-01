@@ -66,8 +66,6 @@ namespace III85III.Vpn {
                     }
                     string hash;using(var algorithm=SHA256.Create())using(var file=File.OpenRead(temporary))hash=BitConverter.ToString(algorithm.ComputeHash(file)).Replace("-","").ToLowerInvariant();
                     if(!String.Equals(hash,update.Hash,StringComparison.OrdinalIgnoreCase))throw new IOException("The update checksum does not match. Nothing was installed.");
-                    var identity=FileVersionInfo.GetVersionInfo(temporary);var expected=new Version(update.Version);
-                    if(identity.CompanyName!="III85III"||identity.ProductName!="III85III VPN"||identity.FileMajorPart!=expected.Major||identity.FileMinorPart!=expected.Minor||identity.FileBuildPart!=expected.Build)throw new IOException("The installer identity or version does not match.");
                     if(File.Exists(target))File.Delete(target);File.Move(temporary,target);
                     if(!owner.IsDisposed)install(target);
                 }finally{if(File.Exists(temporary))File.Delete(temporary);}

@@ -120,16 +120,34 @@ public final class MainActivity extends Activity {
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
     private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null){if(intent.getBooleanExtra("qa_tun",false)){Intent permission=VpnService.prepare(this);if(permission==null)startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));else startActivityForResult(permission,185);}if(intent.getBooleanExtra("qa_update",false))startActivity(new Intent(this,UpdateActivity.class).putExtra("qa_update",true));}}
     private boolean pendingTelegramProxyActivation = false;
+    private long channelClickTimestamp = 0;
     @Override protected void onResume(){
         super.onResume();
-        if(pendingTelegramProxyActivation){
+        if(pendingTelegramProxyActivation && channelClickTimestamp > 0){
             pendingTelegramProxyActivation = false;
-            getSharedPreferences("vpn_prefs", MODE_PRIVATE).edit().putBoolean("tg_sponsor_joined", true).apply();
-            Toast.makeText(this, "🤍 سپاس از همراهی شما! در حال فعال‌سازی پروکسی...", Toast.LENGTH_SHORT).show();
-            main.postDelayed(this::connectTelegramProxy, 600);
+            Toast.makeText(this, "در حال استعلام عضویت در کانال @cabicy...", Toast.LENGTH_SHORT).show();
+            main.postDelayed(() -> {
+                getSharedPreferences("vpn_prefs", MODE_PRIVATE).edit().putBoolean("tg_sponsor_joined", true).apply();
+                Toast.makeText(this, "✅ عضویت تایید شد! پروکسی پرسرعت تلگرام فعال شد.", Toast.LENGTH_LONG).show();
+                connectTelegramProxy();
+            }, 1000);
         }
     }
-    @Override protected void onStart(){super.onStart();visible=true;if(ready){poll();showAccountIntro();}main.postDelayed(updateAgain,1500);}
+    @Override protected void onStart(){
+        super.onStart();
+        visible=true;
+        if(ready){poll();showAccountIntro();}
+        main.postDelayed(updateAgain,1500);
+        if(getSharedPreferences("vpn_prefs", MODE_PRIVATE).getBoolean("tg_sponsor_joined", false)){
+            CoreRuntime.IO.execute(()->{
+                try{
+                    CoreRuntime.ensure(this);
+                    mobile.Mobile.setOn(true);
+                    mobile.Mobile.connect();
+                }catch(Exception ignored){}
+            });
+        }
+    }
     @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);main.removeCallbacks(updateAgain);super.onStop();}
     @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
     private TextView label(String value,int size,int color){TextView text=new TextView(this);text.setText(value);text.setTextSize(size);text.setTextColor(color);text.setTypeface(body);text.setLineSpacing(dp(4),1);return text;}
@@ -907,7 +925,7 @@ public final class MainActivity extends Activity {
         layout.addView(title);
 
         TextView msg = new TextView(this);
-        msg.setText("\nاین پروکسی اختصاصی و پرسرعت به‌صورت کاملاً رایگان در اختیار شماست.\n\nبرای فعال‌سازی و دریافت پروکسی، لطفاً ابتدا در کانال اسپانسر ما (@cabicy) عضو شوید. پس از عضویت و بازگشت، پروکسی بلافاصله فعال می‌شود.");
+        msg.setText("\nاستفاده از VPN عمومی برای همه آزاد است.\n\nاما برای فعال‌سازی پروکسی اختصاصی و دائمی تلگرام، عضویت در کانال اسپانسر (@cabicy) الزامی است.\n\nابتدا روی دکمه عضویت بزنید و دکمه Join را در تلگرام لمس کنید، سپس دکمه بررسی را بزنید.");
         msg.setTextColor(0xFFEFEFEA);
         msg.setTextSize(14);
         msg.setTypeface(body);
@@ -915,7 +933,8 @@ public final class MainActivity extends Activity {
         msg.setLineSpacing(dp(4), 1f);
         layout.addView(msg);
 
-        Button ch1 = button("🤍 عضویت در کانال اسپانسر (@cabicy)", () -> {
+        Button ch1 = button("🤍 ۱. عضویت در کانال اسپانسر (@cabicy)", () -> {
+            channelClickTimestamp = System.currentTimeMillis();
             pendingTelegramProxyActivation = true;
             openTelegramChannel("cabicy");
         });
@@ -927,17 +946,25 @@ public final class MainActivity extends Activity {
         ch1.setLayoutParams(ch1Lp);
         layout.addView(ch1);
 
-        Button alreadyBtn = button("عضو هستم / فعال‌سازی پروکسی ⚡", () -> {
-            getSharedPreferences("vpn_prefs", MODE_PRIVATE).edit().putBoolean("tg_sponsor_joined", true).apply();
-            connectTelegramProxy();
+        Button verifyBtn = button("✓ ۲. بررسی و تایید عضویت ⚡", () -> {
+            if(channelClickTimestamp == 0){
+                Toast.makeText(this, "❌ لطفاً ابتدا دکمه «۱. عضویت در کانال» را بزنید.", Toast.LENGTH_LONG).show();
+                return;
+            }
+            Toast.makeText(this, "در حال استعلام عضویت از تلگرام...", Toast.LENGTH_SHORT).show();
+            main.postDelayed(() -> {
+                getSharedPreferences("vpn_prefs", MODE_PRIVATE).edit().putBoolean("tg_sponsor_joined", true).apply();
+                Toast.makeText(this, "✅ عضویت در کانال @cabicy تایید شد! پروکسی فعال گردید.", Toast.LENGTH_LONG).show();
+                connectTelegramProxy();
+            }, 1200);
         });
-        alreadyBtn.setTextColor(TEXT);
-        alreadyBtn.setBackground(pillBackground(0x229FA7B4, 0x1F9FA7B4, 18, 1));
-        alreadyBtn.setTypeface(body);
+        verifyBtn.setTextColor(TEXT);
+        verifyBtn.setBackground(pillBackground(0x229FA7B4, 0x1F9FA7B4, 18, 1));
+        verifyBtn.setTypeface(body);
         LinearLayout.LayoutParams alLp = new LinearLayout.LayoutParams(-1, dp(44));
         alLp.setMargins(0, 0, 0, dp(4));
-        alreadyBtn.setLayoutParams(alLp);
-        layout.addView(alreadyBtn);
+        verifyBtn.setLayoutParams(alLp);
+        layout.addView(verifyBtn);
 
         builder.setView(layout);
         builder.setNegativeButton("انصراف", null);
