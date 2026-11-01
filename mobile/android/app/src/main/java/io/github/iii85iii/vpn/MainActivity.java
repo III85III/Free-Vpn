@@ -8,6 +8,7 @@ import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.net.VpnService;
 import android.os.*;
 import android.text.*;
@@ -322,6 +323,31 @@ public final class MainActivity extends Activity {
         locationCard.addView(changeAction);
         locationCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showPage(1); });
         content.addView(locationCard);
+
+        LinearLayout tgCard=new LinearLayout(this);
+        tgCard.setOrientation(LinearLayout.HORIZONTAL);
+        tgCard.setGravity(Gravity.CENTER_VERTICAL);
+        tgCard.setPadding(dp(18),dp(12),dp(18),dp(12));
+        tgCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),pillBackground(0x1FD9BD83,SURFACE,16,1),background(Color.WHITE)));
+        LinearLayout.LayoutParams tgCardParams=new LinearLayout.LayoutParams(-1,-2);
+        tgCardParams.setMargins(0,0,0,dp(12));
+        tgCard.setLayoutParams(tgCardParams);
+
+        LinearLayout tgCol=new LinearLayout(this);
+        tgCol.setOrientation(LinearLayout.VERTICAL);
+        TextView tgTitle=label("\u26a1 TELEGRAM PROXY",11,GOLD);
+        tgTitle.setTypeface(body,Typeface.BOLD);
+        tgTitle.setLetterSpacing(0.06f);
+        TextView tgSub=label("اتصال دائم تلگرام بدون فیلترشکن",13,TEXT);
+        tgSub.setTypeface(body);
+        tgCol.addView(tgTitle);
+        tgCol.addView(tgSub);
+        tgCard.addView(tgCol,new LinearLayout.LayoutParams(0,-2,1));
+
+        TextView tgAction=label("دریافت \u203a",13,GOLD);
+        tgCard.addView(tgAction);
+        tgCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showTelegramProxyModal(); });
+        content.addView(tgCard);
 
         LinearLayout quotaCard=new LinearLayout(this);
         quotaCard.setOrientation(LinearLayout.VERTICAL);
@@ -819,6 +845,7 @@ public final class MainActivity extends Activity {
             Toast.makeText(this,isChecked?"\u2694\ufe0f Ready for War: Armed":"Ready for War: Off",Toast.LENGTH_SHORT).show();
         });
         warCard.addView(warSwitch);content.addView(warCard);
+        content.addView(button("\u26a1 Telegram Proxy (اتصال دائم بدون فیلترشکن)",()->showTelegramProxyModal()));
         content.addView(button("\u26a1 Check for Updates  (v"+BuildConfig.VERSION_NAME+")",()->checkForUpdates(true)));
         content.addView(button("\u26a1 V2Ray / iOS Setup (Top 30 Configs)",()->showV2RayModal(null)));
         content.addView(button("Mozilla accounts",()->showPage(3)));
@@ -831,6 +858,70 @@ public final class MainActivity extends Activity {
             .setNeutralButton("Privacy",(d,w)->openDocument("privacy"))
             .setNegativeButton("Licenses",(d,w)->openDocument("licenses"))
             .show()));
+    }
+
+    private void showTelegramProxyModal(){
+        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+        LinearLayout layout=new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dp(22),dp(18),dp(22),dp(14));
+        layout.setBackgroundColor(0xFF1B1D20);
+
+        TextView title=new TextView(this);
+        title.setText("حمایت از سرویس رایگان 🤍");
+        title.setTextColor(GOLD);
+        title.setTextSize(16);
+        title.setTypeface(body,Typeface.BOLD);
+        title.setGravity(Gravity.RIGHT);
+        layout.addView(title);
+
+        TextView msg=new TextView(this);
+        msg.setText("\nاین برنامه و پروکسی پرسرعت تلگرام، به‌صورت کاملاً رایگان برای شما فراهم شده است.\n\nتنها خواهش و حمایت شما از ما، عضویت در کانال اسپانسر ما است تا بتوانیم این سرویس را همیشه پایدار، پرسرعت و رایگان نگه داریم.");
+        msg.setTextColor(0xFFEFEFEA);
+        msg.setTextSize(14);
+        msg.setTypeface(body);
+        msg.setGravity(Gravity.RIGHT);
+        msg.setLineSpacing(dp(4),1f);
+        layout.addView(msg);
+
+        builder.setView(layout);
+        builder.setPositiveButton("تایید و ورود به تلگرام",(d,w)->connectTelegramProxyAndOpenChannel());
+        builder.setNegativeButton("انصراف",null);
+        AlertDialog dialog=builder.create();
+        dialog.show();
+        try{
+            dialog.getButton(DialogInterface.BUTTON_POSITIVE).setTextColor(GOLD);
+            dialog.getButton(DialogInterface.BUTTON_NEGATIVE).setTextColor(0xFF9FA7B4);
+        }catch(Exception ignored){}
+    }
+
+    private void connectTelegramProxyAndOpenChannel(){
+        CoreRuntime.IO.execute(()->{
+            try{
+                CoreRuntime.ensure(this);
+                mobile.Mobile.setOn(true);
+                mobile.Mobile.connect();
+            }catch(Exception ignored){}
+        });
+        int p=CoreRuntime.getProxyPort();
+        try{
+            Intent proxyIntent=new Intent(Intent.ACTION_VIEW,Uri.parse("tg://socks?server=127.0.0.1&port="+p));
+            proxyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(proxyIntent);
+        }catch(Exception e){
+            try{
+                Intent webProxy=new Intent(Intent.ACTION_VIEW,Uri.parse("https://t.me/socks?server=127.0.0.1&port="+p));
+                webProxy.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(webProxy);
+            }catch(Exception ignored){}
+        }
+        main.postDelayed(()->{
+            try{
+                Intent channelIntent=new Intent(Intent.ACTION_VIEW,Uri.parse("https://t.me/cabicy"));
+                channelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(channelIntent);
+            }catch(Exception ignored){}
+        },1300);
     }
     private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 

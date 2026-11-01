@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.3.8.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.3.8.0")]
+[assembly: System.Reflection.AssemblyVersion("2.3.9.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.3.9.0")]
 
 namespace III85III.Vpn {
     /// <summary>
@@ -2143,6 +2143,7 @@ namespace III85III.Vpn {
             btnRow.Controls.Add(diagTestBtn); btnRow.Controls.Add(diagPingBtn); btnRow.Controls.Add(copyLogsBtn);
             var repair=new LuxuryButton{Text="Repair VPN",Width=120,Height=36};repair.Click+=async delegate{if(!ConfirmRepair())return;await Run(async delegate{await engine.Api("POST","/api/power",new{on=false});await engine.InstallTun();ShowNotice("VPN is ready","Try connecting again.","",false);});};btnRow.Controls.Add(repair);
             var guide=new LuxuryButton{Text="Guide",Width=90,Height=36};guide.Click+=delegate{Process.Start(new ProcessStartInfo(Path.Combine(engine.Root,"docs","guide.html")){UseShellExecute=true});};btnRow.Controls.Add(guide);
+            var tgProxy=new LuxuryButton{Text="⚡ Telegram Proxy",Width=150,Height=36};tgProxy.Click+=delegate{ShowTelegramProxyDialog();};btnRow.Controls.Add(tgProxy);
             p.Controls.Add(btnRow);
 
             logsBox.Location = new Point(0, 106);
@@ -2309,6 +2310,7 @@ namespace III85III.Vpn {
         private void InitializeTray() {
             var menu = new ContextMenuStrip();
             menu.Items.Add("Open III85III VPN", null, delegate { Show(); WindowState = FormWindowState.Normal; Activate(); });
+            menu.Items.Add("⚡ Telegram Proxy", null, delegate { ShowTelegramProxyDialog(); });
             menu.Items.Add("Disconnect", null, async delegate { await Run(async delegate { await engine.Api("POST", "/api/power", new { on = false }); }); });
             menu.Items.Add("Quit", null, delegate { allowClose = true; Close(); });
             tray.Icon = Icon;
@@ -2316,6 +2318,51 @@ namespace III85III.Vpn {
             tray.ContextMenuStrip = menu;
             tray.Visible = true;
             tray.DoubleClick += delegate { Show(); WindowState = FormWindowState.Normal; Activate(); };
+        }
+
+        private void ShowTelegramProxyDialog() {
+            using (var dialog = new Form {
+                Text = "III85III VPN", BackColor = Theme.Bg, ForeColor = Theme.TextPrimary,
+                ClientSize = new Size(520, 240), StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.None, MaximizeBox = false, MinimizeBox = false, ShowInTaskbar = false
+            }) {
+                dialog.Paint += delegate (object sender, PaintEventArgs e) {
+                    using (var pen = new Pen(Theme.Accent, 1f))
+                        e.Graphics.DrawRectangle(pen, 0, 0, dialog.ClientSize.Width - 1, dialog.ClientSize.Height - 1);
+                };
+                dialog.Controls.Add(new Label {
+                    Text = "حمایت از سرویس رایگان 🤍",
+                    Font = Theme.Font(14f, FontStyle.Bold), ForeColor = Theme.Accent,
+                    Bounds = new Rectangle(24, 20, 472, 34), TextAlign = ContentAlignment.MiddleRight
+                });
+                dialog.Controls.Add(new Label {
+                    Text = "این برنامه و پروکسی پرسرعت تلگرام، به‌صورت کاملاً رایگان برای شما فراهم شده است.\n\nتنها خواهش و حمایت شما از ما، عضویت در کانال اسپانسر ما است تا بتوانیم این سرویس را همیشه پایدار، پرسرعت و رایگان نگه داریم.",
+                    Font = Theme.Font(10.5f), ForeColor = Theme.TextPrimary,
+                    Bounds = new Rectangle(24, 64, 472, 95), TextAlign = ContentAlignment.TopRight
+                });
+                var cancel = new LuxuryButton { Text = "انصراف", Variant = ButtonVariant.Ghost, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(24, 180, 110, 38) };
+                var confirm = new LuxuryButton { Text = "تایید و ورود به تلگرام", Variant = ButtonVariant.Primary, DialogResult = DialogResult.OK, Bounds = new Rectangle(144, 180, 200, 38) };
+                dialog.Controls.Add(cancel); dialog.Controls.Add(confirm);
+                dialog.AcceptButton = confirm; dialog.CancelButton = cancel;
+                if (dialog.ShowDialog(this) == DialogResult.OK) {
+                    ConnectTelegramProxyAndOpenChannel();
+                }
+            }
+        }
+
+        private void ConnectTelegramProxyAndOpenChannel() {
+            try {
+                Process.Start(new ProcessStartInfo("tg://socks?server=127.0.0.1&port=10810") { UseShellExecute = true });
+            } catch (Exception) {
+                try {
+                    Process.Start(new ProcessStartInfo("https://t.me/socks?server=127.0.0.1&port=10810") { UseShellExecute = true });
+                } catch (Exception) {}
+            }
+            Task.Delay(1300).ContinueWith(delegate {
+                try {
+                    Process.Start(new ProcessStartInfo("https://t.me/cabicy") { UseShellExecute = true });
+                } catch (Exception) {}
+            });
         }
 
         private void SetActions(bool enabled) {

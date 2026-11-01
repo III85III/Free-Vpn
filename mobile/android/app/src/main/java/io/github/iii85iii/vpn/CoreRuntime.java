@@ -15,6 +15,8 @@ final class CoreRuntime {
         ApiFailure(int status,String message){super(message+" (HTTP "+status+")");this.status=status;}
     }
     static final ExecutorService IO = Executors.newFixedThreadPool(4);
+    private static volatile int proxyPort = 10810;
+    static int getProxyPort() { return proxyPort > 0 ? proxyPort : 10810; }
     private static File data;
     private static int port;
     private static String read(File file) throws IOException { return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8); }
@@ -112,7 +114,11 @@ final class CoreRuntime {
         port=freePort();dashboard.put("enabled",true).put("listen","127.0.0.1:"+port);
         config.put("dashboard",dashboard);
         JSONObject proxy=config.optJSONObject("proxy");if(proxy==null)proxy=new JSONObject();
-        proxy.put("listen","127.0.0.1:"+freePort());config.put("proxy",proxy);
+        int targetProxyPort = 10810;
+        try (ServerSocket s = new ServerSocket(targetProxyPort, 1, InetAddress.getLoopbackAddress())) {}
+        catch (Exception occupied) { targetProxyPort = freePort(); }
+        proxyPort = targetProxyPort;
+        proxy.put("listen","127.0.0.1:"+proxyPort);config.put("proxy",proxy);
         config.put("system_proxy",new JSONObject().put("mode","clear"));
         config.put("routing",new JSONObject().put("enabled",false));
         try(FileOutputStream output=new FileOutputStream(configFile)){output.write(config.toString().getBytes(StandardCharsets.UTF_8));}

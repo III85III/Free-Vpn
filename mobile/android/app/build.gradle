@@ -6,8 +6,8 @@ android {
         applicationId 'io.github.iii85iii.vpn'
         minSdk 26
         targetSdk 34
-        versionCode = (project.findProperty('versionCodeOverride') ?: '23008').toInteger()
-        versionName = project.findProperty('versionNameOverride') ?: '2.3.8'
+        versionCode = (project.findProperty('versionCodeOverride') ?: '23009').toInteger()
+        versionName = project.findProperty('versionNameOverride') ?: '2.3.9'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     buildTypes { release { minifyEnabled false } }
