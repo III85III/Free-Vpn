@@ -1374,6 +1374,7 @@ namespace III85III.Vpn {
         readonly LuxuryRadioCard[] modeCards = new LuxuryRadioCard[3];
         readonly LuxuryButton applyModeBtn = new LuxuryButton { Text = "Apply", Variant = ButtonVariant.Primary };
         readonly LuxuryToggle minimizeToggle = new LuxuryToggle();
+        readonly LuxuryToggle warToggle = new LuxuryToggle();
         int pendingModeIndex = 0;
 
         // Diagnostics View Controls
@@ -2081,7 +2082,23 @@ namespace III85III.Vpn {
             trayRow.Controls.Add(minimizeToggle); trayRow.Controls.Add(trayLabel);
             p.Controls.Add(trayRow);
 
-            var sec3 = new Label { Text = "App", Name = "resourcesHeading", Font = Theme.Font(9f, FontStyle.Bold), ForeColor = Theme.TextSubtle, AutoSize = true, Location = new Point(0, 388) };
+            var secWar = new Label { Text = "Anti-censorship & severe DPI bypass", Name = "warHeading", Font = Theme.Font(9f, FontStyle.Bold), ForeColor = Theme.Accent, AutoSize = true, Location = new Point(0, 390) };
+            p.Controls.Add(secWar);
+
+            var warRow = new Panel { Location = new Point(0, 412), Size = new Size(680, 66), BackColor = Theme.Surface, Name = "warPreference" };
+            warRow.Paint += delegate (object s, PaintEventArgs e) {
+                var r = new Rectangle(0, 0, warRow.Width - 1, warRow.Height - 1);
+                using (var pen = new Pen(Theme.Accent, 1f)) Theme.DrawRounded(e.Graphics, pen, r, 8);
+            };
+            warToggle.Location = new Point(14, 16);
+            warToggle.Checked = true;
+            warToggle.AccessibleName = "Ready for War: TLS fragment and Anycast rescue";
+            var warTitle = new Label { Text = "⚔️ Ready for War (TLS Fragment & Anycast Rescue)", Font = Theme.Font(9.5f, FontStyle.Bold), ForeColor = Theme.TextPrimary, Location = new Point(66, 8), AutoSize = true };
+            var warSub = new Label { Text = "Bypasses SNI filtering with packet micro-splitting & Fastly Anycast rescue in severe censorship.", Font = Theme.Font(8.5f), ForeColor = Theme.TextSecondary, Location = new Point(66, 32), AutoSize = true };
+            warRow.Controls.Add(warToggle); warRow.Controls.Add(warTitle); warRow.Controls.Add(warSub);
+            p.Controls.Add(warRow);
+
+            var sec3 = new Label { Text = "App", Name = "resourcesHeading", Font = Theme.Font(9f, FontStyle.Bold), ForeColor = Theme.TextSubtle, AutoSize = true, Location = new Point(0, 488) };
             p.Controls.Add(sec3);
 
             var btnRow = new FlowLayoutPanel { Location = new Point(0, 410), Size = new Size(700, 44), WrapContents = true, Name = "resourceButtons" };
@@ -2264,15 +2281,23 @@ namespace III85III.Vpn {
                 if (info.Bottom > accountsPage.ClientSize.Height) { accountsPage.AutoScroll = true; accountsPage.AutoScrollMinSize = new Size(0, info.Bottom + 8); }
 
                 var settings = pages[4];
-                settings.AutoScroll = settings.ClientSize.Height < 592;
-                settings.AutoScrollMinSize = settings.AutoScroll ? new Size(0, 592) : Size.Empty;
+                settings.AutoScroll = settings.ClientSize.Height < 680;
+                settings.AutoScrollMinSize = settings.AutoScroll ? new Size(0, 680) : Size.Empty;
                 int sw = Math.Max(100, settings.ClientSize.Width - 22);
                 foreach (var card in modeCards) card.Width = sw;
                 var trayRow = settings.Controls["trayPreference"]; trayRow.Width = sw; trayRow.Height = 60;
                 LabelBox(trayRow.Controls[1], 66, 9, Math.Max(1, sw - 80), 44);
-                var resources = settings.Controls["resourceButtons"]; resources.SetBounds(0, 428, sw, 84);
-                settings.Controls["resourcesHeading"].Top = 402;
-                var legal = settings.Controls["sourceNotice"]; LabelBox(legal, 0, 528, sw, 52);
+                var warRow = settings.Controls["warPreference"];
+                if (warRow != null) {
+                    warRow.Width = sw; warRow.Height = 66;
+                    LabelBox(warRow.Controls[1], 66, 8, Math.Max(1, sw - 80), 22);
+                    LabelBox(warRow.Controls[2], 66, 32, Math.Max(1, sw - 80), 28);
+                    if (settings.Controls["warHeading"] != null) settings.Controls["warHeading"].Top = 390;
+                    warRow.Top = 412;
+                }
+                settings.Controls["resourcesHeading"].Top = warRow != null ? 490 : 402;
+                var resources = settings.Controls["resourceButtons"]; resources.SetBounds(0, warRow != null ? 512 : 428, sw, 84);
+                var legal = settings.Controls["sourceNotice"]; LabelBox(legal, 0, warRow != null ? 610 : 528, sw, 52);
 
                 var diagnostics = pages[5]; int dw = Math.Max(100, diagnostics.ClientSize.Width - 10);
                 LabelBox(exitInfoLabel, 0, 34, dw, 28);

@@ -1,4 +1,4 @@
-﻿package proxy
+package proxy
 
 import (
 	"context"
@@ -62,6 +62,36 @@ func newH2ProxySession(proxyURL *url.URL, token string, timeout time.Duration) (
 
 // dialH2ProxySession establishes an HTTP/2 session without logging it; the
 // latency measurement opens one per location.
+var fastlyAnycastRescue = []string{
+	"151.101.65.140:443",
+	"151.101.129.140:443",
+	"151.101.1.140:443",
+	"151.101.193.140:443",
+	"199.232.193.140:443",
+	"199.232.197.140:443",
+	"146.75.121.140:443",
+}
+
+type fragmentConn struct {
+	net.Conn
+	helloSplit bool
+}
+
+func (fc *fragmentConn) Write(b []byte) (int, error) {
+	if !fc.helloSplit && len(b) > 45 && b[0] == 0x16 && b[1] == 0x03 && b[5] == 0x01 {
+		fc.helloSplit = true
+		split := 40
+		n1, err := fc.Conn.Write(b[:split])
+		if err != nil {
+			return n1, err
+		}
+		time.Sleep(3 * time.Millisecond)
+		n2, err := fc.Conn.Write(b[split:])
+		return n1 + n2, err
+	}
+	return fc.Conn.Write(b)
+}
+
 func dialH2ProxySession(proxyURL *url.URL, token string, timeout time.Duration) (*h2ProxySession, error) {
 	proxyHost := proxyURL.Host
 	if proxyURL.Port() == "" {
@@ -77,17 +107,52 @@ func dialH2ProxySession(proxyURL *url.URL, token string, timeout time.Duration) 
 	defer cancelDial()
 	raw, err := resolver.Dial(dialCtx, "tcp", proxyHost)
 	if err != nil {
+		for _, rescue := range fastlyAnycastRescue {
+			rCtx, rCancel := context.WithTimeout(dialCtx, 4*time.Second)
+			raw, err = resolver.Dial(rCtx, "tcp", rescue)
+			rCancel()
+			if err == nil {
+				logx.Info("connected via Fastly Anycast rescue endpoint %s for %s", rescue, proxyHost)
+				break
+			}
+		}
+	}
+	if err != nil {
 		return nil, err
 	}
-	proxyTLS := tls.Client(raw, &tls.Config{
+	proxyTLS := tls.Client(&fragmentConn{Conn: raw}, &tls.Config{
 		RootCAs:    upstreamRoots.Load(),
 		ServerName: proxyURL.Hostname(),
 		MinVersion: tls.VersionTLS12,
 		NextProtos: []string{"h2"},
 	})
-	if err := proxyTLS.HandshakeContext(dialCtx); err != nil {
+	if hErr := proxyTLS.HandshakeContext(dialCtx); hErr != nil {
 		_ = raw.Close()
-		return nil, err
+		rescued := false
+		for _, rescue := range fastlyAnycastRescue {
+			rCtx, rCancel := context.WithTimeout(dialCtx, 4*time.Second)
+			rConn, rErr := resolver.Dial(rCtx, "tcp", rescue)
+			rCancel()
+			if rErr != nil {
+				continue
+			}
+			rTLS := tls.Client(&fragmentConn{Conn: rConn}, &tls.Config{
+				RootCAs:    upstreamRoots.Load(),
+				ServerName: proxyURL.Hostname(),
+				MinVersion: tls.VersionTLS12,
+				NextProtos: []string{"h2"},
+			})
+			if rhErr := rTLS.HandshakeContext(dialCtx); rhErr == nil {
+				proxyTLS = rTLS
+				rescued = true
+				logx.Info("rescued TLS handshake via Fastly Anycast endpoint %s for %s", rescue, proxyHost)
+				break
+			}
+			_ = rConn.Close()
+		}
+		if !rescued {
+			return nil, hErr
+		}
 	}
 
 	if proxyTLS.ConnectionState().NegotiatedProtocol != "h2" {

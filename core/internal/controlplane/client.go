@@ -1,4 +1,4 @@
-﻿// Package controlplane owns the shared HTTP client for every control-plane
+// Package controlplane owns the shared HTTP client for every control-plane
 // API request (Firefox Accounts, Guardian, Remote Settings). It is kept
 // separate from the data-plane CONNECT sessions and from http.DefaultClient.
 package controlplane
@@ -32,10 +32,34 @@ var defaultTransport = func() *http.Transport {
 
 // DialContext connects through the configured resolver with a timeout; a
 // custom transport (the API proxy) uses it to reach its proxy.
+type fragmentConn struct {
+	net.Conn
+	split bool
+}
+
+func (fc *fragmentConn) Write(b []byte) (int, error) {
+	if !fc.split && len(b) > 45 && b[0] == 0x16 && b[1] == 0x03 && b[5] == 0x01 {
+		fc.split = true
+		split := 40
+		n1, err := fc.Conn.Write(b[:split])
+		if err != nil {
+			return n1, err
+		}
+		time.Sleep(3 * time.Millisecond)
+		n2, err := fc.Conn.Write(b[split:])
+		return n1 + n2, err
+	}
+	return fc.Conn.Write(b)
+}
+
 func DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	ctx, cancel := context.WithTimeout(ctx, dialTimeout)
 	defer cancel()
-	return resolver.Dial(ctx, network, address)
+	conn, err := resolver.Dial(ctx, network, address)
+	if err != nil {
+		return nil, err
+	}
+	return &fragmentConn{Conn: conn}, nil
 }
 
 // client carries an explicit timeout so requests can never hang

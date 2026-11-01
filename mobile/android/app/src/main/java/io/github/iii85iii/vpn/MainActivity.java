@@ -802,6 +802,23 @@ public final class MainActivity extends Activity {
     }
     private void settings(){
         heading("Settings","");
+        boolean warOn=getSharedPreferences("vpn_prefs",MODE_PRIVATE).getBoolean("ready_for_war",true);
+        LinearLayout warCard=new LinearLayout(this);warCard.setOrientation(LinearLayout.HORIZONTAL);
+        android.graphics.drawable.GradientDrawable warBg=new android.graphics.drawable.GradientDrawable();
+        warBg.setColor(0xFF1B1D20);warBg.setCornerRadius(dp(12));warBg.setStroke(dp(1),0xFFD9BD83);
+        warCard.setBackground(warBg);warCard.setPadding(dp(16),dp(12),dp(16),dp(12));warCard.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams warLp=new LinearLayout.LayoutParams(-1,-2);warLp.setMargins(0,dp(6),0,dp(8));warCard.setLayoutParams(warLp);
+        LinearLayout warText=new LinearLayout(this);warText.setOrientation(LinearLayout.VERTICAL);
+        TextView warTitle=new TextView(this);warTitle.setText("\u2694\ufe0f READY FOR WAR");warTitle.setTextColor(0xFFD9BD83);warTitle.setTextSize(14);warTitle.setTypeface(body,Typeface.BOLD);
+        TextView warSub=new TextView(this);warSub.setText(warOn?"ARMED \u2022 TLS Fragment & Anycast Rescue":"OFF \u2022 Anti-DPI bypass shield");warSub.setTextColor(0xFF9E9A90);warSub.setTextSize(11);warSub.setTypeface(body);
+        warText.addView(warTitle);warText.addView(warSub);warCard.addView(warText,new LinearLayout.LayoutParams(0,-2,1));
+        android.widget.Switch warSwitch=new android.widget.Switch(this);warSwitch.setChecked(warOn);
+        warSwitch.setOnCheckedChangeListener((btn,isChecked)->{
+            getSharedPreferences("vpn_prefs",MODE_PRIVATE).edit().putBoolean("ready_for_war",isChecked).apply();
+            warSub.setText(isChecked?"ARMED \u2022 TLS Fragment & Anycast Rescue":"OFF \u2022 Anti-DPI bypass shield");
+            Toast.makeText(this,isChecked?"\u2694\ufe0f Ready for War: Armed":"Ready for War: Off",Toast.LENGTH_SHORT).show();
+        });
+        warCard.addView(warSwitch);content.addView(warCard);
         content.addView(button("\u26a1 Check for Updates  (v"+BuildConfig.VERSION_NAME+")",()->checkForUpdates(true)));
         content.addView(button("\u26a1 V2Ray / iOS Setup (Top 30 Configs)",()->showV2RayModal(null)));
         content.addView(button("Mozilla accounts",()->showPage(3)));
