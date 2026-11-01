@@ -119,6 +119,16 @@ public final class MainActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
     private void startTunnelCheck(Intent intent){if(BuildConfig.DEBUG&&intent!=null){if(intent.getBooleanExtra("qa_tun",false)){Intent permission=VpnService.prepare(this);if(permission==null)startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));else startActivityForResult(permission,185);}if(intent.getBooleanExtra("qa_update",false))startActivity(new Intent(this,UpdateActivity.class).putExtra("qa_update",true));}}
+    private boolean pendingTelegramProxyActivation = false;
+    @Override protected void onResume(){
+        super.onResume();
+        if(pendingTelegramProxyActivation){
+            pendingTelegramProxyActivation = false;
+            getSharedPreferences("vpn_prefs", MODE_PRIVATE).edit().putBoolean("tg_sponsor_joined", true).apply();
+            Toast.makeText(this, "🤍 سپاس از همراهی شما! در حال فعال‌سازی پروکسی...", Toast.LENGTH_SHORT).show();
+            main.postDelayed(this::connectTelegramProxy, 600);
+        }
+    }
     @Override protected void onStart(){super.onStart();if(UpdateActivity.isRequired(this)){visible=false;UpdateActivity.openRequired(this);return;}visible=true;if(ready){poll();showAccountIntro();}main.postDelayed(updateAgain,1500);}
     @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);main.removeCallbacks(updateAgain);super.onStop();}
     @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
@@ -877,59 +887,69 @@ public final class MainActivity extends Activity {
     }
 
     private void showTelegramProxyModal(){
-        AlertDialog.Builder builder=new AlertDialog.Builder(this);
-        LinearLayout layout=new LinearLayout(this);
+        boolean alreadyJoined = getSharedPreferences("vpn_prefs", MODE_PRIVATE).getBoolean("tg_sponsor_joined", false);
+        if(alreadyJoined){
+            connectTelegramProxy();
+            return;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(dp(22),dp(18),dp(22),dp(14));
+        layout.setPadding(dp(22), dp(20), dp(22), dp(16));
         layout.setBackgroundColor(0xFF1B1D20);
 
-        TextView title=new TextView(this);
-        title.setText("حمایت از سرویس رایگان 🤍");
+        TextView title = new TextView(this);
+        title.setText("قفل حمایت و عضویت در کانال 🤍");
         title.setTextColor(GOLD);
-        title.setTextSize(16);
-        title.setTypeface(body,Typeface.BOLD);
+        title.setTextSize(17);
+        title.setTypeface(body, Typeface.BOLD);
         title.setGravity(Gravity.RIGHT);
         layout.addView(title);
 
-        TextView msg=new TextView(this);
-        msg.setText("\nاین برنامه و پروکسی پرسرعت تلگرام، به‌صورت کاملاً رایگان برای شما فراهم شده است.\n\nتنها خواهش و حمایت شما از ما، عضویت در کانال‌های اسپانسر ما است تا بتوانیم این سرویس را همیشه پایدار، پرسرعت و رایگان نگه داریم.");
+        TextView msg = new TextView(this);
+        msg.setText("\nاین پروکسی اختصاصی و پرسرعت به‌صورت کاملاً رایگان در اختیار شماست.\n\nبرای فعال‌سازی و دریافت پروکسی، لطفاً ابتدا در کانال اسپانسر ما (@cabicy) عضو شوید. پس از عضویت و بازگشت، پروکسی بلافاصله فعال می‌شود.");
         msg.setTextColor(0xFFEFEFEA);
         msg.setTextSize(14);
         msg.setTypeface(body);
         msg.setGravity(Gravity.RIGHT);
-        msg.setLineSpacing(dp(4),1f);
+        msg.setLineSpacing(dp(4), 1f);
         layout.addView(msg);
 
-        Button ch1=button("🤍 عضویت در کانال اصلی (@cabicy)",()->openTelegramChannel("cabicy"));
+        Button ch1 = button("🤍 عضویت در کانال اسپانسر (@cabicy)", () -> {
+            pendingTelegramProxyActivation = true;
+            openTelegramChannel("cabicy");
+        });
         ch1.setTextColor(BG);
-        ch1.setBackground(pillBackground(0,GOLD,18,0));
-        ch1.setTypeface(body,Typeface.BOLD);
-        LinearLayout.LayoutParams ch1Lp=new LinearLayout.LayoutParams(-1,dp(44));
-        ch1Lp.setMargins(0,dp(12),0,dp(8));
+        ch1.setBackground(pillBackground(0, GOLD, 20, 0));
+        ch1.setTypeface(body, Typeface.BOLD);
+        LinearLayout.LayoutParams ch1Lp = new LinearLayout.LayoutParams(-1, dp(48));
+        ch1Lp.setMargins(0, dp(14), 0, dp(8));
         ch1.setLayoutParams(ch1Lp);
         layout.addView(ch1);
 
-        Button ch2=button("🎵 عضویت در کانال دوم (@playlist_sxy)",()->openTelegramChannel("playlist_sxy"));
-        ch2.setTextColor(TEXT);
-        ch2.setBackground(pillBackground(0x229FA7B4,0x1F9FA7B4,18,1));
-        ch2.setTypeface(body);
-        LinearLayout.LayoutParams ch2Lp=new LinearLayout.LayoutParams(-1,dp(42));
-        ch2Lp.setMargins(0,0,0,dp(12));
-        ch2.setLayoutParams(ch2Lp);
-        layout.addView(ch2);
+        Button alreadyBtn = button("عضو هستم / فعال‌سازی پروکسی ⚡", () -> {
+            getSharedPreferences("vpn_prefs", MODE_PRIVATE).edit().putBoolean("tg_sponsor_joined", true).apply();
+            connectTelegramProxy();
+        });
+        alreadyBtn.setTextColor(TEXT);
+        alreadyBtn.setBackground(pillBackground(0x229FA7B4, 0x1F9FA7B4, 18, 1));
+        alreadyBtn.setTypeface(body);
+        LinearLayout.LayoutParams alLp = new LinearLayout.LayoutParams(-1, dp(44));
+        alLp.setMargins(0, 0, 0, dp(4));
+        alreadyBtn.setLayoutParams(alLp);
+        layout.addView(alreadyBtn);
 
         builder.setView(layout);
-        builder.setPositiveButton("⚡ اتصال به پروکسی تلگرام",(d,w)->connectTelegramProxyAndOpenChannel());
-        builder.setNegativeButton("انصراف",null);
-        AlertDialog dialog=builder.create();
+        builder.setNegativeButton("انصراف", null);
+        AlertDialog dialog = builder.create();
         dialog.show();
-        try{
-            dialog.getButton(DialogInterface.BUTTON_POSITIVE).setTextColor(GOLD);
+        try {
             dialog.getButton(DialogInterface.BUTTON_NEGATIVE).setTextColor(0xFF9FA7B4);
-        }catch(Exception ignored){}
+        } catch(Exception ignored){}
     }
 
-    private void connectTelegramProxyAndOpenChannel(){
+    private void connectTelegramProxy(){
         CoreRuntime.IO.execute(()->{
             try{
                 CoreRuntime.ensure(this);
@@ -937,21 +957,18 @@ public final class MainActivity extends Activity {
                 mobile.Mobile.connect();
             }catch(Exception ignored){}
         });
-        int p=CoreRuntime.getProxyPort();
+        int p = CoreRuntime.getProxyPort();
         try{
-            Intent proxyIntent=new Intent(Intent.ACTION_VIEW,Uri.parse("tg://socks?server=proxy.cabicy.lvh.me&port="+p));
+            Intent proxyIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("tg://socks?server=proxy.cabicy.lvh.me&port=" + p));
             proxyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(proxyIntent);
         }catch(Exception e){
             try{
-                Intent webProxy=new Intent(Intent.ACTION_VIEW,Uri.parse("https://t.me/socks?server=proxy.cabicy.lvh.me&port="+p));
+                Intent webProxy = new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/socks?server=proxy.cabicy.lvh.me&port=" + p));
                 webProxy.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(webProxy);
             }catch(Exception ignored){}
         }
-        main.postDelayed(()->{
-            openTelegramChannel("cabicy");
-        },2200);
     }
     private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 

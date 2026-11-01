@@ -6,17 +6,17 @@
     "expires_at": "2026-11-02T23:59:59Z"
   },
   "windows": {
-    "version": "2.3.10",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.10/III85III-VPN-Setup.exe",
+    "version": "2.3.11",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.11/III85III-VPN-Setup.exe",
     "size": 23478784,
-    "sha256": "f85a6ef0562c7103a1bd83e6fff2b7d5e89798dded70aa681b2b8d41285075ea"
+    "sha256": "2f79aa894c2e2f38253fb964e0166af3b1dd85eef36678f24fb8b3b8b41eec6b"
   },
   "android": {
-    "version": "2.3.10",
-    "version_code": 23010,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.10/III85III-VPN.apk",
+    "version": "2.3.11",
+    "version_code": 23011,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.11/III85III-VPN.apk",
     "size": 13553246,
-    "sha256": "92901f5421dc6ffe9450538123b223c63957fc27c2215bde1081c9e13d507d55"
+    "sha256": "57cd09c59f20b43b1b786ece9938a857faa571964527bd1cd568c27db07cd32c"
   }
 }
 

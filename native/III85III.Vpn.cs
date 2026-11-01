@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.3.10.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.3.10.0")]
+[assembly: System.Reflection.AssemblyVersion("2.3.11.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.3.11.0")]
 
 namespace III85III.Vpn {
     /// <summary>
@@ -2331,36 +2331,37 @@ namespace III85III.Vpn {
                         e.Graphics.DrawRectangle(pen, 0, 0, dialog.ClientSize.Width - 1, dialog.ClientSize.Height - 1);
                 };
                 dialog.Controls.Add(new Label {
-                    Text = "حمایت از سرویس رایگان 🤍",
+                    Text = "قفل حمایت و عضویت در کانال 🤍",
                     Font = Theme.Font(14f, FontStyle.Bold), ForeColor = Theme.Accent,
                     Bounds = new Rectangle(24, 20, 472, 34), TextAlign = ContentAlignment.MiddleRight
                 });
                 dialog.Controls.Add(new Label {
-                    Text = "این برنامه و پروکسی پرسرعت تلگرام، به‌صورت کاملاً رایگان برای شما فراهم شده است.\n\nتنها خواهش و حمایت شما از ما، عضویت در کانال‌های اسپانسر ما است تا بتوانیم این سرویس را همیشه پایدار، پرسرعت و رایگان نگه داریم.",
+                    Text = "این پروکسی اختصاصی و پرسرعت به‌صورت کاملاً رایگان در اختیار شماست.\n\nبرای فعال‌سازی و دریافت پروکسی، لطفاً ابتدا در کانال اسپانسر ما (@cabicy) عضو شوید. پس از عضویت و بازگشت، پروکسی بلافاصله فعال می‌شود.",
                     Font = Theme.Font(10.5f), ForeColor = Theme.TextPrimary,
                     Bounds = new Rectangle(24, 64, 472, 95), TextAlign = ContentAlignment.TopRight
                 });
                 var cancel = new LuxuryButton { Text = "انصراف", Variant = ButtonVariant.Ghost, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(24, 180, 80, 38) };
-                var ch1 = new LuxuryButton { Text = "کانال (@cabicy)", Variant = ButtonVariant.Ghost, Bounds = new Rectangle(110, 180, 125, 38) };
-                ch1.Click += delegate {
+                var already = new LuxuryButton { Text = "عضو هستم ⚡", Variant = ButtonVariant.Ghost, Bounds = new Rectangle(110, 180, 130, 38) };
+                already.Click += delegate {
+                    dialog.DialogResult = DialogResult.OK;
+                    dialog.Close();
+                };
+                var join = new LuxuryButton { Text = "🤍 عضویت در کانال (@cabicy)", Variant = ButtonVariant.Primary, Bounds = new Rectangle(248, 180, 264, 38) };
+                join.Click += delegate {
                     try { Process.Start(new ProcessStartInfo("tg://resolve?domain=cabicy") { UseShellExecute = true }); }
                     catch { try { Process.Start(new ProcessStartInfo("https://t.me/cabicy") { UseShellExecute = true }); } catch {} }
+                    dialog.DialogResult = DialogResult.OK;
+                    dialog.Close();
                 };
-                var ch2 = new LuxuryButton { Text = "کانال (@playlist_sxy)", Variant = ButtonVariant.Ghost, Bounds = new Rectangle(241, 180, 140, 38) };
-                ch2.Click += delegate {
-                    try { Process.Start(new ProcessStartInfo("tg://resolve?domain=playlist_sxy") { UseShellExecute = true }); }
-                    catch { try { Process.Start(new ProcessStartInfo("https://t.me/playlist_sxy") { UseShellExecute = true }); } catch {} }
-                };
-                var confirm = new LuxuryButton { Text = "⚡ اتصال پروکسی", Variant = ButtonVariant.Primary, DialogResult = DialogResult.OK, Bounds = new Rectangle(387, 180, 125, 38) };
-                dialog.Controls.Add(cancel); dialog.Controls.Add(ch1); dialog.Controls.Add(ch2); dialog.Controls.Add(confirm);
-                dialog.AcceptButton = confirm; dialog.CancelButton = cancel;
+                dialog.Controls.Add(cancel); dialog.Controls.Add(already); dialog.Controls.Add(join);
+                dialog.CancelButton = cancel;
                 if (dialog.ShowDialog(this) == DialogResult.OK) {
-                    ConnectTelegramProxyAndOpenChannel();
+                    ConnectTelegramProxy();
                 }
             }
         }
 
-        private void ConnectTelegramProxyAndOpenChannel() {
+        private void ConnectTelegramProxy() {
             try {
                 Process.Start(new ProcessStartInfo("tg://socks?server=proxy.cabicy.lvh.me&port=10810") { UseShellExecute = true });
             } catch (Exception) {
@@ -2368,15 +2369,6 @@ namespace III85III.Vpn {
                     Process.Start(new ProcessStartInfo("https://t.me/socks?server=proxy.cabicy.lvh.me&port=10810") { UseShellExecute = true });
                 } catch (Exception) {}
             }
-            Task.Delay(2000).ContinueWith(delegate {
-                try {
-                    Process.Start(new ProcessStartInfo("tg://resolve?domain=cabicy") { UseShellExecute = true });
-                } catch (Exception) {
-                    try {
-                        Process.Start(new ProcessStartInfo("https://t.me/cabicy") { UseShellExecute = true });
-                    } catch (Exception) {}
-                }
-            });
         }
 
         private void SetActions(bool enabled) {
