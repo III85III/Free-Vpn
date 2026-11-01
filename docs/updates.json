@@ -1,17 +1,17 @@
 {
   "schema": 1,
   "windows": {
-    "version": "2.3.5",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.5/III85III-VPN-Setup.exe",
-    "size": 23452160,
-    "sha256": "de59d2eb57c185f1a7d03b9b840155339afd77da1bca3490476c10db685e00cd"
+    "version": "2.3.6",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.6/III85III-VPN-Setup.exe",
+    "size": 23464448,
+    "sha256": "bcaf814cdd82ee367d897918249595c15e51a5267ac15e8887619d0da92afe5c"
   },
   "android": {
-    "version": "2.3.5",
-    "version_code": 23005,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.5/III85III-VPN.apk",
-    "size": 13540887,
-    "sha256": "6dea9374e55b2f6ceed43b6233aadb5fb03a000d7b460b16fa1aeb9ff6993c39"
+    "version": "2.3.6",
+    "version_code": 23006,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.6/III85III-VPN.apk",
+    "size": 13545054,
+    "sha256": "d76633ad714cac266505c84f1ec793ad0dfbeae636ff66dcfb130f886b43fa0e"
   }
 }
 
