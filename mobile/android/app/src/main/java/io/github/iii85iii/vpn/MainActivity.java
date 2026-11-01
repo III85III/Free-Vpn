@@ -29,7 +29,8 @@ public final class MainActivity extends Activity {
     private Button power;
     private InfinityLoopView heroInfinity;
     private View statusDot;
-    private LinearLayout updateBanner;
+    private LinearLayout updateBanner,speedCard;
+    private ProgressBar quotaBar;
     private int page;
     private boolean ready,visible,polling,pinging;
     private boolean warming;
@@ -60,10 +61,22 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams vpnLp=new LinearLayout.LayoutParams(-2,-2);vpnLp.setMargins(dp(10),0,0,0);brandBox.addView(vpnBadge,vpnLp);
         header.addView(brandBox,new LinearLayout.LayoutParams(0,-2,1));
 
-        TextView contact=label("Support \u2197",13,GOLD);contact.setPadding(dp(12),dp(6),0,dp(12));contact.setContentDescription("Telegram support");contact.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});header.addView(contact);root.addView(header);
+        TextView contact=label("Support \u2197",12,GOLD);
+        contact.setPadding(dp(14),dp(6),dp(14),dp(6));
+        contact.setBackground(pillBackground(0x2B9FA7B4,0x14D9BD83,14,1));
+        contact.setContentDescription("Telegram support");
+        contact.setOnClickListener(v->{v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});
+        header.addView(contact);root.addView(header);
         nav=new LinearLayout(this);
+        nav.setOrientation(LinearLayout.HORIZONTAL);
+        nav.setGravity(Gravity.CENTER);
+        nav.setBackground(pillBackground(0x249FA7B4,0xF0141720,24,1));
+        nav.setPadding(dp(6),dp(5),dp(6),dp(5));
+        LinearLayout.LayoutParams navLp=new LinearLayout.LayoutParams(-1,-2);
+        navLp.setMargins(0,dp(6),0,dp(12));
+        nav.setLayoutParams(navLp);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(0,dp(10),0,dp(16));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        feedback=label("Starting your local engine\u2026",13,MUTED);feedback.setPadding(0,dp(6),0,dp(8));root.addView(feedback);
+        feedback=label("Starting your local engine\u2026",13,MUTED);feedback.setGravity(Gravity.CENTER);feedback.setPadding(0,dp(4),0,dp(6));root.addView(feedback);
         adContainer=new FrameLayout(this);
         LinearLayout.LayoutParams adLp=new LinearLayout.LayoutParams(-1,-2);
         adLp.setMargins(0,dp(2),0,dp(6));
@@ -162,19 +175,23 @@ public final class MainActivity extends Activity {
     }
     private JSONObject object(String key,Object value){JSONObject obj=new JSONObject();try{obj.put(key,value);}catch(JSONException impossible){throw new IllegalStateException(impossible);}return obj;}
     private void showPage(int target){
-        page=target;nav.removeAllViews();String[] names={"VPN","Servers","Settings"};int[] tabs={0,1,4};
+        page=target;nav.removeAllViews();String[] names={"\u26a1 VPN","\ud83c\udf10 Servers","\u2699 Settings"};int[] tabs={0,1,4};
         for(int i=0;i<names.length;i++){
             final int tab=tabs[i];boolean selected=tab==page||(tab==4&&page>=2);
-            Button item=button(names[i],()->showPage(tab));
-            item.setTextColor(selected?BG:MUTED);
+            Button item=new Button(this);
+            item.setText(names[i]);
+            item.setAllCaps(false);
+            item.setTextSize(13);
             item.setTypeface(body,selected?Typeface.BOLD:Typeface.NORMAL);
-            item.setBackground(background(selected?GOLD:BG));
-            LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,dp(48),1);
-            params.setMargins(dp(3),dp(4),dp(3),dp(4));
+            item.setTextColor(selected?GOLD:MUTED);
+            item.setBackground(selected?pillBackground(0x33D9BD83,0x24D9BD83,18,1):new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,dp(42),1);
+            params.setMargins(dp(2),0,dp(2),0);
             item.setLayoutParams(params);
+            item.setOnClickListener(v->{v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);showPage(tab);});
             nav.addView(item);
         }
-        content.removeAllViews();statusText=detailText=speedText=server=null;power=null;heroInfinity=null;statusDot=null;updateBanner=null;quotaSummary=null;
+        content.removeAllViews();statusText=detailText=speedText=server=null;power=null;heroInfinity=null;statusDot=null;updateBanner=null;quotaSummary=null;speedCard=null;quotaBar=null;
         switch(page){case 0:home();break;case 1:locationPage();break;case 2:appRules();break;case 3:accounts();break;case 4:settings();break;default:help();}
     }
     private void home(){
@@ -190,7 +207,7 @@ public final class MainActivity extends Activity {
         heroInfinity=new InfinityLoopView(this);
         LinearLayout.LayoutParams imgParams=new LinearLayout.LayoutParams(dp(260),dp(140));
         imgParams.gravity=Gravity.CENTER_HORIZONTAL;
-        imgParams.setMargins(0,dp(6),0,dp(18));
+        imgParams.setMargins(0,dp(6),0,dp(16));
         heroInfinity.setLayoutParams(imgParams);
         content.addView(heroInfinity);
 
@@ -201,7 +218,7 @@ public final class MainActivity extends Activity {
         statusCapsule.setBackground(pillBackground(0x339FA7B4,0x1A1B2028,20,1));
         LinearLayout.LayoutParams capParams=new LinearLayout.LayoutParams(-2,-2);
         capParams.gravity=Gravity.CENTER_HORIZONTAL;
-        capParams.setMargins(0,0,0,dp(12));
+        capParams.setMargins(0,0,0,dp(14));
         statusCapsule.setLayoutParams(capParams);
 
         statusDot=new View(this);
@@ -231,19 +248,35 @@ public final class MainActivity extends Activity {
         power.setAllCaps(false);
         power.setTextSize(16);
         power.setTypeface(body,Typeface.BOLD);
+        power.setLetterSpacing(0.08f);
         power.setTextColor(BG);
-        power.setBackground(background(GOLD));
+        power.setBackground(pillBackground(0,GOLD,28,0));
         LinearLayout.LayoutParams pwrParams=new LinearLayout.LayoutParams(-1,dp(56));
-        pwrParams.setMargins(0,dp(4),0,dp(14));
+        pwrParams.setMargins(0,dp(2),0,dp(14));
         power.setLayoutParams(pwrParams);
         power.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); toggleConnection(); });
         content.addView(power);
+
+        speedCard=new LinearLayout(this);
+        speedCard.setOrientation(LinearLayout.HORIZONTAL);
+        speedCard.setGravity(Gravity.CENTER);
+        speedCard.setPadding(dp(18),dp(10),dp(18),dp(10));
+        speedCard.setBackground(pillBackground(0x229FA7B4,0x1A1B2028,14,1));
+        LinearLayout.LayoutParams speedCardParams=new LinearLayout.LayoutParams(-1,-2);
+        speedCardParams.setMargins(0,0,0,dp(12));
+        speedCard.setLayoutParams(speedCardParams);
+
+        speedText=label("\u2193 0 B/s      \u2191 0 B/s",13,TEXT);
+        speedText.setTypeface(body);
+        speedCard.addView(speedText);
+        speedCard.setVisibility(View.GONE);
+        content.addView(speedCard);
 
         LinearLayout locationCard=new LinearLayout(this);
         locationCard.setOrientation(LinearLayout.HORIZONTAL);
         locationCard.setGravity(Gravity.CENTER_VERTICAL);
         locationCard.setPadding(dp(18),dp(14),dp(18),dp(14));
-        locationCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),cardBackground(SURFACE,16),background(Color.WHITE)));
+        locationCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),pillBackground(0x1F9FA7B4,SURFACE,16,1),background(Color.WHITE)));
         LinearLayout.LayoutParams locCardParams=new LinearLayout.LayoutParams(-1,-2);
         locCardParams.setMargins(0,0,0,dp(12));
         locationCard.setLayoutParams(locCardParams);
@@ -259,47 +292,47 @@ public final class MainActivity extends Activity {
         locCol.addView(server);
         locationCard.addView(locCol,new LinearLayout.LayoutParams(0,-2,1));
 
-        TextView changeAction=label("Change \u203A",13,MUTED);
+        TextView changeAction=label("Change \u203A",13,GOLD);
         locationCard.addView(changeAction);
         locationCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showPage(1); });
         content.addView(locationCard);
 
-        LinearLayout speedCard=new LinearLayout(this);
-        speedCard.setOrientation(LinearLayout.HORIZONTAL);
-        speedCard.setGravity(Gravity.CENTER);
-        speedCard.setPadding(dp(18),dp(12),dp(18),dp(12));
-        speedCard.setBackground(cardBackground(SURFACE,14));
-        LinearLayout.LayoutParams speedCardParams=new LinearLayout.LayoutParams(-1,-2);
-        speedCardParams.setMargins(0,0,0,dp(10));
-        speedCard.setLayoutParams(speedCardParams);
-
-        speedText=label("\u2193 0 B/s      \u2191 0 B/s",13,TEXT);
-        speedText.setTypeface(body);
-        speedCard.addView(speedText);
-        content.addView(speedCard);
-
         LinearLayout quotaCard=new LinearLayout(this);
-        quotaCard.setOrientation(LinearLayout.HORIZONTAL);
-        quotaCard.setGravity(Gravity.CENTER_VERTICAL);
-        quotaCard.setPadding(dp(18),dp(12),dp(18),dp(12));
-        quotaCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),cardBackground(SURFACE,14),background(Color.WHITE)));
+        quotaCard.setOrientation(LinearLayout.VERTICAL);
+        quotaCard.setPadding(dp(18),dp(14),dp(18),dp(14));
+        quotaCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),pillBackground(0x1F9FA7B4,SURFACE,16,1),background(Color.WHITE)));
         LinearLayout.LayoutParams quotaCardParams=new LinearLayout.LayoutParams(-1,-2);
-        quotaCardParams.setMargins(0,0,0,dp(10));
+        quotaCardParams.setMargins(0,0,0,dp(12));
         quotaCard.setLayoutParams(quotaCardParams);
 
-        LinearLayout quotaCol=new LinearLayout(this);
-        quotaCol.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout quotaTop=new LinearLayout(this);
+        quotaTop.setOrientation(LinearLayout.HORIZONTAL);
+        quotaTop.setGravity(Gravity.CENTER_VERTICAL);
         TextView quotaTitle=label("ACCOUNT QUOTA",11,GOLD);
         quotaTitle.setTypeface(body,Typeface.BOLD);
         quotaTitle.setLetterSpacing(0.06f);
+        quotaTop.addView(quotaTitle,new LinearLayout.LayoutParams(0,-2,1));
+        TextView manageAction=label("Manage \u203a",13,MUTED);
+        quotaTop.addView(manageAction);
+        quotaCard.addView(quotaTop);
+
         quotaSummary=label("Loading quota\u2026",14,TEXT);
         quotaSummary.setTypeface(body,Typeface.BOLD);
-        quotaCol.addView(quotaTitle);
-        quotaCol.addView(quotaSummary);
-        quotaCard.addView(quotaCol,new LinearLayout.LayoutParams(0,-2,1));
+        LinearLayout.LayoutParams qsLp=new LinearLayout.LayoutParams(-1,-2);
+        qsLp.setMargins(0,dp(3),0,dp(6));
+        quotaSummary.setLayoutParams(qsLp);
+        quotaCard.addView(quotaSummary);
 
-        TextView manageAction=label("Manage \u203a",13,MUTED);
-        quotaCard.addView(manageAction);
+        quotaBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
+        quotaBar.setMax(100);
+        quotaBar.setProgress(100);
+        quotaBar.setProgressTintList(android.content.res.ColorStateList.valueOf(GOLD));
+        quotaBar.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0x229FA7B4));
+        LinearLayout.LayoutParams qbLp=new LinearLayout.LayoutParams(-1,dp(4));
+        qbLp.setMargins(0,dp(2),0,0);
+        quotaBar.setLayoutParams(qbLp);
+        quotaCard.addView(quotaBar);
+
         quotaCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showPage(3); });
         content.addView(quotaCard);
 
@@ -466,10 +499,14 @@ public final class MainActivity extends Activity {
             detailText.setVisibility(View.GONE);
             power.setText("CONNECT");
             power.setTextColor(BG);
-            power.setBackground(background(GOLD));
+            power.setBackground(pillBackground(0,GOLD,28,0));
             setInfinityState(InfinityLoopView.STATE_DISCONNECTED);
         }
         power.setEnabled(transition!=VpnLifecycle.Phase.STOPPING);
+        if(speedCard!=null){
+            boolean active=verified||(TunnelService.active&&"running".equals(phase)&&problem.isEmpty());
+            speedCard.setVisibility(active?View.VISIBLE:View.GONE);
+        }
         try{
             String[] rate=Mobile.speed().split(",");
             speedText.setText("\u2193 "+bytes(Double.parseDouble(rate[0]))+"/s      \u2191 "+bytes(Double.parseDouble(rate[1]))+"/s");
@@ -481,18 +518,25 @@ public final class MainActivity extends Activity {
                 if(usage!=null){
                     if(usage.optBoolean("unlimited",false)){
                         quotaSummary.setText("Unlimited Plan");
+                        if(quotaBar!=null)quotaBar.setProgress(100);
                     }else{
                         double rem=usage.optDouble("remaining_bytes",0);
                         double lim=usage.optDouble("limit_bytes",0);
                         double total=lim>0?lim:(50.0*1024*1024*1024);
                         if(rem<=0&&lim<=0) rem=total;
                         quotaSummary.setText(bytes(rem)+" remaining of "+bytes(total));
+                        if(quotaBar!=null){
+                            int pct=(int)Math.max(1,Math.min(100,(rem*100.0/total)));
+                            quotaBar.setProgress(pct);
+                        }
                     }
                 }else{
                     quotaSummary.setText("50.0 GB remaining of 50.0 GB");
+                    if(quotaBar!=null)quotaBar.setProgress(100);
                 }
             }else{
                 quotaSummary.setText("50.0 GB Monthly Plan");
+                if(quotaBar!=null)quotaBar.setProgress(100);
             }
         }
     }
@@ -506,8 +550,46 @@ public final class MainActivity extends Activity {
         return "";
     }
     private void locationPage(){
-        heading("Servers","");
-        EditText search=new EditText(this);search.setSingleLine(true);search.setHint("Search country or code");search.setTextColor(TEXT);search.setHintTextColor(MUTED);content.addView(search);
+        heading("Servers","Select location or tap Fastest");
+        EditText search=new EditText(this);
+        search.setSingleLine(true);
+        search.setHint("Search country or code\u2026");
+        search.setTextColor(TEXT);
+        search.setHintTextColor(MUTED);
+        search.setTextSize(14);
+        search.setBackground(pillBackground(0x1F9FA7B4,SURFACE,14,1));
+        search.setPadding(dp(16),dp(12),dp(16),dp(12));
+        LinearLayout.LayoutParams searchLp=new LinearLayout.LayoutParams(-1,-2);
+        searchLp.setMargins(0,dp(4),0,dp(10));
+        search.setLayoutParams(searchLp);
+        content.addView(search);
+
+        LinearLayout quickRow=new LinearLayout(this);
+        quickRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams qrLp=new LinearLayout.LayoutParams(-1,-2);
+        qrLp.setMargins(0,0,0,dp(10));
+        quickRow.setLayoutParams(qrLp);
+
+        Button recBtn=button("\u2605 Recommended",()->api("POST","/api/location",object("country",""),10000,reply->{showPage(0);}));
+        LinearLayout.LayoutParams recLp=new LinearLayout.LayoutParams(0,dp(46),1);
+        recLp.setMargins(0,0,dp(4),0);
+        recBtn.setLayoutParams(recLp);
+        recBtn.setTextSize(13);
+        recBtn.setTextColor(GOLD);
+        recBtn.setBackground(pillBackground(0x33D9BD83,SURFACE,14,1));
+        quickRow.addView(recBtn);
+
+        Button fastBtn=button("\u26a1 Fastest",()->api("POST","/api/location",object("country","fastest"),60000,reply->{showPage(0);}));
+        LinearLayout.LayoutParams fastLp=new LinearLayout.LayoutParams(0,dp(46),1);
+        fastLp.setMargins(dp(4),0,0,0);
+        fastBtn.setLayoutParams(fastLp);
+        fastBtn.setTextSize(13);
+        fastBtn.setTextColor(GOLD);
+        fastBtn.setBackground(pillBackground(0x33D9BD83,SURFACE,14,1));
+        quickRow.addView(fastBtn);
+
+        content.addView(quickRow);
+
         Button measure=button(pinging?"Testing\u2026":"Test ping",()->{
             if(pinging)return;pinging=true;feedback.setText("Testing ping\u2026");
             CoreRuntime.IO.execute(()->{try{CoreRuntime.request("POST","/api/locations/ping",object("codes",new JSONArray()),60000);}catch(Exception error){main.post(()->feedback.setText("Ping test failed. Try again."));}finally{main.post(()->{pinging=false;if(page==1)showPage(1);});}});
@@ -518,8 +600,6 @@ public final class MainActivity extends Activity {
             if(list.getChildCount()==0){TextView empty=label("No matching locations yet.",14,MUTED);list.addView(empty);}
         };
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){render.run();}public void afterTextChanged(Editable value){}});
-        content.addView(button("Recommended",()->api("POST","/api/location",object("country",""),10000,reply->{showPage(0);})),1);
-        content.addView(button("Fastest",()->api("POST","/api/location",object("country","fastest"),60000,reply->{showPage(0);})),2);
         api("GET","/api/locations",null,15000,reply->{JSONArray rows=reply.optJSONArray("locations");locations=rows==null?new JSONArray():rows;if(page==1)render.run();});render.run();
     }
     private void accounts(){
