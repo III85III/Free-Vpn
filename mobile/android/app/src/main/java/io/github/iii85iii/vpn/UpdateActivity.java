@@ -124,9 +124,9 @@ public final class UpdateActivity extends Activity {
     private void install(){
         if(busy||downloaded==null)return;
         if(Build.VERSION.SDK_INT>=26&&!getPackageManager().canRequestPackageInstalls()){
-            status.setText("Allow updates from III85III VPN, then return here and tap Install update.");
-            try{startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+getPackageName())));}
-            catch(Exception ignored){try{startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES));}catch(Exception e){}}
+            if(available!=null&&available.url!=null){
+                try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(available.url)));}catch(Exception ignored){}
+            }
             return;
         }
         busy=true;action.setEnabled(false);CoreRuntime.IO.execute(()->{int id=-1;PackageInstaller installer=getPackageManager().getPackageInstaller();try{
