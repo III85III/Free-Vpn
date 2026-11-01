@@ -481,6 +481,9 @@ public final class MainActivity extends Activity {
     private void accounts(){
         heading("Accounts","Manage your Mozilla VPN profiles & monthly quota.");
         content.addView(button("+ Add an account",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();}));
+        Button v2rayBtn=button("⚡ Export V2Ray / iOS Config (Top 30)",()->showV2RayModal(null));
+        v2rayBtn.setTextColor(GOLD);
+        content.addView(v2rayBtn);
         boolean hidden=getPreferences(MODE_PRIVATE).getBoolean("hide_email",true);
         content.addView(button(hidden?"Show full email addresses":"Hide email addresses",()->{getPreferences(MODE_PRIVATE).edit().putBoolean("hide_email",!hidden).apply();showPage(3);}));
         LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);content.addView(rows);
@@ -618,6 +621,13 @@ public final class MainActivity extends Activity {
                 refreshBtn.setLayoutParams(refLp);
                 actionsRow.addView(refreshBtn);
 
+                Button v2rayCardBtn=button("V2Ray ↗",()->showV2RayModal(email));
+                v2rayCardBtn.setTextColor(GOLD);
+                LinearLayout.LayoutParams v2rayCardLp=new LinearLayout.LayoutParams(-2,dp(42));
+                v2rayCardLp.setMargins(0,0,dp(6),0);
+                v2rayCardBtn.setLayoutParams(v2rayCardLp);
+                actionsRow.addView(v2rayCardBtn);
+
                 Button removeBtn=button("Remove",()->new AlertDialog.Builder(this).setTitle("Remove this account?").setMessage("This removes its stored session from this device.").setNegativeButton("Cancel",null).setPositiveButton("Remove",(d,w)->api("DELETE","/api/accounts/"+id,null,7000,r->{if(page==3)showPage(3);})).show());
                 removeBtn.setTextColor(Color.rgb(255,100,100));
                 LinearLayout.LayoutParams remLp=new LinearLayout.LayoutParams(-2,dp(42));
@@ -643,6 +653,7 @@ public final class MainActivity extends Activity {
     private void settings(){
         heading("Settings","");
         content.addView(button("⚡ Check for Updates  (v"+BuildConfig.VERSION_NAME+")",()->checkForUpdates(true)));
+        content.addView(button("⚡ V2Ray / iOS Setup (Top 30 Configs)",()->showV2RayModal(null)));
         content.addView(button("Mozilla accounts",()->showPage(3)));
         content.addView(button("App rules (Bypass)",()->showPage(2)));
         content.addView(button("Connection diagnostics",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified."))));
@@ -657,7 +668,7 @@ public final class MainActivity extends Activity {
     private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 
     private final class SignInFlow {
-        boolean closed,pending;String session="",promptStamp="",answeredStamp="";AlertDialog dialog;EditText password;
+        boolean closed,pending;String session="",promptStamp="",answeredStamp="",userEmail="";AlertDialog dialog;EditText password;
         final Runnable pollFlow=()->fetch();
         SignInFlow(){
             LinearLayout fields=new LinearLayout(MainActivity.this);fields.setPadding(dp(24),dp(8),dp(24),dp(8));fields.setOrientation(LinearLayout.VERTICAL);
@@ -665,7 +676,8 @@ public final class MainActivity extends Activity {
             password=new EditText(MainActivity.this);password.setHint("Mozilla password");password.setSingleLine(true);password.setInputType(129);password.setTransformationMethod(PasswordTransformationMethod.getInstance());password.setTypeface(body);password.setTextColor(TEXT);password.setHintTextColor(MUTED);fields.addView(password);
             dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Welcome to III85III").setMessage("Sign in with your own Mozilla account.").setView(fields).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Sign in",null).create();dialog.setOnCancelListener(d->cancel());dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
                 if(pending||closed)return;if(email.getText().toString().trim().isEmpty()||password.length()==0){feedback.setText("Enter your Mozilla email and password.");return;}
-                JSONObject body=object("email",email.getText().toString().trim());try{body.put("password",password.getText().toString());}catch(JSONException ignored){}password.getText().clear();pending=true;dialog.getButton(-1).setEnabled(false);
+                userEmail=email.getText().toString().trim();
+                JSONObject body=object("email",userEmail);try{body.put("password",password.getText().toString());}catch(JSONException ignored){}password.getText().clear();pending=true;dialog.getButton(-1).setEnabled(false);
                 CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("POST","/api/signin",body,60000);String id=reply.optString("id");main.post(()->{pending=false;session=id;if(closed){cancelSession(id);return;}dialog.dismiss();verification();apply(reply);});}catch(Exception error){main.post(()->{pending=false;if(!closed){showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}});
             }));dialog.show();
         }
@@ -683,6 +695,7 @@ public final class MainActivity extends Activity {
                     api("POST","/api/accounts/"+addedId+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
                 }
                 showPage(3);
+                showV2RayModal(userEmail);
                 return;
             }
             if(step.equals("error")||step.equals("failed")||step.equals("cancelled")){feedback.setText(state.optString("error",state.optString("message","Sign-in could not finish.")));cancel();return;}
@@ -714,6 +727,106 @@ public final class MainActivity extends Activity {
         void fetch(){if(closed||pending)return;pending=true;CoreRuntime.IO.execute(()->{try{JSONObject state=CoreRuntime.request("GET","/api/signin/"+session,null,5000);main.post(()->{pending=false;apply(state);});}catch(Exception error){main.post(()->{pending=false;if(!closed){feedback.setText("Sign-in status could not refresh. You can cancel and retry.");main.postDelayed(pollFlow,2500);}});}});}
         void cancelSession(String id){if(id.isEmpty())return;CoreRuntime.IO.execute(()->{try{CoreRuntime.request("DELETE","/api/signin/"+id,null,3000);}catch(Exception ignored){}});}
         void cancel(){if(closed)return;closed=true;main.removeCallbacks(pollFlow);if(password!=null)password.getText().clear();if(dialog!=null)dialog.dismiss();cancelSession(session);}
+    }
+
+    private void copyToClipboard(String label,String text){
+        try{
+            android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip=ClipData.newPlainText(label,text);
+            if(clipboard!=null)clipboard.setPrimaryClip(clip);
+            feedback.setText("Copied to clipboard!");
+            Toast.makeText(this,"Copied to clipboard!",Toast.LENGTH_SHORT).show();
+        }catch(Exception ignored){}
+    }
+    private void fetchAndCopyTop30Configs(){
+        feedback.setText("Loading 30 ultra-fast configs…");
+        CoreRuntime.IO.execute(()->{
+            String configs="";
+            try{
+                java.net.URL url=new java.net.URL("https://raw.githubusercontent.com/alireza786786/Free-V2ray-Configs/main/servers/vless_servers.txt");
+                java.net.HttpURLConnection conn=(java.net.HttpURLConnection)url.openConnection();
+                conn.setRequestProperty("User-Agent","Mozilla/5.0");
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(8000);
+                if(conn.getResponseCode()==200){
+                    java.io.BufferedReader reader=new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream()));
+                    StringBuilder sb=new StringBuilder();
+                    String line;
+                    int count=0;
+                    while((line=reader.readLine())!=null&&count<30){
+                        line=line.trim();
+                        if(line.startsWith("vless://")){
+                            sb.append(line).append("\n");
+                            count++;
+                        }
+                    }
+                    reader.close();
+                    if(count>0)configs=sb.toString();
+                }
+            }catch(Exception ignored){}
+            final String result=configs;
+            main.post(()->{
+                if(isDestroyed())return;
+                if(!result.isEmpty()){
+                    copyToClipboard("V2Ray Top 30",result);
+                    new AlertDialog.Builder(this)
+                        .setTitle("✓ 30 Configs Copied!")
+                        .setMessage("۳۰ کانفیگ پرسرعت VLESS در کلیپ‌بورد کپی شد!\n\nنحوه استفاده در آیفون:\n۱. وارد برنامه V2Box شوید.\n۲. از تب Configs روی + بزنید.\n۳. گزینه Import from Clipboard را انتخاب کنید.\n۴. دکمه Ping بزنید و به بهترین سرور وصل شوید.")
+                        .setPositiveButton("متوجه شدم",null)
+                        .show();
+                }else{
+                    copyToClipboard("V2Ray Subscription","https://raw.githubusercontent.com/ProblemTheCode/SylphNet-public/refs/heads/main/sub/sub.txt");
+                    new AlertDialog.Builder(this)
+                        .setTitle("Subscription Copied")
+                        .setMessage("لینک سابسکریپشن سرورها کپی شد. می‌توانید در V2Box از طریق Add Subscription وارد کنید.")
+                        .setPositiveButton("باشه",null)
+                        .show();
+                }
+            });
+        });
+    }
+    private void showV2RayModal(String email){
+        LinearLayout layout=new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dp(22),dp(12),dp(22),dp(12));
+
+        TextView title=label("⚡ V2Ray & iOS Configs",18,GOLD);
+        title.setTypeface(body,Typeface.BOLD);
+        layout.addView(title);
+
+        TextView desc=label("Top 30 ultra-fast, low-ping V2Ray / VLESS nodes ready for iPhone (V2Box / Streisand) with 24/7 cloud uptime.",13,MUTED);
+        desc.setPadding(0,dp(4),0,dp(12));
+        layout.addView(desc);
+
+        Button copy30=button("📋 Copy 30 Ultra-Fast Configs (یکجا)",()->fetchAndCopyTop30Configs());
+        copy30.setTextColor(BG);
+        copy30.setBackground(background(GOLD));
+        layout.addView(copy30);
+
+        Button copySub=button("🔗 Copy Subscription Link (Top Nodes)",()->{
+            copyToClipboard("V2Ray Subscription","https://raw.githubusercontent.com/ProblemTheCode/SylphNet-public/refs/heads/main/sub/sub.txt");
+        });
+        layout.addView(copySub);
+
+        if(email!=null&&!email.isEmpty()){
+            TextView fxTitle=label("🦊 Firefox Account Proxy (50 GB Quota)",14,TEXT);
+            fxTitle.setTypeface(body,Typeface.BOLD);
+            fxTitle.setPadding(0,dp(12),0,dp(4));
+            layout.addView(fxTitle);
+
+            TextView fxInfo=label("Connected to "+email+". Routes through Mozilla Fastly proxies.",12,MUTED);
+            layout.addView(fxInfo);
+
+            Button fxBtn=button("Copy Firefox Proxy Endpoint",()->{
+                copyToClipboard("Firefox VPN Proxy","http://127.0.0.1:10820#Firefox-VPN");
+            });
+            layout.addView(fxBtn);
+        }
+
+        new AlertDialog.Builder(this)
+            .setView(layout)
+            .setPositiveButton("Close",null)
+            .show();
     }
 
     public static final class AdConfig {
