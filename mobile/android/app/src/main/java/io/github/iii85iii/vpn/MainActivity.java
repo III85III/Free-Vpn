@@ -22,6 +22,7 @@ import mobile.Mobile;
 public final class MainActivity extends Activity {
     private final int BG=Color.rgb(16,19,25),SURFACE=Color.rgb(27,32,40),GOLD=Color.rgb(217,189,131),TEXT=Color.rgb(239,239,234),MUTED=Color.rgb(159,167,180),GREEN=Color.rgb(46,213,115),AMBER=Color.rgb(255,165,2);
     private final Handler main=new Handler(Looper.getMainLooper());
+    private final Set<String> autoSyncedAccounts=new HashSet<>();
     private LinearLayout content,nav;
     private FrameLayout adContainer;
     private TextView statusText,detailText,speedText,feedback,server,quotaSummary;
@@ -372,7 +373,7 @@ public final class MainActivity extends Activity {
             power.setTextColor(GOLD);
             power.setBackground(pillBackground(GOLD,SURFACE,28,2));
             setInfinityState(InfinityLoopView.STATE_CONNECTING);
-        }else if(verified){
+        }else if(verified || (TunnelService.active && "running".equals(phase) && problem.isEmpty())){
             statusText.setText("PROTECTED");
             statusText.setTextColor(GOLD);
             dotBg.setColor(GOLD);
@@ -451,7 +452,7 @@ public final class MainActivity extends Activity {
             }
         }
     }
-    private String bytes(double amount){String[] unit={"B","KB","MB","GB"};int n=0;while(amount>=1000&&n<3){amount/=1000;n++;}return String.format(Locale.US,n==0?"%.0f %s":"%.1f %s",amount,unit[n]);}
+    private String bytes(double amount){if(Double.isNaN(amount)||amount<=0)return "0 B";String[] unit={"B","KB","MB","GB"};int n=0;while(amount>=1000&&n<3){amount/=1000;n++;}return String.format(Locale.US,n==0?"%.0f %s":"%.1f %s",amount,unit[n]);}
     static String connectionProblem(JSONObject value){
         JSONObject state=value.optJSONObject("state"),proxy=value.optJSONObject("proxy");String failure=value.optString("connect_failure");
         if(state!=null&&(state.optString("phase").equals("error")||state.optString("code").equals("no_usable_account")||state.optString("code").equals("no_accounts")))return state.optString("message","Your saved account is not available. Check Accounts for details.");
@@ -537,8 +538,8 @@ public final class MainActivity extends Activity {
                     remBytes=usage.optDouble("remaining_bytes",0);
                     limBytes=usage.optDouble("limit_bytes",0);
                     resetStr=usage.optString("reset_at","");
-                }else{
-                    // Automatic background sync if quota not checked yet
+                }else if(!autoSyncedAccounts.contains(id)){
+                    autoSyncedAccounts.add(id);
                     api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
                 }
 
@@ -609,6 +610,7 @@ public final class MainActivity extends Activity {
 
                 Button refreshBtn=button("Refresh ⟳",()->{
                     feedback.setText("Refreshing quota…");
+                    autoSyncedAccounts.remove(id);
                     api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
                 });
                 LinearLayout.LayoutParams refLp=new LinearLayout.LayoutParams(isActive?0:-2,dp(42),isActive?1:0);
@@ -659,8 +661,8 @@ public final class MainActivity extends Activity {
         final Runnable pollFlow=()->fetch();
         SignInFlow(){
             LinearLayout fields=new LinearLayout(MainActivity.this);fields.setPadding(dp(24),dp(8),dp(24),dp(8));fields.setOrientation(LinearLayout.VERTICAL);
-            EditText email=new EditText(MainActivity.this);email.setHint("Mozilla email");email.setSingleLine(true);email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);email.setTypeface(body);fields.addView(email);
-            password=new EditText(MainActivity.this);password.setHint("Mozilla password");password.setSingleLine(true);password.setInputType(129);password.setTransformationMethod(PasswordTransformationMethod.getInstance());password.setTypeface(body);fields.addView(password);
+            EditText email=new EditText(MainActivity.this);email.setHint("Mozilla email");email.setSingleLine(true);email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);email.setTypeface(body);email.setTextColor(TEXT);email.setHintTextColor(MUTED);fields.addView(email);
+            password=new EditText(MainActivity.this);password.setHint("Mozilla password");password.setSingleLine(true);password.setInputType(129);password.setTransformationMethod(PasswordTransformationMethod.getInstance());password.setTypeface(body);password.setTextColor(TEXT);password.setHintTextColor(MUTED);fields.addView(password);
             dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Welcome to III85III").setMessage("Sign in with your own Mozilla account.").setView(fields).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Sign in",null).create();dialog.setOnCancelListener(d->cancel());dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
                 if(pending||closed)return;if(email.getText().toString().trim().isEmpty()||password.length()==0){feedback.setText("Enter your Mozilla email and password.");return;}
                 JSONObject body=object("email",email.getText().toString().trim());try{body.put("password",password.getText().toString());}catch(JSONException ignored){}password.getText().clear();pending=true;dialog.getButton(-1).setEnabled(false);
@@ -689,7 +691,7 @@ public final class MainActivity extends Activity {
                 promptStamp=state.optString("updated");
                 dialog.dismiss();LinearLayout fields=new LinearLayout(MainActivity.this);fields.setOrientation(LinearLayout.VERTICAL);fields.setPadding(dp(24),dp(8),dp(24),dp(8));
                 String captcha=state.optString("captcha");if(step.equals("need_captcha")&&captcha.startsWith("data:image/")&&captcha.length()<1500000){try{byte[] image=android.util.Base64.decode(captcha.substring(captcha.indexOf(',')+1),android.util.Base64.DEFAULT);ImageView view=new ImageView(MainActivity.this);view.setImageBitmap(android.graphics.BitmapFactory.decodeByteArray(image,0,image.length));fields.addView(view);}catch(Exception ignored){}}
-                EditText input=new EditText(MainActivity.this);input.setSingleLine(true);input.setTypeface(body);input.setHint(step.equals("need_captcha")?"Verification characters":"Verification code");fields.addView(input);
+                EditText input=new EditText(MainActivity.this);input.setSingleLine(true);input.setTypeface(body);input.setTextColor(TEXT);input.setHintTextColor(MUTED);input.setHint(step.equals("need_captcha")?"Verification characters":"Verification code");fields.addView(input);
                 String instruction=state.optString("message","Enter the code requested by Mozilla.");
                 if(!state.optString("error").isEmpty())instruction+="\n\n"+state.optString("error");
                 dialog=new AlertDialog.Builder(MainActivity.this).setTitle(step.equals("need_totp")?"Enter your security code":step.equals("need_captcha")?"Confirm your sign-in":"Check your email").setMessage(instruction).setView(fields).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Verify",null).create();
@@ -707,7 +709,7 @@ public final class MainActivity extends Activity {
                         }catch(Exception error){main.post(()->{pending=false;if(!closed){answeredStamp="";showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}
                     });
                 }));dialog.show();
-            }else{dialog.setMessage(state.optString("message","Waiting for Mozilla…"));main.removeCallbacks(pollFlow);main.postDelayed(pollFlow,1500);}
+            }else{if(dialog!=null&&dialog.isShowing())dialog.setMessage(state.optString("message","Waiting for Mozilla…"));main.removeCallbacks(pollFlow);main.postDelayed(pollFlow,1500);}
         }
         void fetch(){if(closed||pending)return;pending=true;CoreRuntime.IO.execute(()->{try{JSONObject state=CoreRuntime.request("GET","/api/signin/"+session,null,5000);main.post(()->{pending=false;apply(state);});}catch(Exception error){main.post(()->{pending=false;if(!closed){feedback.setText("Sign-in status could not refresh. You can cancel and retry.");main.postDelayed(pollFlow,2500);}});}});}
         void cancelSession(String id){if(id.isEmpty())return;CoreRuntime.IO.execute(()->{try{CoreRuntime.request("DELETE","/api/signin/"+id,null,3000);}catch(Exception ignored){}});}
