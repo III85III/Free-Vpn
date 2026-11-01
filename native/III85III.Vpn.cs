@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.3.6.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.3.6.0")]
+[assembly: System.Reflection.AssemblyVersion("2.3.7.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.3.7.0")]
 
 namespace III85III.Vpn {
     /// <summary>
@@ -903,7 +903,7 @@ namespace III85III.Vpn {
 
     internal sealed class LocationCard : KeyboardActionControl {
         public string LocationName = "Recommended";
-        public string Subtitle = "Automatic server";
+        public string Subtitle = "🛡️ AdBlock Active • Fastly";
         public string Latency = "-- ms";
         public string CountryCode = "";
         private bool isHovered, isPressed;
@@ -1772,11 +1772,21 @@ namespace III85III.Vpn {
                     using (var brush = new SolidBrush(Theme.Accent)) g.FillRectangle(brush, 0, r.Y + 8, 3, r.Height - 16);
                 }
 
-                var nameRect = new RectangleF(18, r.Y + 12, Math.Max(80, r.Width - 110), 22);
+                var nameRect = new RectangleF(18, r.Y + 12, Math.Max(80, r.Width - 190), 22);
                 using (var sf = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap, LineAlignment = StringAlignment.Center }) {
                     using (var brush = new SolidBrush(selected ? Theme.TextPrimary : Theme.TextSecondary))
                     using (var font = Theme.Font(9.5f, selected ? FontStyle.Bold : FontStyle.Regular)) {
                         g.DrawString(item.Name, font, brush, nameRect, sf);
+                    }
+                }
+
+                float nameWidth = Math.Min(r.Width - 195, g.MeasureString(item.Name, Theme.Font(9.5f, FontStyle.Bold)).Width);
+                var badgeRect = new RectangleF(18 + nameWidth + 8, r.Y + 13, 76, 18);
+                using (var bBrush = new SolidBrush(Color.FromArgb(28, 46, 213, 115))) Theme.FillRounded(g, bBrush, Rectangle.Round(badgeRect), 4);
+                using (var bPen = new Pen(Color.FromArgb(80, 46, 213, 115), 1f)) Theme.DrawRounded(g, bPen, Rectangle.Round(badgeRect), 4);
+                using (var bFont = Theme.Font(7.5f, FontStyle.Bold)) using (var tBrush = new SolidBrush(Color.FromArgb(46, 213, 115))) {
+                    using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center }) {
+                        g.DrawString("🛡️ AdBlock", bFont, tBrush, badgeRect, sf);
                     }
                 }
 

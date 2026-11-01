@@ -72,6 +72,24 @@ func TestFakeDNSAnswersAAAAWithNothing(t *testing.T) {
 	}
 }
 
+func TestFakeDNSBlocksAdDomains(t *testing.T) {
+	domains := []string{
+		"ads-fa.spotify.com.",
+		"adclick.g.doubleclick.net.",
+		"unityads.unity3d.com.",
+		"applovin.com.",
+		"taboola.com.",
+		"ads.soundcloud.com.",
+	}
+	f := NewFakeDNS()
+	for _, domain := range domains {
+		_, a := answers(t, f, domain, dnsmessage.TypeA)
+		if len(a) != 1 || a[0] != netip.MustParseAddr("0.0.0.0") {
+			t.Fatalf("expected 0.0.0.0 for ad domain %s, got %v", domain, a)
+		}
+	}
+}
+
 func TestFakeDNSKeepsLocalhost(t *testing.T) {
 	_, a := answers(t, NewFakeDNS(), "localhost.", dnsmessage.TypeA)
 	if len(a) != 1 || a[0] != netip.MustParseAddr("127.0.0.1") {

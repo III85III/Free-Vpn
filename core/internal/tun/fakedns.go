@@ -27,6 +27,120 @@ var fakeRange = netip.MustParsePrefix("198.18.0.0/15")
 // fakeTTL is short: an address is reused once the range wraps.
 const fakeTTL = 60
 
+var adSuffixes = []string{
+	".ads-fa.spotify.com",
+	".adstudio.spotify.com",
+	".adeventtracker.spotify.com",
+	".audio-akp-spotify-com.akamaized.net",
+	".audio-akp-quic-spotify-com.akamaized.net",
+	".heads-fa.spotify.com",
+	".doubleclick.net",
+	".googlesyndication.com",
+	".googleadservices.com",
+	".google-analytics.com",
+	".app-measurement.com",
+	".admob.com",
+	".unityads.unity3d.com",
+	".applovin.com",
+	".applvn.com",
+	".ironsrc.com",
+	".supersonicads.com",
+	".vungle.com",
+	".chartboost.com",
+	".inmobi.com",
+	".mintegral.com",
+	".pglstatp-toutiao.com",
+	".pangolin-sdk-toutiao.com",
+	".pangle.io",
+	".fyber.com",
+	".inner-active.mobi",
+	".adcolony.com",
+	".tapjoy.com",
+	".tapjoyads.com",
+	".flurry.com",
+	".liftoff.io",
+	".smaato.net",
+	".startappservice.com",
+	".criteo.com",
+	".criteo.net",
+	".taboola.com",
+	".outbrain.com",
+	".adnxs.com",
+	".adroll.com",
+	".rubiconproject.com",
+	".openx.net",
+	".pubmatic.com",
+	".smartadserver.com",
+	".popads.net",
+	".popcash.net",
+	".propellerads.com",
+	".exoclick.com",
+	".adsterra.com",
+	".trafficjunky.com",
+	".media.net",
+	".amazon-adsystem.com",
+	".scorecardresearch.com",
+	".quantserve.com",
+	".an.yandex.ru",
+	".adfox.ru",
+	".ads.tiktok.com",
+	".analytics.tiktok.com",
+	".ads-twitter.com",
+	".ads-api.twitter.com",
+	".ad.snapchat.com",
+	".tr.snapchat.com",
+	".an.facebook.com",
+	".ads.soundcloud.com",
+	".api-adzerk.soundcloud.com",
+	".ad.deezer.com",
+	".ads.deezer.com",
+	".ads.pandora.com",
+	".ad.audiomack.com",
+}
+
+var adExact = map[string]struct{}{
+	"ads-fa.spotify.com":                       {},
+	"adstudio.spotify.com":                     {},
+	"adeventtracker.spotify.com":               {},
+	"audio-akp-spotify-com.akamaized.net":      {},
+	"audio-akp-quic-spotify-com.akamaized.net": {},
+	"heads-fa.spotify.com":                     {},
+	"pagead2.googlesyndication.com":            {},
+	"pubads.g.doubleclick.net":                 {},
+	"securepubads.g.doubleclick.net":           {},
+	"adclick.g.doubleclick.net":                {},
+	"googleads.g.doubleclick.net":              {},
+	"adservice.google.com":                     {},
+	"video-ad-stats.googlesyndication.com":     {},
+	"unityads.unity3d.com":                     {},
+	"adserver.unityads.unity3d.com":            {},
+	"config.unityads.unity3d.com":              {},
+	"ads.tiktok.com":                           {},
+	"analytics.tiktok.com":                     {},
+	"ads-twitter.com":                          {},
+	"ads-api.twitter.com":                      {},
+	"ads.soundcloud.com":                       {},
+	"api-adzerk.soundcloud.com":                {},
+	"ad.deezer.com":                            {},
+	"ads.deezer.com":                           {},
+	"ads.pandora.com":                          {},
+	"ad.audiomack.com":                         {},
+	"pixel.facebook.com":                       {},
+	"an.facebook.com":                          {},
+}
+
+func isAdDomain(name string) bool {
+	if _, ok := adExact[name]; ok {
+		return true
+	}
+	for _, suffix := range adSuffixes {
+		if strings.HasSuffix(name, suffix) || name == strings.TrimPrefix(suffix, ".") {
+			return true
+		}
+	}
+	return false
+}
+
 // FakeDNS answers A queries with an address from fakeRange per name and
 // remembers which name each address stands for. AAAA and other types get
 // no answers, so apps use IPv4 and the fake addresses.
@@ -153,6 +267,10 @@ func (f *FakeDNS) Answer(query []byte) ([]byte, error) {
 					reply.Answers = append(reply.Answers, addrRecord(q.Name, addr))
 				}
 			}
+			continue
+		}
+		if isAdDomain(name) && q.Type == dnsmessage.TypeA {
+			reply.Answers = append(reply.Answers, addrRecord(q.Name, netip.AddrFrom4([4]byte{0, 0, 0, 0})))
 			continue
 		}
 		if q.Type != dnsmessage.TypeA {

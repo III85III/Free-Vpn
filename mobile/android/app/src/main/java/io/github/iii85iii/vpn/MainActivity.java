@@ -570,7 +570,7 @@ public final class MainActivity extends Activity {
         qrLp.setMargins(0,0,0,dp(10));
         quickRow.setLayoutParams(qrLp);
 
-        Button recBtn=button("\u2605 Recommended",()->api("POST","/api/location",object("country",""),10000,reply->{showPage(0);}));
+        Button recBtn=button("\u2605 Recommended · 🛡️ AdBlock",()->api("POST","/api/location",object("country",""),10000,reply->{showPage(0);}));
         LinearLayout.LayoutParams recLp=new LinearLayout.LayoutParams(0,dp(46),1);
         recLp.setMargins(0,0,dp(4),0);
         recBtn.setLayoutParams(recLp);
@@ -579,7 +579,7 @@ public final class MainActivity extends Activity {
         recBtn.setBackground(pillBackground(0x33D9BD83,SURFACE,14,1));
         quickRow.addView(recBtn);
 
-        Button fastBtn=button("\u26a1 Fastest",()->api("POST","/api/location",object("country","fastest"),60000,reply->{showPage(0);}));
+        Button fastBtn=button("\u26a1 Fastest · 🛡️ AdBlock",()->api("POST","/api/location",object("country","fastest"),60000,reply->{showPage(0);}));
         LinearLayout.LayoutParams fastLp=new LinearLayout.LayoutParams(0,dp(46),1);
         fastLp.setMargins(dp(4),0,0,0);
         fastBtn.setLayoutParams(fastLp);
@@ -596,7 +596,7 @@ public final class MainActivity extends Activity {
         });measure.setEnabled(!pinging);content.addView(measure);
         LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);content.addView(list);
         Runnable render=()->{list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.ROOT);List<JSONObject> values=new ArrayList<>();for(int i=0;i<locations.length();i++){JSONObject row=locations.optJSONObject(i);if(row!=null&&!LocationOrder.pinned(row.optString("code")))values.add(row);}values.sort((a,b)->LocationOrder.compare(a.optString("code"),a.optString("name"),a.optInt("ping_ms",0),b.optString("code"),b.optString("name"),b.optInt("ping_ms",0)));
-            for(JSONObject row:values){String code=row.optString("code"),name=row.optString("name",code);if(!(name+" "+code).toLowerCase(Locale.ROOT).contains(q))continue;int ping=row.optInt("ping_ms",0);list.addView(button(name+(ping>0?"  \u00b7  "+ping+" ms":""),()->api("POST","/api/location",object("country",code),10000,reply->{feedback.setText("Location selected: "+name);showPage(0);})));}
+            for(JSONObject row:values){String code=row.optString("code"),name=row.optString("name",code);if(!(name+" "+code).toLowerCase(Locale.ROOT).contains(q))continue;int ping=row.optInt("ping_ms",0);list.addView(button(name+"  [🛡️ AdBlock]"+(ping>0?"  \u00b7  "+ping+" ms":""),()->api("POST","/api/location",object("country",code),10000,reply->{feedback.setText("Location selected: "+name);showPage(0);})));}
             if(list.getChildCount()==0){TextView empty=label("No matching locations yet.",14,MUTED);list.addView(empty);}
         };
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){render.run();}public void afterTextChanged(Editable value){}});
@@ -792,18 +792,86 @@ public final class MainActivity extends Activity {
     private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 
     private final class SignInFlow {
-        boolean closed,pending;String session="",promptStamp="",answeredStamp="",userEmail="";AlertDialog dialog;EditText password;
+        boolean closed,pending,isBrowserTab;String session="",promptStamp="",answeredStamp="",userEmail="";AlertDialog dialog;EditText password,browserEmail,browserToken;
         final Runnable pollFlow=()->fetch();
         SignInFlow(){
-            LinearLayout fields=new LinearLayout(MainActivity.this);fields.setPadding(dp(24),dp(8),dp(24),dp(8));fields.setOrientation(LinearLayout.VERTICAL);
-            EditText email=new EditText(MainActivity.this);email.setHint("Mozilla email");email.setSingleLine(true);email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);email.setTypeface(body);email.setTextColor(TEXT);email.setHintTextColor(MUTED);fields.addView(email);
-            password=new EditText(MainActivity.this);password.setHint("Mozilla password");password.setSingleLine(true);password.setInputType(129);password.setTransformationMethod(PasswordTransformationMethod.getInstance());password.setTypeface(body);password.setTextColor(TEXT);password.setHintTextColor(MUTED);fields.addView(password);
-            dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Welcome to III85III").setMessage("Sign in with your own Mozilla account.").setView(fields).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Sign in",null).create();dialog.setOnCancelListener(d->cancel());dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
-                if(pending||closed)return;if(email.getText().toString().trim().isEmpty()||password.length()==0){feedback.setText("Enter your Mozilla email and password.");return;}
-                userEmail=email.getText().toString().trim();
-                JSONObject body=object("email",userEmail);try{body.put("password",password.getText().toString());}catch(JSONException ignored){}password.getText().clear();pending=true;dialog.getButton(-1).setEnabled(false);
-                CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("POST","/api/signin",body,60000);String id=reply.optString("id");main.post(()->{pending=false;session=id;if(closed){cancelSession(id);return;}dialog.dismiss();verification();apply(reply);});}catch(Exception error){main.post(()->{pending=false;if(!closed){showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}});
-            }));dialog.show();
+            LinearLayout rootLayout=new LinearLayout(MainActivity.this);rootLayout.setPadding(dp(20),dp(8),dp(20),dp(8));rootLayout.setOrientation(LinearLayout.VERTICAL);
+
+            LinearLayout tabBar=new LinearLayout(MainActivity.this);tabBar.setOrientation(LinearLayout.HORIZONTAL);
+            Button tabPass=new Button(MainActivity.this);tabPass.setText("🔑 Password");tabPass.setTypeface(body,Typeface.BOLD);tabPass.setTextSize(12);
+            Button tabBrow=new Button(MainActivity.this);tabBrow.setText("🌐 Browser / Google");tabBrow.setTypeface(body,Typeface.BOLD);tabBrow.setTextSize(12);
+            LinearLayout.LayoutParams tabParams=new LinearLayout.LayoutParams(0,dp(38),1f);tabParams.setMargins(dp(2),0,dp(2),dp(8));
+            tabPass.setLayoutParams(tabParams);tabBrow.setLayoutParams(tabParams);
+            tabBar.addView(tabPass);tabBar.addView(tabBrow);
+            rootLayout.addView(tabBar);
+
+            LinearLayout passContainer=new LinearLayout(MainActivity.this);passContainer.setOrientation(LinearLayout.VERTICAL);
+            EditText email=new EditText(MainActivity.this);email.setHint("Mozilla email");email.setSingleLine(true);email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);email.setTypeface(body);email.setTextColor(TEXT);email.setHintTextColor(MUTED);passContainer.addView(email);
+            password=new EditText(MainActivity.this);password.setHint("Mozilla password");password.setSingleLine(true);password.setInputType(129);password.setTransformationMethod(PasswordTransformationMethod.getInstance());password.setTypeface(body);password.setTextColor(TEXT);password.setHintTextColor(MUTED);passContainer.addView(password);
+            rootLayout.addView(passContainer);
+
+            LinearLayout browContainer=new LinearLayout(MainActivity.this);browContainer.setOrientation(LinearLayout.VERTICAL);browContainer.setVisibility(View.GONE);
+            TextView browDesc=label("Sign in with Google or Firefox in your browser with no security blocks:",12,MUTED);browDesc.setPadding(0,0,0,dp(6));browContainer.addView(browDesc);
+            Button openBrowBtn=button("🌐 Open Firefox / Google in Browser",()->{
+                try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://accounts.firefox.com/signin?context=fx_desktop_v3&entrypoint=vpn")));feedback.setText("Browser opened. Sign in, then paste token below.");}
+                catch(Exception ex){feedback.setText("Cannot open browser: "+ex.getMessage());}
+            });
+            openBrowBtn.setPadding(dp(12),dp(8),dp(12),dp(8));
+            browContainer.addView(openBrowBtn);
+            browserEmail=new EditText(MainActivity.this);browserEmail.setHint("Account Email / Gmail");browserEmail.setSingleLine(true);browserEmail.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);browserEmail.setTypeface(body);browserEmail.setTextColor(TEXT);browserEmail.setHintTextColor(MUTED);browContainer.addView(browserEmail);
+            browserToken=new EditText(MainActivity.this);browserToken.setHint("Account Token / Refresh Link");browserToken.setSingleLine(true);browserToken.setTypeface(body);browserToken.setTextColor(TEXT);browserToken.setHintTextColor(MUTED);browContainer.addView(browserToken);
+            rootLayout.addView(browContainer);
+
+            Runnable updateTabs=()->{
+                if(!isBrowserTab){
+                    passContainer.setVisibility(View.VISIBLE);browContainer.setVisibility(View.GONE);
+                    tabPass.setBackgroundColor(GOLD);tabPass.setTextColor(BG);
+                    tabBrow.setBackgroundColor(SURFACE);tabBrow.setTextColor(MUTED);
+                    if(dialog!=null&&dialog.getButton(-1)!=null)dialog.getButton(-1).setText("Sign in");
+                }else{
+                    passContainer.setVisibility(View.GONE);browContainer.setVisibility(View.VISIBLE);
+                    tabPass.setBackgroundColor(SURFACE);tabPass.setTextColor(MUTED);
+                    tabBrow.setBackgroundColor(GOLD);tabBrow.setTextColor(BG);
+                    if(dialog!=null&&dialog.getButton(-1)!=null)dialog.getButton(-1).setText("Link Account");
+                }
+            };
+            tabPass.setOnClickListener(v->{isBrowserTab=false;updateTabs.run();});
+            tabBrow.setOnClickListener(v->{isBrowserTab=true;updateTabs.run();});
+
+            dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Welcome to III85III").setMessage("Choose how you want to sign in:").setView(rootLayout).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Sign in",null).create();
+            dialog.setOnCancelListener(d->cancel());
+            dialog.setOnShowListener(d->{
+                updateTabs.run();
+                dialog.getButton(-1).setOnClickListener(v->{
+                    if(pending||closed)return;
+                    if(isBrowserTab){
+                        String mail=browserEmail.getText().toString().trim(),tok=browserToken.getText().toString().trim();
+                        if(mail.isEmpty()||tok.isEmpty()){feedback.setText("Enter your account email and token.");return;}
+                        pending=true;dialog.getButton(-1).setEnabled(false);
+                        userEmail=mail;
+                        JSONObject importBody=object("email",mail);try{importBody.put("refresh_token",tok);}catch(JSONException ignored){}
+                        CoreRuntime.IO.execute(()->{
+                            try{
+                                JSONObject acc=CoreRuntime.request("POST","/api/accounts/import",importBody,30000);
+                                main.post(()->{
+                                    pending=false;closed=true;dialog.dismiss();
+                                    feedback.setText("Account linked! Syncing quota\u2026");
+                                    String addedId=acc.optString("id");
+                                    if(!addedId.isEmpty()){api("POST","/api/accounts/"+addedId+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});}
+                                    showPage(3);showV2RayModal(userEmail);
+                                });
+                            }catch(Exception error){
+                                main.post(()->{pending=false;if(!closed){showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});
+                            }
+                        });
+                        return;
+                    }
+                    if(email.getText().toString().trim().isEmpty()||password.length()==0){feedback.setText("Enter your Mozilla email and password.");return;}
+                    userEmail=email.getText().toString().trim();
+                    JSONObject body=object("email",userEmail);try{body.put("password",password.getText().toString());}catch(JSONException ignored){}password.getText().clear();pending=true;dialog.getButton(-1).setEnabled(false);
+                    CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("POST","/api/signin",body,60000);String id=reply.optString("id");main.post(()->{pending=false;session=id;if(closed){cancelSession(id);return;}dialog.dismiss();verification();apply(reply);});}catch(Exception error){main.post(()->{pending=false;if(!closed){showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}});
+                });
+            });dialog.show();
         }
         void verification(){dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Checking your sign-in").setMessage("Waiting for Mozilla\u2026").setNegativeButton("Cancel",(d,w)->cancel()).create();dialog.setOnCancelListener(d->cancel());dialog.show();}
         void apply(JSONObject state){
