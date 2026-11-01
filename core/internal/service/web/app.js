@@ -805,10 +805,10 @@ async function renderHelp() {
   const hostPart = host.includes(":") ? `[${host}]` : host;
   const address = `${hostPart}:${port}`;
   const userinfo = base64(`${proxy.username || ""}:${proxy.password || ""}`).replace(/=+$/, "");
-  const link = `socks://${userinfo}@${address}#${encodeURIComponent("🦊Firefox VPN")}`;
+  const link = `socks://${userinfo}@${address}#${encodeURIComponent("Cabicy-VPN")}`;
   $("#help-socks-addr").textContent = address;
   // The password stays out of sight; the copied link has it.
-  $("#help-socks-link").textContent = proxy.password ? `socks://…@${address}#🦊Firefox VPN` : `socks://${userinfo}@${address}#🦊Firefox VPN`;
+  $("#help-socks-link").textContent = proxy.password ? `socks://…@${address}#Cabicy-VPN` : `socks://${userinfo}@${address}#Cabicy-VPN`;
   $("#help-copy-addr").onclick = () => copyText(address);
   $("#help-copy-link").onclick = () => copyText(link, "the link");
 }

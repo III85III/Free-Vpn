@@ -66,7 +66,7 @@ public final class MainActivity extends Activity {
         contact.setPadding(dp(14),dp(6),dp(14),dp(6));
         contact.setBackground(pillBackground(0x2B9FA7B4,0x14D9BD83,14,1));
         contact.setContentDescription("Telegram support");
-        contact.setOnClickListener(v->{v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});
+        contact.setOnClickListener(v->{v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);openTelegramChannel("cabicy");});
         header.addView(contact);root.addView(header);
 
         long annExpiry = 1793664000000L;
@@ -446,7 +446,7 @@ public final class MainActivity extends Activity {
     private void explainConnection(){
         if(getPreferences(MODE_PRIVATE).getInt("vpn_disclosure",0)==1){requestVpnPermission();return;}
         new AlertDialog.Builder(this).setTitle("Before you connect")
-            .setMessage("III85III VPN uses Android's VPN interface to route supported internet traffic through Mozilla's network service. Your Mozilla account is used for sign-in and service quota checks. The service receives information needed to carry your connection, including network addresses. Selected excluded apps stay direct. Local connection diagnostics may contain network details. This app is not a verified kill switch.")
+            .setMessage("III85III VPN uses Android's VPN interface to route supported internet traffic securely through encrypted cloud network service. Your account is used for service quota checks. The service receives information needed to carry your connection, including network addresses. Selected excluded apps stay direct. Local connection diagnostics may contain network details. This app is not a verified kill switch.")
             .setNegativeButton("Not now",(dialog,which)->feedback.setText("VPN has not been started."))
             .setNeutralButton("Privacy details",(dialog,which)->openDocument("privacy"))
             .setPositiveButton("Agree and continue",(dialog,which)->{getPreferences(MODE_PRIVATE).edit().putInt("vpn_disclosure",1).apply();requestVpnPermission();}).show();
@@ -860,6 +860,22 @@ public final class MainActivity extends Activity {
             .show()));
     }
 
+    private void openTelegramChannel(String domain){
+        try{
+            Intent nativeTg=new Intent(Intent.ACTION_VIEW,Uri.parse("tg://resolve?domain="+domain));
+            nativeTg.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(nativeTg);
+        }catch(Exception e){
+            try{
+                Intent webTg=new Intent(Intent.ACTION_VIEW,Uri.parse("https://t.me/"+domain));
+                webTg.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(webTg);
+            }catch(Exception err){
+                showError("Open t.me/"+domain+" in your browser.");
+            }
+        }
+    }
+
     private void showTelegramProxyModal(){
         AlertDialog.Builder builder=new AlertDialog.Builder(this);
         LinearLayout layout=new LinearLayout(this);
@@ -876,7 +892,7 @@ public final class MainActivity extends Activity {
         layout.addView(title);
 
         TextView msg=new TextView(this);
-        msg.setText("\nاین برنامه و پروکسی پرسرعت تلگرام، به‌صورت کاملاً رایگان برای شما فراهم شده است.\n\nتنها خواهش و حمایت شما از ما، عضویت در کانال اسپانسر ما است تا بتوانیم این سرویس را همیشه پایدار، پرسرعت و رایگان نگه داریم.");
+        msg.setText("\nاین برنامه و پروکسی پرسرعت تلگرام، به‌صورت کاملاً رایگان برای شما فراهم شده است.\n\nتنها خواهش و حمایت شما از ما، عضویت در کانال‌های اسپانسر ما است تا بتوانیم این سرویس را همیشه پایدار، پرسرعت و رایگان نگه داریم.");
         msg.setTextColor(0xFFEFEFEA);
         msg.setTextSize(14);
         msg.setTypeface(body);
@@ -884,8 +900,26 @@ public final class MainActivity extends Activity {
         msg.setLineSpacing(dp(4),1f);
         layout.addView(msg);
 
+        Button ch1=button("🤍 عضویت در کانال اصلی (@cabicy)",()->openTelegramChannel("cabicy"));
+        ch1.setTextColor(BG);
+        ch1.setBackground(pillBackground(0,GOLD,18,0));
+        ch1.setTypeface(body,Typeface.BOLD);
+        LinearLayout.LayoutParams ch1Lp=new LinearLayout.LayoutParams(-1,dp(44));
+        ch1Lp.setMargins(0,dp(12),0,dp(8));
+        ch1.setLayoutParams(ch1Lp);
+        layout.addView(ch1);
+
+        Button ch2=button("🎵 عضویت در کانال دوم (@playlist_sxy)",()->openTelegramChannel("playlist_sxy"));
+        ch2.setTextColor(TEXT);
+        ch2.setBackground(pillBackground(0x229FA7B4,0x1F9FA7B4,18,1));
+        ch2.setTypeface(body);
+        LinearLayout.LayoutParams ch2Lp=new LinearLayout.LayoutParams(-1,dp(42));
+        ch2Lp.setMargins(0,0,0,dp(12));
+        ch2.setLayoutParams(ch2Lp);
+        layout.addView(ch2);
+
         builder.setView(layout);
-        builder.setPositiveButton("تایید و ورود به تلگرام",(d,w)->connectTelegramProxyAndOpenChannel());
+        builder.setPositiveButton("⚡ اتصال به پروکسی تلگرام",(d,w)->connectTelegramProxyAndOpenChannel());
         builder.setNegativeButton("انصراف",null);
         AlertDialog dialog=builder.create();
         dialog.show();
@@ -905,23 +939,19 @@ public final class MainActivity extends Activity {
         });
         int p=CoreRuntime.getProxyPort();
         try{
-            Intent proxyIntent=new Intent(Intent.ACTION_VIEW,Uri.parse("tg://socks?server=127.0.0.1&port="+p));
+            Intent proxyIntent=new Intent(Intent.ACTION_VIEW,Uri.parse("tg://socks?server=proxy.cabicy.lvh.me&port="+p));
             proxyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(proxyIntent);
         }catch(Exception e){
             try{
-                Intent webProxy=new Intent(Intent.ACTION_VIEW,Uri.parse("https://t.me/socks?server=127.0.0.1&port="+p));
+                Intent webProxy=new Intent(Intent.ACTION_VIEW,Uri.parse("https://t.me/socks?server=proxy.cabicy.lvh.me&port="+p));
                 webProxy.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(webProxy);
             }catch(Exception ignored){}
         }
         main.postDelayed(()->{
-            try{
-                Intent channelIntent=new Intent(Intent.ACTION_VIEW,Uri.parse("https://t.me/cabicy"));
-                channelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(channelIntent);
-            }catch(Exception ignored){}
-        },1300);
+            openTelegramChannel("cabicy");
+        },2200);
     }
     private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 
@@ -1135,16 +1165,16 @@ public final class MainActivity extends Activity {
         layout.addView(copySub);
 
         if(email!=null&&!email.isEmpty()){
-            TextView fxTitle=label("\ud83e\udd8a Firefox Account Proxy (50 GB Quota)",14,TEXT);
+            TextView fxTitle=label("⚡ Dedicated Secure Proxy (50 GB Quota)",14,TEXT);
             fxTitle.setTypeface(body,Typeface.BOLD);
             fxTitle.setPadding(0,dp(12),0,dp(4));
             layout.addView(fxTitle);
 
-            TextView fxInfo=label("Connected to "+email+". Routes through Mozilla Fastly proxies.",12,MUTED);
+            TextView fxInfo=label("Connected to "+email+". Routes through encrypted Anycast nodes.",12,MUTED);
             layout.addView(fxInfo);
 
-            Button fxBtn=button("Copy Firefox Proxy Endpoint",()->{
-                copyToClipboard("Firefox VPN Proxy","http://127.0.0.1:10820#Firefox-VPN");
+            Button fxBtn=button("Copy Dedicated Proxy Endpoint",()->{
+                copyToClipboard("III85III Dedicated Proxy","http://proxy.cabicy.lvh.me:10820#Cabicy-VPN");
             });
             layout.addView(fxBtn);
         }
