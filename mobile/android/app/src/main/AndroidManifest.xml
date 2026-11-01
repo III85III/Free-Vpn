@@ -17,6 +17,11 @@
         </activity>
         <activity android:name=".InformationActivity" android:exported="false" />
         <activity android:name=".UpdateActivity" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden" />
+        <provider
+            android:name=".UpdateActivity$Provider"
+            android:authorities="io.github.iii85iii.vpn.updateprovider"
+            android:exported="false"
+            android:grantUriPermissions="true" />
         <receiver android:name=".UpdateReceiver" android:exported="false" />
         <service android:name=".TunnelService" android:exported="false"
             android:permission="android.permission.BIND_VPN_SERVICE" android:foregroundServiceType="specialUse">

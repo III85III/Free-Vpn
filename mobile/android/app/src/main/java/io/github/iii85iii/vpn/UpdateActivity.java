@@ -3,6 +3,7 @@ package io.github.iii85iii.vpn;
 import android.app.*;
 import android.content.*;
 import android.content.pm.*;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.*;
 import android.provider.Settings;
@@ -123,20 +124,69 @@ public final class UpdateActivity extends Activity {
     }
     private void install(){
         if(busy||downloaded==null)return;
-        if(Build.VERSION.SDK_INT>=26&&!getPackageManager().canRequestPackageInstalls()){
-            if(available!=null&&available.url!=null){
-                try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(available.url)));}catch(Exception ignored){}
+        if(Build.VERSION.SDK_INT>=26 && !getPackageManager().canRequestPackageInstalls()){
+            status.setText("لطفاً اجازه نصب را در صفحه بعد فعال کنید، سپس روی Install update بزنید.");
+            try{
+                startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:"+getPackageName())));
+            }catch(Exception e){
+                try{startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES));}catch(Exception ignored){}
             }
             return;
         }
-        busy=true;action.setEnabled(false);CoreRuntime.IO.execute(()->{int id=-1;PackageInstaller installer=getPackageManager().getPackageInstaller();try{
-            verify(downloaded,available);PackageInstaller.SessionParams params=new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);params.setAppPackageName(getPackageName());params.setSize(downloaded.length());id=installer.createSession(params);
-            try(PackageInstaller.Session session=installer.openSession(id)){
-                try(InputStream input=new FileInputStream(downloaded);OutputStream output=session.openWrite("base.apk",0,downloaded.length())){byte[] buffer=new byte[65536];int count;while((count=input.read(buffer))!=-1)output.write(buffer,0,count);session.fsync(output);}
-                runOnUiThread(()->startService(new Intent(this,TunnelService.class).setAction(TunnelService.STOP)));
-                Intent callback=new Intent(this,UpdateReceiver.class);int flags=PendingIntent.FLAG_UPDATE_CURRENT|(Build.VERSION.SDK_INT>=31?PendingIntent.FLAG_MUTABLE:0);PendingIntent pending=PendingIntent.getBroadcast(this,86,callback,flags);session.commit(pending.getIntentSender());
+        busy=true;
+        action.setEnabled(false);
+        CoreRuntime.IO.execute(()->{
+            try {
+                verify(downloaded, available);
+                runOnUiThread(()->{
+                    finishWork();
+                    launchInstall();
+                });
+            } catch(Exception error){
+                runOnUiThread(()->{
+                    status.setText("فایل دانلود شده اعتبارسنجی نشد. لطفاً مجدداً بررسی کنید.");
+                    finishWork();
+                });
             }
-            runOnUiThread(()->{if(!isDestroyed()){status.setText("Confirm the update in Android's installer.");finishWork();}});
-        }catch(Exception error){if(id!=-1)installer.abandonSession(id);runOnUiThread(()->{if(!isDestroyed()){status.setText("Installation could not start. Nothing was changed. You can retry.");finishWork();}});}});
+        });
+    }
+
+    private void launchInstall(){
+        try {
+            startService(new Intent(this, TunnelService.class).setAction(TunnelService.STOP));
+            Uri contentUri = Uri.parse("content://" + getPackageName() + ".updateprovider/update.apk");
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+        } catch(Exception e) {
+            try {
+                Uri contentUri = Uri.parse("content://" + getPackageName() + ".updateprovider/update.apk");
+                Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } catch(Exception fallbackError) {
+                if(available != null && available.url != null){
+                    try{startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(available.url)));}catch(Exception ignored){}
+                }
+            }
+        }
+    }
+
+    public static final class Provider extends ContentProvider {
+        @Override public boolean onCreate() { return true; }
+        @Override public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
+            File file = new File(getContext().getCacheDir(), "III85III-VPN.apk");
+            if (file.exists()) {
+                return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+            }
+            throw new FileNotFoundException("Update APK not found");
+        }
+        @Override public String getType(Uri uri) { return "application/vnd.android.package-archive"; }
+        @Override public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) { return null; }
+        @Override public Uri insert(Uri uri, ContentValues values) { return null; }
+        @Override public int delete(Uri uri, String selection, String[] selectionArgs) { return 0; }
+        @Override public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) { return 0; }
     }
 }
