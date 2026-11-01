@@ -9,7 +9,7 @@ using System.Windows.Forms;
 [assembly:AssemblyTitle("III85III VPN Setup")]
 [assembly:AssemblyCompany("III85III")]
 [assembly:AssemblyProduct("III85III VPN")]
-[assembly:AssemblyVersion("2.3.13.0")]
+[assembly:AssemblyVersion("2.3.14.0")]
 internal static class Installer {
     [STAThread]static int Main(){
         Application.EnableVisualStyles();
@@ -27,7 +27,7 @@ internal static class Installer {
             }catch(ArgumentException){}
         }
         string root=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","III85III VPN");
-        bool update=previous>0&&File.Exists(Path.Combine(root,"III85III VPN.exe"));
+        bool update=previous>0||Array.IndexOf(Environment.GetCommandLineArgs(),"-update")>=0||File.Exists(Path.Combine(root,"III85III VPN.exe"));
         InstallPackage.TerminateProcesses(root);
         if(Process.GetProcessesByName("III85III VPN").Length>0){
             for(int i=0;i<10&&Process.GetProcessesByName("III85III VPN").Length>0;i++)System.Threading.Thread.Sleep(200);
@@ -46,6 +46,7 @@ internal static class Installer {
             });
             string exe=Path.Combine(root,"III85III VPN.exe");if(!File.Exists(exe))throw new IOException("Incomplete package.");
             try { CreateShortcut(exe,root); } catch { }
+            try{string dataDir=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN");File.Delete(Path.Combine(dataDir,"required-update.txt"));}catch{}
             if(update||MessageBox.Show("Installation complete. Open III85III VPN now?\n\nLocation: "+root,"III85III VPN Setup",MessageBoxButtons.YesNo,MessageBoxIcon.Information)==DialogResult.Yes)Process.Start(new ProcessStartInfo(exe){UseShellExecute=true,WorkingDirectory=root});
             return 0;
         }catch(Exception){MessageBox.Show("Installation could not finish. Close any running copy of III85III VPN and try again. Your saved accounts were not removed.","III85III VPN Setup",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}

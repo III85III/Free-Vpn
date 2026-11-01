@@ -1,6 +1,9 @@
 param([string]$AppDirectory)
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
+if (-not $AppDirectory) {
+    & "$PSScriptRoot\build.ps1"
+}
 & "$PSScriptRoot\package.ps1" -AppDirectory $AppDirectory
 $version=(Get-Content -LiteralPath "$root\tools\project.json" -Raw|ConvertFrom-Json).version
 $archive=Join-Path $root (".build\packages\III85III-VPN-v$version-windows-x64.zip")

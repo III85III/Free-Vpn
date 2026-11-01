@@ -2,7 +2,13 @@ param([string]$OutputDirectory,[string]$EngineDirectory)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $out = if ($OutputDirectory) { [IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $root '.build\app' }
-if (Test-Path -LiteralPath $out) { throw 'Choose an empty output directory to preserve existing builds.' }
+if (Test-Path -LiteralPath $out) {
+    if (-not $OutputDirectory) {
+        Remove-Item -LiteralPath $out -Recurse -Force
+    } else {
+        throw 'Choose an empty output directory to preserve existing builds.'
+    }
+}
 
 New-Item -ItemType Directory -Path $out, "$out\core", "$out\licenses", "$out\source\native", "$out\source\tools", "$out\source\core" -Force | Out-Null
 
@@ -15,13 +21,13 @@ if($EngineDirectory){
 Push-Location "$root\core"
 try {
     Write-Output "Compiling iii85iii-core.exe..."
-    $ldflags = "-s -w -X github.com/III85III/III85III-VPN/core/internal/version.Current=2.3.13"
+    $ldflags = "-s -w -X github.com/III85III/III85III-VPN/core/internal/version.Current=2.3.14"
     & go build -trimpath -ldflags $ldflags -o "$out\core\iii85iii-core.exe" ./cmd/firefox-vpn-core
     if ($LASTEXITCODE -ne 0) { throw "Go core build failed." }
     Copy-Item "$out\core\iii85iii-core.exe" "$out\core\firefox-vpn-core.exe" -Force
 
     Write-Output "Compiling iii85iii-tun.exe..."
-    $ldflagsTun = "-s -w -H windowsgui -X github.com/III85III/III85III-VPN/core/internal/version.Current=2.3.13"
+    $ldflagsTun = "-s -w -H windowsgui -X github.com/III85III/III85III-VPN/core/internal/version.Current=2.3.14"
     & go build -tags with_gvisor -trimpath -ldflags $ldflagsTun -o "$out\core\iii85iii-tun.exe" ./cmd/firefox-vpn-tun
     if ($LASTEXITCODE -ne 0) { throw "Go tun build failed." }
     Copy-Item "$out\core\iii85iii-tun.exe" "$out\core\firefox-vpn-tun.exe" -Force

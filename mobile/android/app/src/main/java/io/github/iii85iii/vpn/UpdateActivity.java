@@ -132,6 +132,20 @@ public final class UpdateActivity extends Activity {
     private void launchInstall(){
         try {
             startService(new Intent(this, TunnelService.class).setAction(TunnelService.STOP));
+        } catch(Exception ignored){}
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!getPackageManager().canRequestPackageInstalls()) {
+                try {
+                    Intent allowIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName()));
+                    startActivityForResult(allowIntent, 999);
+                    Toast.makeText(this, "لطفاً دسترسی نصب برنامه را تایید کنید", Toast.LENGTH_LONG).show();
+                    return;
+                } catch(Exception ignored) {}
+            }
+        }
+
+        try {
             Uri contentUri = Uri.parse("content://" + getPackageName() + ".updateprovider/update.apk");
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
@@ -152,6 +166,15 @@ public final class UpdateActivity extends Activity {
         }
     }
 
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 999) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && getPackageManager().canRequestPackageInstalls()) {
+                launchInstall();
+            }
+        }
+    }
+
     public static final class Provider extends ContentProvider {
         @Override public boolean onCreate() { return true; }
         @Override public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
@@ -162,7 +185,16 @@ public final class UpdateActivity extends Activity {
             throw new FileNotFoundException("Update APK not found");
         }
         @Override public String getType(Uri uri) { return "application/vnd.android.package-archive"; }
-        @Override public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) { return null; }
+        @Override public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+            File file = new File(getContext().getCacheDir(), "III85III-VPN.apk");
+            if (!file.exists()) return null;
+            android.database.MatrixCursor cursor = new android.database.MatrixCursor(new String[]{
+                android.provider.OpenableColumns.DISPLAY_NAME,
+                android.provider.OpenableColumns.SIZE
+            }, 1);
+            cursor.addRow(new Object[]{file.getName(), file.length()});
+            return cursor;
+        }
         @Override public Uri insert(Uri uri, ContentValues values) { return null; }
         @Override public int delete(Uri uri, String selection, String[] selectionArgs) { return 0; }
         @Override public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) { return 0; }
