@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.3.14.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.3.14.0")]
+[assembly: System.Reflection.AssemblyVersion("2.3.15.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.3.15.0")]
 
 namespace III85III.Vpn {
     /// <summary>
@@ -1348,7 +1348,8 @@ namespace III85III.Vpn {
         readonly LuxuryButton antigravityBtn = new LuxuryButton { Text = "United Kingdom", Variant = ButtonVariant.Secondary, Width = 150 };
         readonly LuxuryButton verifyBtn = new LuxuryButton { Text = "Check connection", Variant = ButtonVariant.Ghost, Width = 140 };
         readonly LocationCard selectedLocationCard = new LocationCard();
-        readonly Label speedStats = new Label(), accountBadge = new Label(), noticeLabel = new Label();
+        readonly Label speedStats = new Label(), accountBadge = new Label();
+        readonly LuxuryButton noticeLabel = new LuxuryButton { Text = "⚡ پروکسی اختصاصی تلگرام (اسپانسر @cabicy)", Variant = ButtonVariant.Secondary };
         readonly LuxuryButton eyeBtn = new LuxuryButton { Text = "Hide", Variant = ButtonVariant.Ghost, Width = 64, Height = 24 };
         readonly Panel announcementBar = new Panel();
         readonly Label announcementText = new Label();
@@ -1757,13 +1758,11 @@ namespace III85III.Vpn {
 
             p.Controls.Add(metricsPanel);
 
-            noticeLabel.Text = "Telegram";
-            noticeLabel.Visible=true;noticeLabel.Cursor=Cursors.Hand;noticeLabel.ForeColor=Theme.Accent;noticeLabel.AccessibleName="Telegram support";
-            noticeLabel.Click+=delegate{try{Process.Start(new ProcessStartInfo("https://t.me/cabicy"){UseShellExecute=true});}catch{ShowNotice("Telegram","Open t.me/cabicy in your browser.","",false);}};
-            noticeLabel.Font = Theme.Font(9f);
-            noticeLabel.ForeColor = Theme.TextSubtle;
-            noticeLabel.TextAlign = ContentAlignment.MiddleCenter;
-            noticeLabel.Size = new Size(480, 36);
+            noticeLabel.Text = "⚡ پروکسی اختصاصی تلگرام (اسپانسر @cabicy)";
+            noticeLabel.Visible = true;
+            noticeLabel.Cursor = Cursors.Hand;
+            noticeLabel.AccessibleName = "Telegram proxy";
+            noticeLabel.Click += async delegate { await ShowTelegramProxyDialog(); };
             p.Controls.Add(noticeLabel);
 
             Action layoutControls = delegate {
@@ -2159,7 +2158,7 @@ namespace III85III.Vpn {
             btnRow.Controls.Add(diagTestBtn); btnRow.Controls.Add(diagPingBtn); btnRow.Controls.Add(copyLogsBtn);
             var repair=new LuxuryButton{Text="Repair VPN",Width=120,Height=36};repair.Click+=async delegate{if(!ConfirmRepair())return;await Run(async delegate{await engine.Api("POST","/api/power",new{on=false});await engine.InstallTun();ShowNotice("VPN is ready","Try connecting again.","",false);});};btnRow.Controls.Add(repair);
             var guide=new LuxuryButton{Text="Guide",Width=90,Height=36};guide.Click+=delegate{Process.Start(new ProcessStartInfo(Path.Combine(engine.Root,"docs","guide.html")){UseShellExecute=true});};btnRow.Controls.Add(guide);
-            var tgProxy=new LuxuryButton{Text="⚡ Telegram Proxy",Width=150,Height=36};tgProxy.Click+=delegate{ShowTelegramProxyDialog();};btnRow.Controls.Add(tgProxy);
+            var tgProxy=new LuxuryButton{Text="⚡ Telegram Proxy",Width=150,Height=36};tgProxy.Click+=async delegate{await ShowTelegramProxyDialog();};btnRow.Controls.Add(tgProxy);
             p.Controls.Add(btnRow);
 
             logsBox.Location = new Point(0, 106);
@@ -2259,7 +2258,7 @@ namespace III85III.Vpn {
                 var metrics = home.Controls["connectionMetrics"];
                 metrics.SetBounds(Math.Max(0, (w - 520) / 2), y + 430, Math.Min(520, w), 80);
                 LabelBox(accountBadge, 18, 43, metrics.Width - 110, 24); eyeBtn.SetBounds(metrics.Width - 76, 39, 64, 28);
-                LabelBox(noticeLabel, Math.Max(0, (w - 520) / 2), y + 520, Math.Min(520, w), 20);
+                LabelBox(noticeLabel, Math.Max(0, (w - 440) / 2), y + 518, Math.Min(440, w), 34);
 
                 // Search/action rows wrap before they can overlap one another.
                 foreach (int pageIndex in new[] { 1, 2 }) {
@@ -2326,7 +2325,7 @@ namespace III85III.Vpn {
         private void InitializeTray() {
             var menu = new ContextMenuStrip();
             menu.Items.Add("Open III85III VPN", null, delegate { Show(); WindowState = FormWindowState.Normal; Activate(); });
-            menu.Items.Add("⚡ Telegram Proxy", null, delegate { ShowTelegramProxyDialog(); });
+            menu.Items.Add("⚡ Telegram Proxy", null, async delegate { await ShowTelegramProxyDialog(); });
             menu.Items.Add("Disconnect", null, async delegate { await Run(async delegate { await engine.Api("POST", "/api/power", new { on = false }); }); });
             menu.Items.Add("Quit", null, delegate { allowClose = true; Close(); });
             tray.Icon = Icon;
@@ -2336,10 +2335,15 @@ namespace III85III.Vpn {
             tray.DoubleClick += delegate { Show(); WindowState = FormWindowState.Normal; Activate(); };
         }
 
-        private void ShowTelegramProxyDialog() {
+        private async Task ShowTelegramProxyDialog() {
+            string sponsorMarker = Path.Combine(engine.DataDir, "tg-sponsor-joined.txt");
+            if (File.Exists(sponsorMarker)) {
+                await ConnectTelegramProxy();
+                return;
+            }
             using (var dialog = new Form {
                 Text = "III85III VPN", BackColor = Theme.Bg, ForeColor = Theme.TextPrimary,
-                ClientSize = new Size(520, 240), StartPosition = FormStartPosition.CenterParent,
+                ClientSize = new Size(540, 260), StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.None, MaximizeBox = false, MinimizeBox = false, ShowInTaskbar = false
             }) {
                 dialog.Paint += delegate (object sender, PaintEventArgs e) {
@@ -2349,35 +2353,46 @@ namespace III85III.Vpn {
                 dialog.Controls.Add(new Label {
                     Text = "قفل حمایت و عضویت در کانال 🤍",
                     Font = Theme.Font(14f, FontStyle.Bold), ForeColor = Theme.Accent,
-                    Bounds = new Rectangle(24, 20, 472, 34), TextAlign = ContentAlignment.MiddleRight
+                    Bounds = new Rectangle(24, 16, 492, 32), TextAlign = ContentAlignment.MiddleRight
                 });
                 dialog.Controls.Add(new Label {
-                    Text = "این پروکسی اختصاصی و پرسرعت به‌صورت کاملاً رایگان در اختیار شماست.\n\nبرای فعال‌سازی و دریافت پروکسی، لطفاً ابتدا در کانال اسپانسر ما (@cabicy) عضو شوید. پس از عضویت و بازگشت، پروکسی بلافاصله فعال می‌شود.",
-                    Font = Theme.Font(10.5f), ForeColor = Theme.TextPrimary,
-                    Bounds = new Rectangle(24, 64, 472, 95), TextAlign = ContentAlignment.TopRight
+                    Text = "استفاده از VPN عمومی برای همه آزاد است.\n\nاما برای دریافت پروکسی اختصاصی و دائمی تلگرام، عضویت در کانال اسپانسر (@cabicy) الزامی است.\n\nابتدا روی دکمه عضویت بزنید و Join را در تلگرام لمس کنید، سپس دکمه بررسی را بزنید.",
+                    Font = Theme.Font(10f), ForeColor = Theme.TextPrimary,
+                    Bounds = new Rectangle(24, 52, 492, 90), TextAlign = ContentAlignment.TopRight
                 });
-                var cancel = new LuxuryButton { Text = "انصراف", Variant = ButtonVariant.Ghost, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(24, 180, 80, 38) };
-                var already = new LuxuryButton { Text = "عضو هستم ⚡", Variant = ButtonVariant.Ghost, Bounds = new Rectangle(110, 180, 130, 38) };
-                already.Click += delegate {
+                bool channelClicked = false;
+                var cancel = new LuxuryButton { Text = "انصراف", Variant = ButtonVariant.Ghost, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(24, 204, 80, 36) };
+                var verifyBtn = new LuxuryButton { Text = "✓ ۲. بررسی و تایید عضویت ⚡", Variant = ButtonVariant.Secondary, Bounds = new Rectangle(114, 204, 190, 36) };
+                verifyBtn.Click += delegate {
+                    if (!channelClicked) {
+                        ShowNotice("عضویت در کانال", "❌ لطفاً ابتدا دکمه «۱. عضویت در کانال» را بزنید.", "", false);
+                        return;
+                    }
+                    try { File.WriteAllText(sponsorMarker, "joined"); } catch {}
                     dialog.DialogResult = DialogResult.OK;
                     dialog.Close();
                 };
-                var join = new LuxuryButton { Text = "🤍 عضویت در کانال (@cabicy)", Variant = ButtonVariant.Primary, Bounds = new Rectangle(248, 180, 264, 38) };
+                var join = new LuxuryButton { Text = "🤍 ۱. عضویت در کانال (@cabicy)", Variant = ButtonVariant.Primary, Bounds = new Rectangle(314, 204, 202, 36) };
                 join.Click += delegate {
+                    channelClicked = true;
                     try { Process.Start(new ProcessStartInfo("tg://resolve?domain=cabicy") { UseShellExecute = true }); }
                     catch { try { Process.Start(new ProcessStartInfo("https://t.me/cabicy") { UseShellExecute = true }); } catch {} }
-                    dialog.DialogResult = DialogResult.OK;
-                    dialog.Close();
                 };
-                dialog.Controls.Add(cancel); dialog.Controls.Add(already); dialog.Controls.Add(join);
+                dialog.Controls.Add(cancel); dialog.Controls.Add(verifyBtn); dialog.Controls.Add(join);
                 dialog.CancelButton = cancel;
                 if (dialog.ShowDialog(this) == DialogResult.OK) {
-                    ConnectTelegramProxy();
+                    await ConnectTelegramProxy();
                 }
             }
         }
 
-        private void ConnectTelegramProxy() {
+        private async Task ConnectTelegramProxy() {
+            try {
+                if (Json.Str(Json.Child(lastStatus, "state"), "phase") == "off") {
+                    try { await engine.Api("POST", "/api/power", new { on = true }); } catch {}
+                }
+            } catch {}
+            noticeLabel.Text = "⚡ پروکسی فعال است (کلیک برای اتصال تلگرام)";
             try {
                 Process.Start(new ProcessStartInfo("tg://socks?server=proxy.cabicy.lvh.me&port=10810") { UseShellExecute = true });
             } catch (Exception) {
