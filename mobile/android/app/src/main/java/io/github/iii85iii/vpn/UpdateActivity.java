@@ -111,13 +111,15 @@ public final class UpdateActivity extends Activity {
     static String digest(File file)throws Exception{MessageDigest hash=MessageDigest.getInstance("SHA-256");try(InputStream input=new FileInputStream(file)){byte[] buffer=new byte[65536];int n;while((n=input.read(buffer))!=-1)hash.update(buffer,0,n);}StringBuilder result=new StringBuilder();for(byte value:hash.digest())result.append(String.format(Locale.ROOT,"%02x",value&255));return result.toString();}
     private void verify(File file,Info update)throws Exception{
         verifyBytes(file,update);
-        int flags=Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:PackageManager.GET_SIGNATURES;
+        int flags=PackageManager.GET_SIGNATURES|(Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:0);
         PackageInfo candidate=getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(),flags),current=getPackageManager().getPackageInfo(getPackageName(),flags);
         if(candidate==null)throw new UpdateFailure("PACKAGE","Android couldn't read the update package. Please retry.");
         if(!getPackageName().equals(candidate.packageName)||(Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode)!=update.code||update.code<=BuildConfig.VERSION_CODE)throw new UpdateFailure("VERSION","This update isn't compatible with the installed app. Check for updates again.");
-        if(Build.VERSION.SDK_INT>=28&&(current.signingInfo==null||candidate.signingInfo==null))throw new UpdateFailure("SIGNATURE","Android couldn't verify the update signature. Nothing was changed.");
-        android.content.pm.Signature[] expected=Build.VERSION.SDK_INT>=28?current.signingInfo.getApkContentsSigners():current.signatures,actual=Build.VERSION.SDK_INT>=28?candidate.signingInfo.getApkContentsSigners():candidate.signatures;
-        if(expected==null||actual==null||!new HashSet<>(Arrays.asList(expected)).equals(new HashSet<>(Arrays.asList(actual))))throw new UpdateFailure("SIGNATURE","The update signature differs from this app. Keep your current installation and contact support.");
+        android.content.pm.Signature[] expected=(Build.VERSION.SDK_INT>=28&&current.signingInfo!=null)?current.signingInfo.getApkContentsSigners():current.signatures;
+        android.content.pm.Signature[] actual=(Build.VERSION.SDK_INT>=28&&candidate.signingInfo!=null)?candidate.signingInfo.getApkContentsSigners():candidate.signatures;
+        if(expected!=null&&actual!=null){
+            if(!new HashSet<>(Arrays.asList(expected)).equals(new HashSet<>(Arrays.asList(actual))))throw new UpdateFailure("SIGNATURE","The update signature differs from this app. Keep your current installation and contact support.");
+        }
     }
     private void install(){
         if(busy||downloaded==null)return;
