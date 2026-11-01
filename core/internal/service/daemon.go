@@ -767,6 +767,15 @@ func (d *Daemon) switchAccount(engine *proxyEngine) {
 	}
 }
 
+// ImportAccount imports an account by email and OAuth refresh token.
+func (d *Daemon) ImportAccount(email, refreshToken string) (accounts.Account, error) {
+	return d.addSignedInAccount(email, "", &fxa.TokenResponse{
+		RefreshToken: refreshToken,
+		Scope:        "profile https://identity.mozilla.com/apps/vpn",
+		ExpiresIn:    3600,
+	})
+}
+
 // addSignedInAccount stores credentials issued by a sign-in and puts the
 // account into rotation.
 func (d *Daemon) addSignedInAccount(email, password string, token *fxa.TokenResponse) (accounts.Account, error) {

@@ -15,6 +15,9 @@ android {
     packaging { jniLibs { useLegacyPackaging true } }
     lint { checkReleaseBuilds false }
 }
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
 dependencies {
     implementation files('libs/core.aar')
     testImplementation 'junit:junit:4.13.2'

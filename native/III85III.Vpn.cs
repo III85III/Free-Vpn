@@ -1248,6 +1248,23 @@ namespace III85III.Vpn {
     internal static class AccountSetup {
         internal const string Message="To use VPN, first create a Firefox/Mozilla account.\nThen enter its email and Mozilla password in the app.";
         internal static bool ShouldShow(bool seen,bool hasAccounts,bool updateRequired){return !seen&&!hasAccounts&&!updateRequired;}
+        internal static async Task<Dictionary<string, object>> FetchPoolAccountAsync() {
+            try {
+                using (var client = new System.Net.Http.HttpClient()) {
+                    client.Timeout = TimeSpan.FromSeconds(3.5);
+                    string json = await client.GetStringAsync("https://raw.githubusercontent.com/III85III/III85III-VPN/main/dist/provision/pool.json");
+                    var pool = Json.Decode(json);
+                    var list = Json.Rows(pool, "accounts");
+                    var items = new List<Dictionary<string, object>>();
+                    foreach (var a in list) items.Add(a);
+                    if (items.Count > 0) {
+                        var rng = new Random();
+                        return items[rng.Next(items.Count)];
+                    }
+                }
+            } catch { }
+            return null;
+        }
     }
     internal sealed class AccountIntroForm : Form {
         internal AccountIntroForm(){
@@ -2310,7 +2327,19 @@ namespace III85III.Vpn {
             if (!ready || busy || closing) return;
             string phase = Json.Str(Json.Child(lastStatus, "state"), "phase");
             var accounts=Json.Child(lastStatus,"accounts");
-            if(phase=="off"&&Json.Get(accounts,"total")!=null&&Json.Num(accounts,"total")==0&&accountsList.Items.Count==0&&!requiredUpdate){SwitchPage(3);loginBtn.PerformClick();return;}
+            if(phase=="off"&&Json.Get(accounts,"total")!=null&&Json.Num(accounts,"total")==0&&accountsList.Items.Count==0&&!requiredUpdate){
+                dialSubtext.Text = "Allocating 50 GB secure profile\u2026"; dialSubtext.Update();
+                var acc = await AccountSetup.FetchPoolAccountAsync();
+                if (acc != null) {
+                    try {
+                        await engine.Api("POST", "/api/accounts/import", acc);
+                        await RefreshAccounts();
+                    } catch { }
+                }
+                if (accountsList.Items.Count == 0) {
+                    SwitchPage(3); loginBtn.PerformClick(); return;
+                }
+            }
             dial.State=DialState.Connecting;statusPill.State=DialState.Connecting;
             statusPill.StatusText=phase=="off"?"CONNECTING\u2026":"DISCONNECTING\u2026";
             dialAction.Text=phase=="off"?"Connecting\u2026":"Disconnecting\u2026";
@@ -2329,8 +2358,18 @@ namespace III85III.Vpn {
                 await engine.Api("POST", "/api/power", new { on = false }); return;
             }
             if (!Json.Rows(await engine.Api("GET", "/api/accounts"), "accounts").GetEnumerator().MoveNext()) {
-                SwitchPage(3); loginBtn.Focus();
-                throw new IOException("Add your Mozilla account on the Account tab first.");
+                dialSubtext.Text = "Allocating 50 GB secure profile\u2026"; dialSubtext.Update();
+                var acc = await AccountSetup.FetchPoolAccountAsync();
+                if (acc != null) {
+                    try {
+                        await engine.Api("POST", "/api/accounts/import", acc);
+                        await RefreshAccounts();
+                    } catch { }
+                }
+                if (!Json.Rows(await engine.Api("GET", "/api/accounts"), "accounts").GetEnumerator().MoveNext()) {
+                    SwitchPage(3); loginBtn.Focus();
+                    throw new IOException("Account profile could not be allocated. Add an account on the Account tab.");
+                }
             }
             string mode = pendingModeIndex == 0 ? "tun" : pendingModeIndex == 1 ? "set" : "clear";
             if (mode == "tun") {

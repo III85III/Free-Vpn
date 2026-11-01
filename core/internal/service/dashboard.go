@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"crypto/hmac"
@@ -214,6 +214,7 @@ func (s *dashboardServer) handler() http.Handler {
 	mux.HandleFunc("POST /api/retry", s.handleRetry)
 
 	mux.HandleFunc("GET /api/accounts", s.handleAccounts)
+	mux.HandleFunc("POST /api/accounts/import", s.handleAccountImport)
 	mux.HandleFunc("POST /api/accounts/order", s.handleAccountOrder)
 	mux.HandleFunc("POST /api/accounts/{id}/activate", s.handleAccountActivate)
 	mux.HandleFunc("POST /api/accounts/{id}/enabled", s.handleAccountEnabled)

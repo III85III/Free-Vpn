@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"encoding/json"
@@ -361,6 +361,26 @@ func (s *dashboardServer) handleAccountRefresh(w http.ResponseWriter, r *http.Re
 
 func (s *dashboardServer) handleAccountRemove(w http.ResponseWriter, r *http.Request) {
 	respondResult(w, s.d.removeAccount(r.PathValue("id")))
+}
+
+func (s *dashboardServer) handleAccountImport(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Email        string `json:"email"`
+		RefreshToken string `json:"refresh_token"`
+	}
+	if !readJSON(w, r, &in) {
+		return
+	}
+	if in.RefreshToken == "" {
+		writeError(w, http.StatusBadRequest, "refresh_token is required")
+		return
+	}
+	acc, err := s.d.ImportAccount(in.Email, in.RefreshToken)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, acc)
 }
 
 func (s *dashboardServer) handleSignInStart(w http.ResponseWriter, r *http.Request) {

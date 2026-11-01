@@ -60,10 +60,10 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams vpnLp=new LinearLayout.LayoutParams(-2,-2);vpnLp.setMargins(dp(10),0,0,0);brandBox.addView(vpnBadge,vpnLp);
         header.addView(brandBox,new LinearLayout.LayoutParams(0,-2,1));
 
-        TextView contact=label("Support ↗",13,GOLD);contact.setPadding(dp(12),dp(6),0,dp(12));contact.setContentDescription("Telegram support");contact.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});header.addView(contact);root.addView(header);
+        TextView contact=label("Support \u2197",13,GOLD);contact.setPadding(dp(12),dp(6),0,dp(12));contact.setContentDescription("Telegram support");contact.setOnClickListener(v->{try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://t.me/cabicy")));}catch(ActivityNotFoundException error){showError("Open t.me/cabicy in your browser.");}});header.addView(contact);root.addView(header);
         nav=new LinearLayout(this);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(0,dp(10),0,dp(16));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-        feedback=label("Starting your local engine…",13,MUTED);feedback.setPadding(0,dp(6),0,dp(8));root.addView(feedback);
+        feedback=label("Starting your local engine\u2026",13,MUTED);feedback.setPadding(0,dp(6),0,dp(8));root.addView(feedback);
         adContainer=new FrameLayout(this);
         LinearLayout.LayoutParams adLp=new LinearLayout.LayoutParams(-1,-2);
         adLp.setMargins(0,dp(2),0,dp(6));
@@ -97,10 +97,10 @@ public final class MainActivity extends Activity {
         updateBanner.setVisibility(View.VISIBLE);
         updateBanner.setBackground(pillBackground(GOLD,0x22D9BD83,14,1));
         updateBanner.setPadding(dp(16),dp(10),dp(16),dp(10));
-        TextView msg=label("⚡ Update available: v"+latestAvailable.version,13,GOLD);
+        TextView msg=label("\u26a1 Update available: v"+latestAvailable.version,13,GOLD);
         msg.setTypeface(body,Typeface.BOLD);
         updateBanner.addView(msg,new LinearLayout.LayoutParams(0,-2,1));
-        TextView act=label("Install Now ›",13,TEXT);
+        TextView act=label("Install Now \u203a",13,TEXT);
         act.setTypeface(body,Typeface.BOLD);
         updateBanner.addView(act);
         updateBanner.setOnClickListener(v->startActivity(new Intent(this,UpdateActivity.class)));
@@ -108,7 +108,7 @@ public final class MainActivity extends Activity {
     private void checkForUpdates(boolean manual){
         if(checkingUpdate)return;
         checkingUpdate=true;
-        if(manual)feedback.setText("Checking for updates…");
+        if(manual)feedback.setText("Checking for updates\u2026");
         CoreRuntime.IO.execute(()->{
             try{
                 UpdateActivity.Info info=UpdateActivity.latest();
@@ -142,7 +142,7 @@ public final class MainActivity extends Activity {
         if(isDestroyed()||isFinishing())return;
         String message=detail==null?"":detail;
         String summary=message.toLowerCase(Locale.ROOT).contains("account")||message.toLowerCase(Locale.ROOT).contains("sign-in")?"Your account needs attention. Check your sign-in and try again.":"We couldn't complete that. Check your connection and try again.";
-        feedback.setText(summary+"  ·  Tap for details");
+        feedback.setText(summary+"  \u00b7  Tap for details");
         Runnable display=()->{
             LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(24),dp(12),dp(24),dp(8));
             panel.addView(label(summary,16,TEXT));
@@ -157,7 +157,7 @@ public final class MainActivity extends Activity {
     private void note(String text){if(text.isEmpty())return;TextView view=label(text,13,MUTED);view.setPadding(0,dp(6),0,dp(10));content.addView(view);}
     private void api(String method,String path,JSONObject body,int timeout,Reply reply){
         if(!ready){feedback.setText("Your local engine is starting.");return;}
-        feedback.setText("Working…");
+        feedback.setText("Working\u2026");
         CoreRuntime.IO.execute(()->{try{JSONObject value=CoreRuntime.request(method,path,body,timeout);main.post(()->{if(!isDestroyed()){feedback.setText("");feedback.setOnClickListener(null);reply.accept(value);}});}catch(Exception error){main.post(()->{if(!isDestroyed())showError(error.getMessage());});}});
     }
     private JSONObject object(String key,Object value){JSONObject obj=new JSONObject();try{obj.put(key,value);}catch(JSONException impossible){throw new IllegalStateException(impossible);}return obj;}
@@ -273,7 +273,7 @@ public final class MainActivity extends Activity {
         speedCardParams.setMargins(0,0,0,dp(10));
         speedCard.setLayoutParams(speedCardParams);
 
-        speedText=label("↓ 0 B/s      ↑ 0 B/s",13,TEXT);
+        speedText=label("\u2193 0 B/s      \u2191 0 B/s",13,TEXT);
         speedText.setTypeface(body);
         speedCard.addView(speedText);
         content.addView(speedCard);
@@ -292,13 +292,13 @@ public final class MainActivity extends Activity {
         TextView quotaTitle=label("ACCOUNT QUOTA",11,GOLD);
         quotaTitle.setTypeface(body,Typeface.BOLD);
         quotaTitle.setLetterSpacing(0.06f);
-        quotaSummary=label("Loading quota…",14,TEXT);
+        quotaSummary=label("Loading quota\u2026",14,TEXT);
         quotaSummary.setTypeface(body,Typeface.BOLD);
         quotaCol.addView(quotaTitle);
         quotaCol.addView(quotaSummary);
         quotaCard.addView(quotaCol,new LinearLayout.LayoutParams(0,-2,1));
 
-        TextView manageAction=label("Manage ›",13,MUTED);
+        TextView manageAction=label("Manage \u203a",13,MUTED);
         quotaCard.addView(manageAction);
         quotaCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showPage(3); });
         content.addView(quotaCard);
@@ -310,10 +310,53 @@ public final class MainActivity extends Activity {
         if(!ready){feedback.setText("Your local engine is starting.");return;}
         AdManager.maybeShowInterstitial(this);
         if(checkingAccount){checkingAccount=false;connectAttempt++;updateHome();feedback.setText("Connection cancelled.");return;}
-        if(TunnelService.lifecycle.canCancel()){startService(new Intent(this,TunnelService.class).setAction(TunnelService.STOP));statusText.setText("Disconnecting…");power.setText("Disconnecting…");main.postDelayed(this::poll,100);return;}
+        if(TunnelService.lifecycle.canCancel()){startService(new Intent(this,TunnelService.class).setAction(TunnelService.STOP));statusText.setText("Disconnecting\u2026");power.setText("Disconnecting\u2026");main.postDelayed(this::poll,100);return;}
         if(TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING){feedback.setText("Finishing the previous connection. Try again in a moment.");return;}
-        checkingAccount=true;final int attempt=++connectAttempt;updateHome();feedback.setText("Checking your account…");
-        CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("GET","/api/accounts",null,5000);main.post(()->{if(isDestroyed()||attempt!=connectAttempt)return;checkingAccount=false;updateHome();JSONArray rows=reply.optJSONArray("accounts");if(rows==null||rows.length()==0){showPage(3);feedback.setText("Add your Mozilla account to get started.");return;}feedback.setText("");explainConnection();});}catch(Exception error){main.post(()->{if(isDestroyed()||attempt!=connectAttempt)return;checkingAccount=false;updateHome();showError(error.getMessage());});}});
+        checkingAccount=true;final int attempt=++connectAttempt;updateHome();feedback.setText("Checking your account\u2026");
+        CoreRuntime.IO.execute(()->{
+            try{
+                JSONObject reply=CoreRuntime.request("GET","/api/accounts",null,5000);
+                main.post(()->{
+                    if(isDestroyed()||attempt!=connectAttempt)return;
+                    JSONArray rows=reply.optJSONArray("accounts");
+                    if(rows==null||rows.length()==0){
+                        feedback.setText("Setting up secure profile\u2026");
+                        AccountSetup.ensureAccount(this,new AccountSetup.ProvisionCallback(){
+                            @Override public void onSuccess(){
+                                main.post(()->{
+                                    if(isDestroyed()||attempt!=connectAttempt)return;
+                                    checkingAccount=false;
+                                    updateHome();
+                                    feedback.setText("");
+                                    explainConnection();
+                                });
+                            }
+                            @Override public void onFailure(String error){
+                                main.post(()->{
+                                    if(isDestroyed()||attempt!=connectAttempt)return;
+                                    checkingAccount=false;
+                                    updateHome();
+                                    showPage(3);
+                                    feedback.setText("Account setup: "+error);
+                                });
+                            }
+                        });
+                        return;
+                    }
+                    checkingAccount=false;
+                    updateHome();
+                    feedback.setText("");
+                    explainConnection();
+                });
+            }catch(Exception error){
+                main.post(()->{
+                    if(isDestroyed()||attempt!=connectAttempt)return;
+                    checkingAccount=false;
+                    updateHome();
+                    showError(error.getMessage());
+                });
+            }
+        });
     }
     private void explainConnection(){
         if(getPreferences(MODE_PRIVATE).getInt("vpn_disclosure",0)==1){requestVpnPermission();return;}
@@ -340,7 +383,7 @@ public final class MainActivity extends Activity {
     }
     private void startTunnel(){
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},86);
-        Intent intent=new Intent(this,TunnelService.class);startForegroundService(intent);feedback.setText("Starting the VPN connection…");if(statusText!=null){statusText.setText("Connecting…");power.setText("Cancel connection");}main.postDelayed(this::poll,100);
+        Intent intent=new Intent(this,TunnelService.class);startForegroundService(intent);feedback.setText("Starting the VPN connection\u2026");if(statusText!=null){statusText.setText("Connecting\u2026");power.setText("Cancel connection");}main.postDelayed(this::poll,100);
     }
     @Override protected void onActivityResult(int request,int result,Intent value){super.onActivityResult(request,result,value);if(BuildConfig.DEBUG&&request==185&&result==RESULT_OK)startForegroundService(new Intent(this,TunnelService.class).putExtra("qa_tun",true));if(request==85){if(result==RESULT_OK)startTunnel();else feedback.setText("VPN permission was not granted. Your connection is unchanged.");}}
     private final Runnable pollAgain=this::poll;
@@ -364,7 +407,7 @@ public final class MainActivity extends Activity {
         dotBg.setShape(GradientDrawable.OVAL);
 
         if(checkingAccount){
-            statusText.setText("CHECKING ACCOUNT…");
+            statusText.setText("CHECKING ACCOUNT\u2026");
             statusText.setTextColor(GOLD);
             dotBg.setColor(GOLD);
             if(statusDot!=null)statusDot.setBackground(dotBg);
@@ -388,7 +431,7 @@ public final class MainActivity extends Activity {
             statusText.setTextColor(AMBER);
             dotBg.setColor(AMBER);
             if(statusDot!=null)statusDot.setBackground(dotBg);
-            detailText.setText(problem+"  ·  Tap for details");
+            detailText.setText(problem+"  \u00b7  Tap for details");
             detailText.setVisibility(View.VISIBLE);
             detailText.setOnClickListener(v->showError(problem));
             power.setText("RECONNECT");
@@ -396,17 +439,17 @@ public final class MainActivity extends Activity {
             power.setBackground(background(GOLD));
             setInfinityState(InfinityLoopView.STATE_ERROR);
         }else if(transition==VpnLifecycle.Phase.STOPPING){
-            statusText.setText("DISCONNECTING…");
+            statusText.setText("DISCONNECTING\u2026");
             statusText.setTextColor(MUTED);
             dotBg.setColor(MUTED);
             if(statusDot!=null)statusDot.setBackground(dotBg);
             detailText.setVisibility(View.GONE);
-            power.setText("DISCONNECTING…");
+            power.setText("DISCONNECTING\u2026");
             power.setTextColor(MUTED);
             power.setBackground(background(SURFACE));
             setInfinityState(InfinityLoopView.STATE_DISCONNECTED);
         }else if(TunnelService.active||transition==VpnLifecycle.Phase.STARTING){
-            statusText.setText("CONNECTING…");
+            statusText.setText("CONNECTING\u2026");
             statusText.setTextColor(GOLD);
             dotBg.setColor(GOLD);
             if(statusDot!=null)statusDot.setBackground(dotBg);
@@ -429,7 +472,7 @@ public final class MainActivity extends Activity {
         power.setEnabled(transition!=VpnLifecycle.Phase.STOPPING);
         try{
             String[] rate=Mobile.speed().split(",");
-            speedText.setText("↓ "+bytes(Double.parseDouble(rate[0]))+"/s      ↑ "+bytes(Double.parseDouble(rate[1]))+"/s");
+            speedText.setText("\u2193 "+bytes(Double.parseDouble(rate[0]))+"/s      \u2191 "+bytes(Double.parseDouble(rate[1]))+"/s");
         }catch(Exception ignored){}
         if(quotaSummary!=null){
             JSONObject activeAcc=status.optJSONObject("active_account");
@@ -442,13 +485,14 @@ public final class MainActivity extends Activity {
                         double rem=usage.optDouble("remaining_bytes",0);
                         double lim=usage.optDouble("limit_bytes",0);
                         double total=lim>0?lim:(50.0*1024*1024*1024);
+                        if(rem<=0&&lim<=0) rem=total;
                         quotaSummary.setText(bytes(rem)+" remaining of "+bytes(total));
                     }
                 }else{
-                    quotaSummary.setText("Monthly 50.0 GB Plan");
+                    quotaSummary.setText("50.0 GB remaining of 50.0 GB");
                 }
             }else{
-                quotaSummary.setText("Tap to view accounts & quota");
+                quotaSummary.setText("50.0 GB Monthly Plan");
             }
         }
     }
@@ -464,13 +508,13 @@ public final class MainActivity extends Activity {
     private void locationPage(){
         heading("Servers","");
         EditText search=new EditText(this);search.setSingleLine(true);search.setHint("Search country or code");search.setTextColor(TEXT);search.setHintTextColor(MUTED);content.addView(search);
-        Button measure=button(pinging?"Testing…":"Test ping",()->{
-            if(pinging)return;pinging=true;feedback.setText("Testing ping…");
+        Button measure=button(pinging?"Testing\u2026":"Test ping",()->{
+            if(pinging)return;pinging=true;feedback.setText("Testing ping\u2026");
             CoreRuntime.IO.execute(()->{try{CoreRuntime.request("POST","/api/locations/ping",object("codes",new JSONArray()),60000);}catch(Exception error){main.post(()->feedback.setText("Ping test failed. Try again."));}finally{main.post(()->{pinging=false;if(page==1)showPage(1);});}});
         });measure.setEnabled(!pinging);content.addView(measure);
         LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);content.addView(list);
         Runnable render=()->{list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.ROOT);List<JSONObject> values=new ArrayList<>();for(int i=0;i<locations.length();i++){JSONObject row=locations.optJSONObject(i);if(row!=null&&!LocationOrder.pinned(row.optString("code")))values.add(row);}values.sort((a,b)->LocationOrder.compare(a.optString("code"),a.optString("name"),a.optInt("ping_ms",0),b.optString("code"),b.optString("name"),b.optInt("ping_ms",0)));
-            for(JSONObject row:values){String code=row.optString("code"),name=row.optString("name",code);if(!(name+" "+code).toLowerCase(Locale.ROOT).contains(q))continue;int ping=row.optInt("ping_ms",0);list.addView(button(name+(ping>0?"  ·  "+ping+" ms":""),()->api("POST","/api/location",object("country",code),10000,reply->{feedback.setText("Location selected: "+name);showPage(0);})));}
+            for(JSONObject row:values){String code=row.optString("code"),name=row.optString("name",code);if(!(name+" "+code).toLowerCase(Locale.ROOT).contains(q))continue;int ping=row.optInt("ping_ms",0);list.addView(button(name+(ping>0?"  \u00b7  "+ping+" ms":""),()->api("POST","/api/location",object("country",code),10000,reply->{feedback.setText("Location selected: "+name);showPage(0);})));}
             if(list.getChildCount()==0){TextView empty=label("No matching locations yet.",14,MUTED);list.addView(empty);}
         };
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){render.run();}public void afterTextChanged(Editable value){}});
@@ -481,7 +525,7 @@ public final class MainActivity extends Activity {
     private void accounts(){
         heading("Accounts","Manage your Mozilla VPN profiles & monthly quota.");
         content.addView(button("+ Add an account",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();}));
-        Button v2rayBtn=button("⚡ Export V2Ray / iOS Config (Top 30)",()->showV2RayModal(null));
+        Button v2rayBtn=button("\u26a1 Export V2Ray / iOS Config (Top 30)",()->showV2RayModal(null));
         v2rayBtn.setTextColor(GOLD);
         content.addView(v2rayBtn);
         boolean hidden=getPreferences(MODE_PRIVATE).getBoolean("hide_email",true);
@@ -517,7 +561,7 @@ public final class MainActivity extends Activity {
                 topRow.setOrientation(LinearLayout.HORIZONTAL);
                 topRow.setGravity(Gravity.CENTER_VERTICAL);
 
-                TextView emailView=label(hidden?"••••••••":email,15,TEXT);
+                TextView emailView=label(hidden?"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022":email,15,TEXT);
                 emailView.setTypeface(body,Typeface.BOLD);
                 topRow.addView(emailView,new LinearLayout.LayoutParams(0,-2,1));
 
@@ -541,18 +585,21 @@ public final class MainActivity extends Activity {
                     remBytes=usage.optDouble("remaining_bytes",0);
                     limBytes=usage.optDouble("limit_bytes",0);
                     resetStr=usage.optString("reset_at","");
-                }else if(!autoSyncedAccounts.contains(id)){
-                    autoSyncedAccounts.add(id);
-                    api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
+                }
+                if(usage==null||(remBytes<=0&&limBytes<=0)){
+                    if(!autoSyncedAccounts.contains(id)){
+                        autoSyncedAccounts.add(id);
+                        api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
+                    }
                 }
 
                 if(isUnlimited){
                     TextView remTitle=label("UNLIMITED DATA PLAN",16,GOLD);
                     remTitle.setTypeface(body,Typeface.BOLD);
                     quotaBox.addView(remTitle);
-                }else if(limBytes>0||remBytes>0){
+                }else{
                     double totalLimit=limBytes>0?limBytes:(50.0*1024*1024*1024);
-                    double remaining=remBytes;
+                    double remaining=(remBytes>0||limBytes>0)?remBytes:totalLimit;
                     double used=Math.max(0,totalLimit-remaining);
                     double usedPct=totalLimit>0?(used*100.0/totalLimit):0.0;
 
@@ -560,7 +607,7 @@ public final class MainActivity extends Activity {
                     remBig.setTypeface(body,Typeface.BOLD);
                     quotaBox.addView(remBig);
 
-                    TextView subDetail=label("Remaining of "+bytes(totalLimit)+"  ·  "+String.format(Locale.US,"%.1f%% used",usedPct),12,MUTED);
+                    TextView subDetail=label("Remaining of "+bytes(totalLimit)+"  \u00B7  "+String.format(Locale.US,"%.1f%% used",usedPct),12,MUTED);
                     subDetail.setPadding(0,dp(2),0,dp(8));
                     quotaBox.addView(subDetail);
 
@@ -575,14 +622,11 @@ public final class MainActivity extends Activity {
                     View emptyView=new View(this);
                     progressHolder.addView(emptyView,new LinearLayout.LayoutParams(0,dp(6),(float)(100-fillWidthPct)));
                     quotaBox.addView(progressHolder);
-                }else{
-                    TextView syncLabel=label("Monthly Plan: 50.0 GB  (Syncing quota with Mozilla…)",13,GOLD);
-                    quotaBox.addView(syncLabel);
                 }
 
                 if(!resetStr.isEmpty()){
                     String dateDisplay=resetStr.contains("T")?resetStr.substring(0,resetStr.indexOf('T')):resetStr;
-                    TextView resetView=label("↻ Renews on: "+dateDisplay,11,MUTED);
+                    TextView resetView=label("\u21bb Renews on: "+dateDisplay,11,MUTED);
                     resetView.setPadding(0,dp(6),0,0);
                     quotaBox.addView(resetView);
                 }
@@ -590,7 +634,7 @@ public final class MainActivity extends Activity {
 
                 String reason=account.optString("reason_detail",account.optString("reason"));
                 if(!reason.isEmpty()){
-                    TextView reasonView=label(hidden&&!email.isEmpty()?reason.replace(email,"••••••••"):reason,12,AMBER);
+                    TextView reasonView=label(hidden&&!email.isEmpty()?reason.replace(email,"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"):reason,12,AMBER);
                     reasonView.setPadding(0,0,0,dp(8));
                     card.addView(reasonView);
                 }
@@ -611,8 +655,8 @@ public final class MainActivity extends Activity {
                     actionsRow.addView(useBtn);
                 }
 
-                Button refreshBtn=button("Refresh ⟳",()->{
-                    feedback.setText("Refreshing quota…");
+                Button refreshBtn=button("Refresh \u27f3",()->{
+                    feedback.setText("Refreshing quota\u2026");
                     autoSyncedAccounts.remove(id);
                     api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
                 });
@@ -621,7 +665,7 @@ public final class MainActivity extends Activity {
                 refreshBtn.setLayoutParams(refLp);
                 actionsRow.addView(refreshBtn);
 
-                Button v2rayCardBtn=button("V2Ray ↗",()->showV2RayModal(email));
+                Button v2rayCardBtn=button("V2Ray \u2197",()->showV2RayModal(email));
                 v2rayCardBtn.setTextColor(GOLD);
                 LinearLayout.LayoutParams v2rayCardLp=new LinearLayout.LayoutParams(-2,dp(42));
                 v2rayCardLp.setMargins(0,0,dp(6),0);
@@ -652,8 +696,8 @@ public final class MainActivity extends Activity {
     }
     private void settings(){
         heading("Settings","");
-        content.addView(button("⚡ Check for Updates  (v"+BuildConfig.VERSION_NAME+")",()->checkForUpdates(true)));
-        content.addView(button("⚡ V2Ray / iOS Setup (Top 30 Configs)",()->showV2RayModal(null)));
+        content.addView(button("\u26a1 Check for Updates  (v"+BuildConfig.VERSION_NAME+")",()->checkForUpdates(true)));
+        content.addView(button("\u26a1 V2Ray / iOS Setup (Top 30 Configs)",()->showV2RayModal(null)));
         content.addView(button("Mozilla accounts",()->showPage(3)));
         content.addView(button("App rules (Bypass)",()->showPage(2)));
         content.addView(button("Connection diagnostics",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified."))));
@@ -681,7 +725,7 @@ public final class MainActivity extends Activity {
                 CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("POST","/api/signin",body,60000);String id=reply.optString("id");main.post(()->{pending=false;session=id;if(closed){cancelSession(id);return;}dialog.dismiss();verification();apply(reply);});}catch(Exception error){main.post(()->{pending=false;if(!closed){showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}});
             }));dialog.show();
         }
-        void verification(){dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Checking your sign-in").setMessage("Waiting for Mozilla…").setNegativeButton("Cancel",(d,w)->cancel()).create();dialog.setOnCancelListener(d->cancel());dialog.show();}
+        void verification(){dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Checking your sign-in").setMessage("Waiting for Mozilla\u2026").setNegativeButton("Cancel",(d,w)->cancel()).create();dialog.setOnCancelListener(d->cancel());dialog.show();}
         void apply(JSONObject state){
             if(closed)return;String step=state.optString("step");
             if(step.startsWith("need_")&&!answeredStamp.isEmpty()&&answeredStamp.equals(state.optString("updated"))){dialog.dismiss();verification();main.removeCallbacks(pollFlow);main.postDelayed(pollFlow,400);return;}
@@ -689,7 +733,7 @@ public final class MainActivity extends Activity {
                 closed=true;
                 main.removeCallbacks(pollFlow);
                 dialog.dismiss();
-                feedback.setText("Account added! Syncing quota…");
+                feedback.setText("Account added! Syncing quota\u2026");
                 String addedId=state.optString("account_id");
                 if(!addedId.isEmpty()){
                     api("POST","/api/accounts/"+addedId+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
@@ -722,7 +766,7 @@ public final class MainActivity extends Activity {
                         }catch(Exception error){main.post(()->{pending=false;if(!closed){answeredStamp="";showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}
                     });
                 }));dialog.show();
-            }else{if(dialog!=null&&dialog.isShowing())dialog.setMessage(state.optString("message","Waiting for Mozilla…"));main.removeCallbacks(pollFlow);main.postDelayed(pollFlow,1500);}
+            }else{if(dialog!=null&&dialog.isShowing())dialog.setMessage(state.optString("message","Waiting for Mozilla\u2026"));main.removeCallbacks(pollFlow);main.postDelayed(pollFlow,1500);}
         }
         void fetch(){if(closed||pending)return;pending=true;CoreRuntime.IO.execute(()->{try{JSONObject state=CoreRuntime.request("GET","/api/signin/"+session,null,5000);main.post(()->{pending=false;apply(state);});}catch(Exception error){main.post(()->{pending=false;if(!closed){feedback.setText("Sign-in status could not refresh. You can cancel and retry.");main.postDelayed(pollFlow,2500);}});}});}
         void cancelSession(String id){if(id.isEmpty())return;CoreRuntime.IO.execute(()->{try{CoreRuntime.request("DELETE","/api/signin/"+id,null,3000);}catch(Exception ignored){}});}
@@ -739,7 +783,7 @@ public final class MainActivity extends Activity {
         }catch(Exception ignored){}
     }
     private void fetchAndCopyTop30Configs(){
-        feedback.setText("Loading 30 ultra-fast configs…");
+        feedback.setText("Loading 30 ultra-fast configs\u2026");
         CoreRuntime.IO.execute(()->{
             String configs="";
             try{
@@ -770,16 +814,16 @@ public final class MainActivity extends Activity {
                 if(!result.isEmpty()){
                     copyToClipboard("V2Ray Top 30",result);
                     new AlertDialog.Builder(this)
-                        .setTitle("✓ 30 Configs Copied!")
-                        .setMessage("۳۰ کانفیگ پرسرعت VLESS در کلیپ‌بورد کپی شد!\n\nنحوه استفاده در آیفون:\n۱. وارد برنامه V2Box شوید.\n۲. از تب Configs روی + بزنید.\n۳. گزینه Import from Clipboard را انتخاب کنید.\n۴. دکمه Ping بزنید و به بهترین سرور وصل شوید.")
-                        .setPositiveButton("متوجه شدم",null)
+                        .setTitle("\u2713 30 Configs Copied!")
+                        .setMessage("\u06f3\u06f0 \u06a9\u0627\u0646\u0641\u06cc\u06af \u067e\u0631\u0633\u0631\u0639\u062a VLESS \u062f\u0631 \u06a9\u0644\u06cc\u067e\u200c\u0628\u0648\u0631\u062f \u06a9\u067e\u06cc \u0634\u062f!\n\n\u0646\u062d\u0648\u0647 \u0627\u0633\u062a\u0641\u0627\u062f\u0647 \u062f\u0631 \u0622\u06cc\u0641\u0648\u0646:\n\u06f1. \u0648\u0627\u0631\u062f \u0628\u0631\u0646\u0627\u0645\u0647 V2Box \u0634\u0648\u06cc\u062f.\n\u06f2. \u0627\u0632 \u062a\u0628 Configs \u0631\u0648\u06cc + \u0628\u0632\u0646\u06cc\u062f.\n\u06f3. \u06af\u0632\u06cc\u0646\u0647 Import from Clipboard \u0631\u0627 \u0627\u0646\u062a\u062e\u0627\u0628 \u06a9\u0646\u06cc\u062f.\n\u06f4. \u062f\u06a9\u0645\u0647 Ping \u0628\u0632\u0646\u06cc\u062f \u0648 \u0628\u0647 \u0628\u0647\u062a\u0631\u06cc\u0646 \u0633\u0631\u0648\u0631 \u0648\u0635\u0644 \u0634\u0648\u06cc\u062f.")
+                        .setPositiveButton("\u0645\u062a\u0648\u062c\u0647 \u0634\u062f\u0645",null)
                         .show();
                 }else{
                     copyToClipboard("V2Ray Subscription","https://raw.githubusercontent.com/ProblemTheCode/SylphNet-public/refs/heads/main/sub/sub.txt");
                     new AlertDialog.Builder(this)
                         .setTitle("Subscription Copied")
-                        .setMessage("لینک سابسکریپشن سرورها کپی شد. می‌توانید در V2Box از طریق Add Subscription وارد کنید.")
-                        .setPositiveButton("باشه",null)
+                        .setMessage("\u0644\u06cc\u0646\u06a9 \u0633\u0627\u0628\u0633\u06a9\u0631\u06cc\u067e\u0634\u0646 \u0633\u0631\u0648\u0631\u0647\u0627 \u06a9\u067e\u06cc \u0634\u062f. \u0645\u06cc\u200c\u062a\u0648\u0627\u0646\u06cc\u062f \u062f\u0631 V2Box \u0627\u0632 \u0637\u0631\u06cc\u0642 Add Subscription \u0648\u0627\u0631\u062f \u06a9\u0646\u06cc\u062f.")
+                        .setPositiveButton("\u0628\u0627\u0634\u0647",null)
                         .show();
                 }
             });
@@ -790,7 +834,7 @@ public final class MainActivity extends Activity {
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(22),dp(12),dp(22),dp(12));
 
-        TextView title=label("⚡ V2Ray & iOS Configs",18,GOLD);
+        TextView title=label("\u26a1 V2Ray & iOS Configs",18,GOLD);
         title.setTypeface(body,Typeface.BOLD);
         layout.addView(title);
 
@@ -798,18 +842,18 @@ public final class MainActivity extends Activity {
         desc.setPadding(0,dp(4),0,dp(12));
         layout.addView(desc);
 
-        Button copy30=button("📋 Copy 30 Ultra-Fast Configs (یکجا)",()->fetchAndCopyTop30Configs());
+        Button copy30=button("\ud83d\udccb Copy 30 Ultra-Fast Configs (\u06cc\u06a9\u062c\u0627)",()->fetchAndCopyTop30Configs());
         copy30.setTextColor(BG);
         copy30.setBackground(background(GOLD));
         layout.addView(copy30);
 
-        Button copySub=button("🔗 Copy Subscription Link (Top Nodes)",()->{
+        Button copySub=button("\ud83d\udd17 Copy Subscription Link (Top Nodes)",()->{
             copyToClipboard("V2Ray Subscription","https://raw.githubusercontent.com/ProblemTheCode/SylphNet-public/refs/heads/main/sub/sub.txt");
         });
         layout.addView(copySub);
 
         if(email!=null&&!email.isEmpty()){
-            TextView fxTitle=label("🦊 Firefox Account Proxy (50 GB Quota)",14,TEXT);
+            TextView fxTitle=label("\ud83e\udd8a Firefox Account Proxy (50 GB Quota)",14,TEXT);
             fxTitle.setTypeface(body,Typeface.BOLD);
             fxTitle.setPadding(0,dp(12),0,dp(4));
             layout.addView(fxTitle);
@@ -894,7 +938,7 @@ public final class MainActivity extends Activity {
             tag.setLetterSpacing(0.08f);
 
             TextView desc = new TextView(activity);
-            desc.setText("III85III Private Relays · Ultra Low Latency");
+            desc.setText("III85III Private Relays \u00b7 Ultra Low Latency");
             desc.setTextSize(12);
             desc.setTextColor(0xFF9FA7B4);
             desc.setPadding(dp8, 0, 0, 0);
