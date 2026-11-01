@@ -129,7 +129,7 @@ public final class MainActivity extends Activity {
             main.postDelayed(this::connectTelegramProxy, 600);
         }
     }
-    @Override protected void onStart(){super.onStart();if(UpdateActivity.isRequired(this)){visible=false;UpdateActivity.openRequired(this);return;}visible=true;if(ready){poll();showAccountIntro();}main.postDelayed(updateAgain,1500);}
+    @Override protected void onStart(){super.onStart();visible=true;if(ready){poll();showAccountIntro();}main.postDelayed(updateAgain,1500);}
     @Override protected void onStop(){visible=false;main.removeCallbacks(pollAgain);main.removeCallbacks(updateAgain);super.onStop();}
     @Override protected void onDestroy(){if(signIn!=null)signIn.cancel();main.removeCallbacksAndMessages(null);super.onDestroy();}
     private TextView label(String value,int size,int color){TextView text=new TextView(this);text.setText(value);text.setTextSize(size);text.setTextColor(color);text.setTypeface(body);text.setLineSpacing(dp(4),1);return text;}
@@ -401,7 +401,6 @@ public final class MainActivity extends Activity {
         updateHome();
     }
     private void toggleConnection(){
-        if(UpdateActivity.isRequired(this)){UpdateActivity.openRequired(this);return;}
         if(!ready){feedback.setText("Your local engine is starting.");return;}
         AdManager.maybeShowInterstitial(this);
         if(checkingAccount){checkingAccount=false;connectAttempt++;updateHome();feedback.setText("Connection cancelled.");return;}

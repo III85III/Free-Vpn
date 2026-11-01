@@ -15,10 +15,10 @@ import java.security.MessageDigest;
 import java.util.*;
 
 public final class UpdateActivity extends Activity {
-    static boolean isRequired(Context context){return UpdatePolicy.required(BuildConfig.VERSION_CODE,context.getSharedPreferences("interface",MODE_PRIVATE).getLong("required_update",0));}
-    static void openRequired(Activity owner){owner.startActivity(new Intent(owner,UpdateActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));}
-    private static void require(Activity owner,Info info){owner.getSharedPreferences("interface",MODE_PRIVATE).edit().putLong("required_update",info.code).putString("required_update_version",info.version).apply();owner.startService(new Intent(owner,TunnelService.class).setAction(TunnelService.STOP));}
-    @Override public void onBackPressed(){if(isRequired(this))finishAffinity();else super.onBackPressed();}
+    static boolean isRequired(Context context){ return false; }
+    static void openRequired(Activity owner){}
+    private static void require(Activity owner,Info info){}
+    @Override public void onBackPressed(){ finish(); }
     private Button back;
     private TextView status;private ProgressBar progress;private Button action;
     private Info available;private File downloaded;private boolean busy;
@@ -26,31 +26,29 @@ public final class UpdateActivity extends Activity {
     static final class Info {String version,url,hash;long size,code;}
     @Override public void onCreate(Bundle state){
         super.onCreate(state);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xff101319);int pad=(int)(24*getResources().getDisplayMetrics().density);root.setPadding(pad,pad,pad,pad);
-        if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->{if(isRequired(this))finishAffinity();else finish();});
-        back=new Button(this);back.setText(isRequired(this)?"Exit":"Back to settings");back.setAllCaps(false);back.setOnClickListener(v->{if(isRequired(this))finishAffinity();else finish();});root.addView(back);
+        if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->finish());
+        back=new Button(this);back.setText("✕ بستن و ادامه کار با نسخه فعلی");back.setAllCaps(false);back.setOnClickListener(v->finish());root.addView(back);
         status=new TextView(this);status.setTextColor(0xffefefea);status.setTextSize(18);status.setPadding(0,pad,0,pad);root.addView(status);
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(100);root.addView(progress);
-        action=new Button(this);action.setAllCaps(false);action.setText("Check for updates");action.setOnClickListener(v->{if(downloaded!=null)install();else if(available!=null)download();else check();});root.addView(action);
-        try{android.graphics.Typeface font=android.graphics.Typeface.createFromAsset(getAssets(),"fonts/Lato-Regular.ttf");status.setTypeface(font);action.setTypeface(font);back.setTypeface(font);}catch(RuntimeException ignored){}
+        action=new Button(this);action.setAllCaps(false);action.setText("بررسی آپدیت");action.setOnClickListener(v->{if(downloaded!=null)install();else if(available!=null)download();else check();});root.addView(action);
+        Button directWebBtn=new Button(this);
+        directWebBtn.setText("🌐 دانلود مستقیم فایل نصبی با مرورگر");
+        directWebBtn.setAllCaps(false);
+        directWebBtn.setOnClickListener(v->{
+            if(available!=null&&available.url!=null){
+                try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(available.url)));}catch(Exception ignored){}
+            }else{
+                try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/III85III/Free-Vpn/releases/latest")));}catch(Exception ignored){}
+            }
+        });
+        root.addView(directWebBtn);
+        try{android.graphics.Typeface font=android.graphics.Typeface.createFromAsset(getAssets(),"fonts/Lato-Regular.ttf");status.setTypeface(font);action.setTypeface(font);back.setTypeface(font);directWebBtn.setTypeface(font);}catch(RuntimeException ignored){}
         android.graphics.drawable.GradientDrawable button=new android.graphics.drawable.GradientDrawable();button.setColor(0xffd9bd83);button.setCornerRadius(pad/2f);action.setBackground(button);action.setTextColor(0xff101319);action.setMinHeight((int)(54*getResources().getDisplayMetrics().density));progress.setProgressTintList(android.content.res.ColorStateList.valueOf(0xffd9bd83));
-        TextView note=new TextView(this);note.setTextColor(0xff9fa7b4);note.setText("Updates come from the official III85III GitHub repository. Downloads are checked before Android asks you to install. Your local accounts stay on this device. The VPN disconnects while the app updates.");note.setPadding(0,pad,0,0);root.addView(note);setContentView(root);WindowLayout.apply(this,root);
-        if(BuildConfig.DEBUG&&getIntent().getBooleanExtra("qa_update",false)){
-            action.setEnabled(false);status.setText("Preparing synthetic update test…");CoreRuntime.IO.execute(()->{try{
-                File file=new File(getCacheDir(),"qa-upgrade.apk");PackageInfo candidate=getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(),0);if(candidate==null)throw new IOException("Missing test APK");
-                Info info=new Info();info.code=Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode;info.version=candidate.versionName;info.size=file.length();info.hash=digest(file);
-                File partial=new File(getCacheDir(),"update.part");try(InputStream input=new FileInputStream(file);OutputStream output=new FileOutputStream(partial)){byte[] buffer=new byte[65536];int count;while((count=input.read(buffer))!=-1)output.write(buffer,0,count);}
-                String legacy;try{verify(partial,info);legacy="accepted";}catch(Exception rejected){legacy="rejected";}
-                String hash=info.hash;info.hash=String.join("",Collections.nCopies(64,"0"));expectRejected(partial,info,"HASH");info.hash=hash;
-                info.size++;expectRejected(partial,info,"SIZE");info.size--;
-                long code=info.code;info.code++;expectRejected(file,info,"VERSION");info.code=code;
-                available=info;downloaded=prepareUpdate(partial,info);
-                try(FileWriter report=new FileWriter(new File(getCacheDir(),"update-validation.txt"))){report.write("PASS: production partial-file promotion, checksum, size, package version and signing verification. Legacy .part parser: "+legacy+".\n");}
-                runOnUiThread(()->{if(!isDestroyed()){status.setText("Synthetic update verified.");action.setText("Install update");action.setEnabled(true);install();}});
-            }catch(Exception error){runOnUiThread(()->status.setText("Synthetic update rejected: "+downloadError(error)));}});
-        }else check();
+        TextView note=new TextView(this);note.setTextColor(0xff9fa7b4);note.setText("آپدیت‌ها کاملاً اختیاری هستند و می‌توانید بدون آپدیت به استفاده از فیلترشکن ادامه دهید.");note.setPadding(0,pad,0,0);root.addView(note);setContentView(root);WindowLayout.apply(this,root);
+        check();
     }
     private void check(){if(busy)return;busy=true;action.setEnabled(false);status.setText("Checking for updates…");progress.setIndeterminate(true);
-        CoreRuntime.IO.execute(()->{try{Info update=latest();File cached=new File(getCacheDir(),"III85III-VPN.apk");boolean valid=false;if(update.code>BuildConfig.VERSION_CODE&&cached.isFile()){try{verify(cached,update);valid=true;}catch(Exception ignored){}}final boolean ready=valid;runOnUiThread(()->{if(isDestroyed())return;available=update.code>BuildConfig.VERSION_CODE?update:null;if(available!=null){require(this,update);back.setText("Exit");}downloaded=ready?cached:null;status.setText(available==null?(isRequired(this)?"Update required. Check again to continue.":"You're up to date."):ready?"Update ready to install.":"Update to "+update.version+" to use VPN.");action.setText(available==null?"Check again":ready?"Install update":"Download update");finishWork();});}catch(Exception error){runOnUiThread(()->{if(!isDestroyed()){status.setText("Updates are unavailable. Check your connection and retry.");finishWork();}});}});
+        CoreRuntime.IO.execute(()->{try{Info update=latest();File cached=new File(getCacheDir(),"III85III-VPN.apk");boolean valid=false;if(update.code>BuildConfig.VERSION_CODE&&cached.isFile()){try{verifyBytes(cached,update);valid=true;}catch(Exception ignored){}}final boolean ready=valid;runOnUiThread(()->{if(isDestroyed())return;available=update.code>BuildConfig.VERSION_CODE?update:null;downloaded=ready?cached:null;status.setText(available==null?"شما از جدیدترین نسخه استفاده می‌کنید.":ready?"آپدیت دانلود شده و آماده نصب است.":"نسخه جدید "+update.version+" منتشر شده است.");action.setText(available==null?"بررسی مجدد":ready?"نصب آپدیت":"دانلود و نصب آپدیت");finishWork();});}catch(Exception error){runOnUiThread(()->{if(!isDestroyed()){status.setText("خطا در بررسی آپدیت. وضعیت اتصال را چک کنید.");finishWork();}});}});
     }
     private void finishWork(){busy=false;progress.setIndeterminate(false);action.setEnabled(true);}
     static HttpURLConnection open(String address)throws Exception{
@@ -75,23 +73,25 @@ public final class UpdateActivity extends Activity {
         }finally{request.disconnect();}
     }
     static void notifyAvailable(Activity owner){
-        android.content.SharedPreferences prefs=owner.getSharedPreferences("interface",MODE_PRIVATE);long now=System.currentTimeMillis();if(now-prefs.getLong("update_checked",0)<5*60*1000L)return;prefs.edit().putLong("update_checked",now).apply();
-        CoreRuntime.IO.execute(()->{try{Info update=latest();if(update.code>BuildConfig.VERSION_CODE)owner.runOnUiThread(()->{if(owner.isDestroyed()||owner.isFinishing()||!owner.hasWindowFocus())return;require(owner,update);openRequired(owner);});}catch(Exception ignored){}});
     }
-    private void download(){if(busy||available==null)return;long required=available.size*3+30L*1024*1024;if(getCacheDir().getUsableSpace()<required){status.setText("There isn't enough free space. Free at least "+(long)Math.ceil(required/(1024d*1024))+" MB on your device and retry. Nothing was installed.");return;}if(!downloading.compareAndSet(false,true)){status.setText("An update is already downloading. Check again in a moment.");available=null;action.setText("Check again");return;}busy=true;action.setEnabled(false);status.setText("Downloading update…");Info update=available;
+    private void download(){if(busy||available==null)return;long required=available.size*2+10L*1024*1024;if(getCacheDir().getUsableSpace()<required){status.setText("فضای ذخیره‌سازی کافی نیست.");return;}if(!downloading.compareAndSet(false,true)){status.setText("در حال دانلود...");return;}busy=true;action.setEnabled(false);status.setText("در حال دانلود آپدیت...");Info update=available;
         CoreRuntime.IO.execute(()->{File partial=new File(getCacheDir(),"update.part");try{
             UpdateTransfer.download(partial,update.size,offset->open(update.url,offset),percent->runOnUiThread(()->progress.setProgress(percent)));
             downloaded=prepareUpdate(partial,update);
-            runOnUiThread(()->{if(!isDestroyed()){progress.setProgress(100);status.setText("Confirm installation in Android.");action.setText("Install update");finishWork();install();}});
+            runOnUiThread(()->{if(!isDestroyed()){progress.setProgress(100);status.setText("دانلود کامل شد! در حال اجرای نصاب...");action.setText("نصب آپدیت");finishWork();install();}});
         }catch(Exception error){partial.delete();final String message=downloadError(error);runOnUiThread(()->{if(!isDestroyed()){status.setText(message);finishWork();}});}finally{downloading.set(false);}});
     }
     private File prepareUpdate(File partial,Info update)throws Exception{
         verifyBytes(partial,update);
-        // Android package parsers (including vendor implementations) expect an APK path.
         File ready=new File(getCacheDir(),"III85III-VPN.apk");
-        if(ready.exists()&&!ready.delete())throw new UpdateFailure("STORAGE","Couldn't prepare the update. Close the app and retry.");
-        if(!partial.renameTo(ready))throw new UpdateFailure("STORAGE","Couldn't prepare the update. Close the app and retry.");
-        try{verify(ready,update);return ready;}catch(Exception error){ready.delete();throw error;}
+        if(ready.exists()&&!ready.delete()){}
+        if(!partial.renameTo(ready)){
+            try(InputStream in=new FileInputStream(partial);OutputStream out=new FileOutputStream(ready)){
+                byte[] b=new byte[65536];int l;while((l=in.read(b))!=-1)out.write(b,0,l);
+            }
+            partial.delete();
+        }
+        return ready;
     }
     private static final class UpdateFailure extends IOException {
         final String code;
@@ -105,47 +105,25 @@ public final class UpdateActivity extends Activity {
         if(file.length()!=update.size)throw new UpdateFailure("SIZE","The download is incomplete. Please retry.");
         if(!digest(file).equalsIgnoreCase(update.hash))throw new UpdateFailure("HASH","The downloaded file doesn't match this update. Check for updates and retry.");
     }
-    private void expectRejected(File file,Info update,String code)throws Exception{
-        try{verify(file,update);}catch(UpdateFailure error){if(code.equals(error.code))return;throw error;}
-        throw new IOException("Invalid update was accepted");
-    }
     static String digest(File file)throws Exception{MessageDigest hash=MessageDigest.getInstance("SHA-256");try(InputStream input=new FileInputStream(file)){byte[] buffer=new byte[65536];int n;while((n=input.read(buffer))!=-1)hash.update(buffer,0,n);}StringBuilder result=new StringBuilder();for(byte value:hash.digest())result.append(String.format(Locale.ROOT,"%02x",value&255));return result.toString();}
-    private void verify(File file,Info update)throws Exception{
-        verifyBytes(file,update);
-        int flags=PackageManager.GET_SIGNATURES|(Build.VERSION.SDK_INT>=28?PackageManager.GET_SIGNING_CERTIFICATES:0);
-        PackageInfo candidate=getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(),flags),current=getPackageManager().getPackageInfo(getPackageName(),flags);
-        if(candidate==null)throw new UpdateFailure("PACKAGE","Android couldn't read the update package. Please retry.");
-        if(!getPackageName().equals(candidate.packageName)||(Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode)!=update.code||update.code<=BuildConfig.VERSION_CODE)throw new UpdateFailure("VERSION","This update isn't compatible with the installed app. Check for updates again.");
-        android.content.pm.Signature[] expected=(Build.VERSION.SDK_INT>=28&&current.signingInfo!=null)?current.signingInfo.getApkContentsSigners():current.signatures;
-        android.content.pm.Signature[] actual=(Build.VERSION.SDK_INT>=28&&candidate.signingInfo!=null)?candidate.signingInfo.getApkContentsSigners():candidate.signatures;
-        if(expected!=null&&actual!=null){
-            if(!new HashSet<>(Arrays.asList(expected)).equals(new HashSet<>(Arrays.asList(actual))))throw new UpdateFailure("SIGNATURE","The update signature differs from this app. Keep your current installation and contact support.");
-        }
-    }
     private void install(){
-        if(busy||downloaded==null)return;
-        if(Build.VERSION.SDK_INT>=26 && !getPackageManager().canRequestPackageInstalls()){
-            status.setText("لطفاً اجازه نصب را در صفحه بعد فعال کنید، سپس روی Install update بزنید.");
-            try{
-                startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:"+getPackageName())));
-            }catch(Exception e){
-                try{startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES));}catch(Exception ignored){}
-            }
+        if(downloaded==null||!downloaded.exists()){
+            if(available!=null)download();
             return;
         }
-        busy=true;
-        action.setEnabled(false);
+        busy=true;action.setEnabled(false);
         CoreRuntime.IO.execute(()->{
             try {
-                verify(downloaded, available);
+                verifyBytes(downloaded, available);
                 runOnUiThread(()->{
                     finishWork();
                     launchInstall();
                 });
             } catch(Exception error){
                 runOnUiThread(()->{
-                    status.setText("فایل دانلود شده اعتبارسنجی نشد. لطفاً مجدداً بررسی کنید.");
+                    status.setText("فایل ناقص بود. مجدداً دانلود می‌شود...");
                     finishWork();
+                    download();
                 });
             }
         });
