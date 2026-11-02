@@ -38,6 +38,7 @@ public final class MainActivity extends Activity {
     private boolean checkingAccount;
     private boolean checkingAccountIntro,accountIntroShowing;
     private boolean checkingUpdate, autoRenewingAccount;
+    private long nextRenewalAllowed;
     private int connectAttempt;
     private long nextWarmup;
     private UpdateActivity.Info latestAvailable;
@@ -1041,7 +1042,7 @@ public final class MainActivity extends Activity {
     }
 
     private void checkQuotaRenewal(JSONObject value){
-        if(value==null||autoRenewingAccount)return;
+        if(value==null||autoRenewingAccount||SystemClock.elapsedRealtime()<nextRenewalAllowed)return;
         JSONObject activeAcc=value.optJSONObject("active_account");
         JSONObject state=value.optJSONObject("state");
         JSONObject usage=activeAcc!=null?activeAcc.optJSONObject("usage"):null;
@@ -1057,6 +1058,7 @@ public final class MainActivity extends Activity {
                 ||(wError!=null&&wError.toLowerCase(Locale.US).contains("quota"));
         if(quotaDepleted){
             autoRenewingAccount=true;
+            nextRenewalAllowed=SystemClock.elapsedRealtime()+10000;
             String oldId=activeAcc!=null?activeAcc.optString("id",""):"";
             String oldEmail=activeAcc!=null?activeAcc.optString("email",""):"";
             Toast.makeText(this,"حجم اکانت شما به پایان رسید. در حال دریافت ۵۰ گیگابایت جدید...",Toast.LENGTH_LONG).show();
@@ -1110,6 +1112,15 @@ public final class MainActivity extends Activity {
                         }
                     }catch(Exception wait){}
                     try{Thread.sleep(300);}catch(Exception ignored){}
+                }
+
+                if(!ready){
+                    main.post(()->{
+                        if(!isDestroyed()){
+                            Toast.makeText(this,"خطا در برقراری پروکسی تلگرام. اینترنت خود را بررسی کنید.",Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    return;
                 }
 
                 main.post(()->{

@@ -333,6 +333,14 @@ namespace III85III.Vpn {
             }
         }
         public async Task Start() {
+            try {
+                foreach (var p in Process.GetProcessesByName("iii85iii-core")) {
+                    try { if (!p.HasExited) p.Kill(); } catch {}
+                }
+                foreach (var p in Process.GetProcessesByName("firefox-vpn-core")) {
+                    try { if (!p.HasExited) p.Kill(); } catch {}
+                }
+            } catch {}
             VerifyFiles(); PrivateDirectory(DataDir);
             string configPath = Path.Combine(DataDir, "config.json");
             var cfg = File.Exists(configPath) ? Json.Decode(File.ReadAllText(configPath)) : new Dictionary<string, object>();
@@ -1258,17 +1266,39 @@ namespace III85III.Vpn {
 
 
     internal static class AccountSetup {
+        private static readonly HashSet<string> exhaustedEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        internal static void MarkExhausted(string email) {
+            if (!String.IsNullOrEmpty(email)) {
+                lock (exhaustedEmails) { exhaustedEmails.Add(email); }
+            }
+        }
+
         internal const string Message="To use VPN, first create a Firefox/Mozilla account.\nThen enter its email and Mozilla password in the app.";
         internal static bool ShouldShow(bool seen,bool hasAccounts,bool updateRequired){return !seen&&!hasAccounts&&!updateRequired;}
         internal static async Task<Dictionary<string, object>> FetchPoolAccountAsync(string excludeEmail = null) {
             try {
+                if (!String.IsNullOrEmpty(excludeEmail)) MarkExhausted(excludeEmail);
                 string lp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "provision", "pool.json");
                 if (!File.Exists(lp)) lp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dist", "provision", "pool.json");
                 if (File.Exists(lp)) {
                     var lpool = Json.Decode(File.ReadAllText(lp));
                     var lrows = Json.Rows(lpool, "accounts");
+                    var allAccounts = new List<Dictionary<string, object>>();
+                    foreach (var a in lrows) allAccounts.Add(a);
                     var litems = new List<Dictionary<string, object>>();
-                    foreach (var a in lrows) if (String.IsNullOrEmpty(excludeEmail) || Json.Str(a, "email") != excludeEmail) litems.Add(a);
+                    lock (exhaustedEmails) {
+                        if (exhaustedEmails.Count >= allAccounts.Count) exhaustedEmails.Clear();
+                        foreach (var a in allAccounts) {
+                            string em = Json.Str(a, "email");
+                            if (!exhaustedEmails.Contains(em) && (String.IsNullOrEmpty(excludeEmail) || em != excludeEmail)) {
+                                litems.Add(a);
+                            }
+                        }
+                    }
+                    if (litems.Count == 0) {
+                        foreach (var a in allAccounts) if (String.IsNullOrEmpty(excludeEmail) || Json.Str(a, "email") != excludeEmail) litems.Add(a);
+                    }
                     if (litems.Count > 0) {
                         int s = Math.Abs((Environment.MachineName + "_" + Environment.UserName).GetHashCode());
                         return litems[s % litems.Count];
@@ -1314,7 +1344,7 @@ namespace III85III.Vpn {
     internal sealed class MainForm : Form {
         readonly Engine engine;
         bool accountIntroSeen;
-        bool updating,requiredUpdate,autoRenewing;string lastActionError="";LuxuryButton appUpdateButton,requiredUpdateButton;Label requiredUpdateStatus;Panel updateGate; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(2);
+        bool updating,requiredUpdate,autoRenewing; DateTime nextRenewalAllowed = DateTime.MinValue;string lastActionError="";LuxuryButton appUpdateButton,requiredUpdateButton;Label requiredUpdateStatus;Panel updateGate; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(2);
         internal Task RequireUpdate(string version){
             if(!AppUpdate.Required(Application.ProductVersion,version))return Task.CompletedTask;
             bool first=!requiredUpdate;requiredUpdate=true;
@@ -2451,7 +2481,12 @@ namespace III85III.Vpn {
                 } catch {}
                 await Task.Delay(250);
             }
-            noticeLabel.Text = portReady ? "\u26a1 \u067e\u0631\u0648\u06a9\u0633\u06cc \u0641\u0639\u0627\u0644 \u0634\u062f! (\u062f\u0631 \u062d\u0627\u0644 \u0627\u062a\u0635\u0627\u0644 \u062a\u0644\u06af\u0631\u0627\u0645...)" : "\u23f3 \u062f\u0631 \u062d\u0627\u0644 \u0628\u0627\u0632 \u06a9\u0631\u062f\u0646 \u062a\u0644\u06af\u0631\u0627\u0645..."; noticeLabel.Update();
+            if (!portReady) {
+                noticeLabel.Text = "❌ برقراری پروکسی تلگرام با خطا مواجه شد. لطفاً اتصال شبکه را بررسی کنید.";
+                noticeLabel.Update();
+                return;
+            }
+            noticeLabel.Text = "⚡ پروکسی فعال شد! (در حال باز کردن تلگرام...)"; noticeLabel.Update();
             try {
                 Process.Start(new ProcessStartInfo("tg://socks?server=127.0.0.1&port=" + targetPort) { UseShellExecute = true });
             } catch (Exception) {
@@ -2731,7 +2766,8 @@ namespace III85III.Vpn {
                 string stCode = Json.Str(state, "code");
                 string wError = Json.Str(proxy, "wake_error");
                 bool quotaDepleted = acctReason == "quota_exhausted" || (limB > 0 && remB <= 0) || stCode == "no_usable_account" || wError.IndexOf("quota", StringComparison.OrdinalIgnoreCase) >= 0;
-                if (quotaDepleted && !autoRenewing && !closing && ready) {
+                if (quotaDepleted && !autoRenewing && !closing && ready && DateTime.UtcNow >= nextRenewalAllowed) {
+                    nextRenewalAllowed = DateTime.UtcNow.AddSeconds(10);
                     autoRenewing = true;
                     Task.Run(async () => {
                         try {

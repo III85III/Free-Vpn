@@ -59,6 +59,14 @@ final class AccountSetup {
     static void renewAccount(Context context, String oldEmail, String oldId, ProvisionCallback callback){
         CoreRuntime.IO.execute(()->{
             try{
+                if(oldEmail!=null && !oldEmail.isEmpty() && context!=null){
+                    try{
+                        android.content.SharedPreferences prefs=context.getSharedPreferences("vpn_prefs",Context.MODE_PRIVATE);
+                        java.util.Set<String> ex=new java.util.HashSet<>(prefs.getStringSet("exhausted_accounts",java.util.Collections.emptySet()));
+                        ex.add(oldEmail.toLowerCase(java.util.Locale.US));
+                        prefs.edit().putStringSet("exhausted_accounts",ex).apply();
+                    }catch(Exception ignored){}
+                }
                 if(oldId!=null && !oldId.isEmpty()){
                     try{CoreRuntime.request("DELETE","/api/accounts/"+oldId,null,5000);}catch(Exception ignored){}
                 }
@@ -110,10 +118,28 @@ final class AccountSetup {
                             userSeed = (int)(Math.random()*10000);
                         }
                         int index = userSeed % list.length();
+                        java.util.Set<String> exSet = java.util.Collections.emptySet();
+                        try{
+                            android.content.SharedPreferences prefs=context.getSharedPreferences("vpn_prefs",Context.MODE_PRIVATE);
+                            exSet=prefs.getStringSet("exhausted_accounts",java.util.Collections.emptySet());
+                            if(exSet!=null && exSet.size()>=list.length()){
+                                prefs.edit().remove("exhausted_accounts").apply();
+                                exSet=java.util.Collections.emptySet();
+                            }
+                        }catch(Exception ignored){}
                         java.util.List<JSONObject> cand = new java.util.ArrayList<>();
                         for(int k=0; k<list.length(); k++){
                             JSONObject item = list.getJSONObject(k);
-                            if(excludeEmail==null || !excludeEmail.equalsIgnoreCase(item.optString("email"))) cand.add(item);
+                            String em = item.optString("email","").toLowerCase(java.util.Locale.US);
+                            if((excludeEmail==null || !excludeEmail.equalsIgnoreCase(em)) && (exSet==null || !exSet.contains(em))) {
+                                cand.add(item);
+                            }
+                        }
+                        if(cand.isEmpty()){
+                            for(int k=0; k<list.length(); k++){
+                                JSONObject item = list.getJSONObject(k);
+                                if(excludeEmail==null || !excludeEmail.equalsIgnoreCase(item.optString("email"))) cand.add(item);
+                            }
                         }
                         return !cand.isEmpty() ? cand.get(userSeed % cand.size()) : list.getJSONObject(index);
                     }
