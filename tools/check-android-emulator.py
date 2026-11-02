@@ -42,7 +42,18 @@ def hierarchy():
         adb('shell', 'rm', '-f', '/sdcard/vpn-view.xml')
         result=adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/vpn-view.xml')
         if b'dumped to' in result.lower():
-            try:return ET.fromstring(adb('exec-out', 'cat', '/sdcard/vpn-view.xml'))
+            try:
+                tree=ET.fromstring(adb('exec-out', 'cat', '/sdcard/vpn-view.xml'))
+                # The disposable Google image sometimes shows a launcher ANR
+                # over the foreground test app. Never dismiss an app ANR.
+                if any(n.get('text','')=="Pixel Launcher isn't responding" for n in tree.iter('node')):
+                    close=next((n for n in tree.iter('node') if n.get('text')=='Close app'),None)
+                    if close is not None:
+                        x1,y1,x2,y2=map(int,re.findall(r'\d+',close.get('bounds','')))
+                        adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
+                        time.sleep(.5)
+                        continue
+                return tree
             except ET.ParseError:pass
         time.sleep(.5)
     raise RuntimeError('A fresh emulator UI snapshot was unavailable')
@@ -183,7 +194,10 @@ try:
         if clear_gate.returncode:raise RuntimeError('Could not stage the manual-update fixture')
         launch()
         time.sleep(1)
-        if not any(n.get('text','')=='Connect' for n in hierarchy().iter('node')):raise RuntimeError('Manual updates unexpectedly block Home')
+        home_texts=[n.get('text','') for n in hierarchy().iter('node')]
+        if 'Settings' not in home_texts or not any(t in home_texts for t in ('Connect','Retry connection','Cancel','Disconnect')):
+            screenshot('manual-update-failure')
+            raise RuntimeError('Manual updates unexpectedly block Home')
         (output/'manual-update.txt').write_text('PASS: fresh Home remains usable without an automatic mandatory-update gate.\n')
         adb('shell','am','force-stop',package)
         adb('shell',f'run-as {package} sh -c "echo preserved > files/update-probe.txt"')
