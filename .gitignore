@@ -49,3 +49,8 @@ RESUME-NOTES.md
 FEATURE-PLAN.md
 .codex/
 .agents/
+dist/provision/
+mobile/android/app/src/main/assets/accounts_pool.json
+core/cmd/pool-gen/
+tools/pool-gen.exe
+.github/workflows/replenish_accounts.yml

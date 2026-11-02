@@ -82,7 +82,7 @@ public final class MainActivity extends Activity {
         root.addView(nav);setContentView(root);
         WindowLayout.apply(this,root);
         showPage(state==null?0:state.getInt("page",0));
-        startTunnelCheck(getIntent()); try{Intent pi=new Intent(this,TunnelService.class).setAction(TunnelService.START_PROXY);if(Build.VERSION.SDK_INT>=26)startForegroundService(pi);else startService(pi);}catch(Exception ignored){}
+        startTunnelCheck(getIntent());
         CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible){poll();showAccountIntro();}});AccountSetup.ensureAccount(this,null);}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
     }
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
@@ -362,7 +362,7 @@ public final class MainActivity extends Activity {
     private final Runnable pollAgain=this::poll;
     private void poll(){
         if(!visible||!ready||polling)return;polling=true;
-        CoreRuntime.IO.execute(()->{try{JSONObject value=CoreRuntime.request("GET","/api/status",null,4000);main.post(()->{if(!isDestroyed()){status=value;updateHome();warmConnection();checkQuotaRenewal(value);}});}catch(Exception ignored){main.post(()->{if(!isDestroyed()){status=new JSONObject();updateHome();feedback.setText("Connection status is unavailable. Check the VPN notification or try again.");}});}finally{main.post(()->{polling=false;if(visible&&!isDestroyed()){main.removeCallbacks(pollAgain);main.postDelayed(pollAgain,checkingAccount||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STARTING||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING?350:1000);}});}});
+        CoreRuntime.IO.execute(()->{try{JSONObject value=CoreRuntime.request("GET","/api/status",null,4000);main.post(()->{if(!isDestroyed()){status=value;updateHome();warmConnection();}});}catch(Exception ignored){main.post(()->{if(!isDestroyed()){status=new JSONObject();updateHome();feedback.setText("Connection status is unavailable. Check the VPN notification or try again.");}});}finally{main.post(()->{polling=false;if(visible&&!isDestroyed()){main.removeCallbacks(pollAgain);main.postDelayed(pollAgain,checkingAccount||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STARTING||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING?350:1000);}});}});
     }
     private boolean verified(){JSONObject state=status.optJSONObject("state"),test=status.optJSONObject("last_test");return ConnectionTruth.verified(TunnelService.active,state==null?"off":state.optString("phase"),test!=null&&test.optBoolean("ok"),test==null?"":test.optString("at"),state==null?"":state.optString("since"),status.optString("network_changed_at"));}
     private void warmConnection(){if(!TunnelService.active||verified()||warming||SystemClock.elapsedRealtime()<nextWarmup)return;warming=true;nextWarmup=SystemClock.elapsedRealtime()+30000;CoreRuntime.IO.execute(()->{try{CoreRuntime.request("POST","/api/test",new JSONObject(),20000);}catch(Exception ignored){}finally{main.post(()->warming=false);}});}
@@ -596,9 +596,11 @@ public final class MainActivity extends Activity {
                     TextView remTitle=label("UNLIMITED DATA PLAN",16,GOLD);
                     remTitle.setTypeface(body,Typeface.BOLD);
                     quotaBox.addView(remTitle);
+                }else if(usage==null||limBytes<=0||!usage.has("remaining_bytes")){
+                    quotaBox.addView(label("Allowance unavailable",14,MUTED));
                 }else{
-                    double totalLimit=limBytes>0?limBytes:(50.0*1024*1024*1024);
-                    double remaining=(remBytes>0||limBytes>0)?remBytes:totalLimit;
+                    double totalLimit=limBytes;
+                    double remaining=Math.max(0,remBytes);
                     double used=Math.max(0,totalLimit-remaining);
                     double usedPct=totalLimit>0?(used*100.0/totalLimit):0.0;
 
@@ -664,12 +666,6 @@ public final class MainActivity extends Activity {
                 refreshBtn.setLayoutParams(refLp);
                 actionsRow.addView(refreshBtn);
 
-                Button v2rayCardBtn=button("V2Ray \u2197",()->showV2RayModal(email));
-                v2rayCardBtn.setTextColor(GOLD);
-                LinearLayout.LayoutParams v2rayCardLp=new LinearLayout.LayoutParams(-2,dp(42));
-                v2rayCardLp.setMargins(0,0,dp(6),0);
-                v2rayCardBtn.setLayoutParams(v2rayCardLp);
-                actionsRow.addView(v2rayCardBtn);
 
                 Button removeBtn=button("حذف",()->new AlertDialog.Builder(this).setTitle("حذف این اکانت؟").setMessage("این اکانت از دستگاه شما حذف می‌شود.").setNegativeButton("انصراف",null).setPositiveButton("حذف",(d,w)->api("DELETE","/api/accounts/"+id,null,7000,r->{if(page==3)showPage(3);})).show());
                 removeBtn.setTextColor(Color.rgb(255,100,100));
@@ -721,7 +717,6 @@ public final class MainActivity extends Activity {
         compatibility.setChecked(getSharedPreferences("vpn_prefs",MODE_PRIVATE).getBoolean("ready_for_war",true));
         compatibility.setOnCheckedChangeListener((button,on)->getSharedPreferences("vpn_prefs",MODE_PRIVATE).edit().putBoolean("ready_for_war",on).apply());
         content.addView(compatibility);
-        content.addView(button("Connection profiles",()->showV2RayModal(null)));
         content.addView(button("Back to help",()->showPage(5)));
     }
 
@@ -816,15 +811,15 @@ public final class MainActivity extends Activity {
 
     private void connectTelegramProxy(){
         Toast.makeText(this,"⏳ در حال آماده‌سازی و اتصال پروکسی تلگرام...",Toast.LENGTH_SHORT).show();
-        try{startForegroundService(new Intent(this,TunnelService.class).setAction(TunnelService.START_PROXY));}catch(Exception ignored){}
         CoreRuntime.IO.execute(()->{
             try{
                 CoreRuntime.ensure(this);
                 JSONObject reply=CoreRuntime.request("GET","/api/accounts",null,3000);
                 JSONArray accounts=reply!=null?reply.optJSONArray("accounts"):null;
                 if(accounts==null||accounts.length()==0){
-                    AccountSetup.ensureAccount(this,null);
+                    main.post(()->{showPage(3);openSignIn();});return;
                 }
+                startForegroundService(new Intent(this,TunnelService.class).setAction(TunnelService.START_PROXY));
                 Mobile.setOn(true);
                 Mobile.connect();
 
@@ -900,19 +895,19 @@ public final class MainActivity extends Activity {
             rootLayout.setOrientation(LinearLayout.VERTICAL);
 
 
-            TextView divText=label("ایمیل و رمز حساب موزیلا را وارد کن.",12,MUTED);
+            TextView divText=label("Use your own Mozilla account.",12,MUTED);
             divText.setPadding(0,0,0,dp(8));
             rootLayout.addView(divText);
 
             final EditText email=new EditText(MainActivity.this);
-            email.setHint("ایمیل (Mozilla Email)");
+            email.setHint("Mozilla email");
             email.setSingleLine(true);
             email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
             email.setTypeface(body);email.setTextColor(TEXT);email.setHintTextColor(MUTED);
             rootLayout.addView(email);
 
             password=new EditText(MainActivity.this);
-            password.setHint("رمز حساب موزیلا");
+            password.setHint("Mozilla password");
             password.setSingleLine(true);
             password.setInputType(129);
             password.setTransformationMethod(PasswordTransformationMethod.getInstance());
@@ -920,10 +915,10 @@ public final class MainActivity extends Activity {
             rootLayout.addView(password);
 
             dialog=new AlertDialog.Builder(MainActivity.this)
-                .setTitle("ورود با حساب موزیلا")
+                .setTitle("Sign in with Mozilla")
                 .setView(rootLayout)
-                .setNegativeButton("انصراف",(d,w)->cancel())
-                .setPositiveButton("ورود",null).create();
+                .setNegativeButton("Cancel",(d,w)->cancel())
+                .setPositiveButton("Sign in",null).create();
             dialog.setOnCancelListener(d->cancel());
             dialog.setOnShowListener(d->{
                 dialog.getButton(-1).setOnClickListener(v->{
@@ -972,7 +967,6 @@ public final class MainActivity extends Activity {
                     api("POST","/api/accounts/"+addedId+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
                 }
                 showPage(3);
-                showV2RayModal(userEmail);
                 return;
             }
             if(step.equals("error")||step.equals("failed")||step.equals("cancelled")){String failure=state.optString("error",state.optString("message","Sign-in could not finish."));cancel();if(!step.equals("cancelled"))showError(failure);return;}
@@ -1004,106 +998,6 @@ public final class MainActivity extends Activity {
         void fetch(){if(closed||pending)return;pending=true;CoreRuntime.IO.execute(()->{try{JSONObject state=CoreRuntime.request("GET","/api/signin/"+session,null,5000);main.post(()->{pending=false;apply(state);});}catch(Exception error){main.post(()->{pending=false;if(!closed){feedback.setText("Sign-in status could not refresh. You can cancel and retry.");main.postDelayed(pollFlow,2500);}});}});}
         void cancelSession(String id){if(id.isEmpty())return;CoreRuntime.IO.execute(()->{try{CoreRuntime.request("DELETE","/api/signin/"+id,null,3000);}catch(Exception ignored){}});}
         void cancel(){if(closed)return;closed=true;main.removeCallbacks(pollFlow);if(password!=null)password.getText().clear();if(dialog!=null)dialog.dismiss();cancelSession(session);}
-    }
-
-    private void copyToClipboard(String label,String text){
-        try{
-            android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip=ClipData.newPlainText(label,text);
-            if(clipboard!=null)clipboard.setPrimaryClip(clip);
-            feedback.setText("Copied to clipboard!");
-            Toast.makeText(this,"Copied to clipboard!",Toast.LENGTH_SHORT).show();
-        }catch(Exception ignored){}
-    }
-    private void fetchAndCopyTop30Configs(){
-        feedback.setText("Loading 30 ultra-fast configs\u2026");
-        CoreRuntime.IO.execute(()->{
-            String configs="";
-            try{
-                java.net.URL url=new java.net.URL("https://raw.githubusercontent.com/alireza786786/Free-V2ray-Configs/main/servers/vless_servers.txt");
-                java.net.HttpURLConnection conn=(java.net.HttpURLConnection)url.openConnection();
-                conn.setRequestProperty("User-Agent","Mozilla/5.0");
-                conn.setConnectTimeout(8000);
-                conn.setReadTimeout(8000);
-                if(conn.getResponseCode()==200){
-                    java.io.BufferedReader reader=new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream()));
-                    StringBuilder sb=new StringBuilder();
-                    String line;
-                    int count=0;
-                    while((line=reader.readLine())!=null&&count<30){
-                        line=line.trim();
-                        if(line.startsWith("vless://")){
-                            sb.append(line).append("\n");
-                            count++;
-                        }
-                    }
-                    reader.close();
-                    if(count>0)configs=sb.toString();
-                }
-            }catch(Exception ignored){}
-            final String result=configs;
-            main.post(()->{
-                if(isDestroyed())return;
-                if(!result.isEmpty()){
-                    copyToClipboard("V2Ray Top 30",result);
-                    new AlertDialog.Builder(this)
-                        .setTitle("\u2713 30 Configs Copied!")
-                        .setMessage("\u06f3\u06f0 \u06a9\u0627\u0646\u0641\u06cc\u06af \u067e\u0631\u0633\u0631\u0639\u062a VLESS \u062f\u0631 \u06a9\u0644\u06cc\u067e\u200c\u0628\u0648\u0631\u062f \u06a9\u067e\u06cc \u0634\u062f!\n\n\u0646\u062d\u0648\u0647 \u0627\u0633\u062a\u0641\u0627\u062f\u0647 \u062f\u0631 \u0622\u06cc\u0641\u0648\u0646:\n\u06f1. \u0648\u0627\u0631\u062f \u0628\u0631\u0646\u0627\u0645\u0647 V2Box \u0634\u0648\u06cc\u062f.\n\u06f2. \u0627\u0632 \u062a\u0628 Configs \u0631\u0648\u06cc + \u0628\u0632\u0646\u06cc\u062f.\n\u06f3. \u06af\u0632\u06cc\u0646\u0647 Import from Clipboard \u0631\u0627 \u0627\u0646\u062a\u062e\u0627\u0628 \u06a9\u0646\u06cc\u062f.\n\u06f4. \u062f\u06a9\u0645\u0647 Ping \u0628\u0632\u0646\u06cc\u062f \u0648 \u0628\u0647 \u0628\u0647\u062a\u0631\u06cc\u0646 \u0633\u0631\u0648\u0631 \u0648\u0635\u0644 \u0634\u0648\u06cc\u062f.")
-                        .setPositiveButton("\u0645\u062a\u0648\u062c\u0647 \u0634\u062f\u0645",null)
-                        .show();
-                }else{
-                    copyToClipboard("V2Ray Subscription","https://raw.githubusercontent.com/ProblemTheCode/SylphNet-public/refs/heads/main/sub/sub.txt");
-                    new AlertDialog.Builder(this)
-                        .setTitle("Subscription Copied")
-                        .setMessage("\u0644\u06cc\u0646\u06a9 \u0633\u0627\u0628\u0633\u06a9\u0631\u06cc\u067e\u0634\u0646 \u0633\u0631\u0648\u0631\u0647\u0627 \u06a9\u067e\u06cc \u0634\u062f. \u0645\u06cc\u200c\u062a\u0648\u0627\u0646\u06cc\u062f \u062f\u0631 V2Box \u0627\u0632 \u0637\u0631\u06cc\u0642 Add Subscription \u0648\u0627\u0631\u062f \u06a9\u0646\u06cc\u062f.")
-                        .setPositiveButton("\u0628\u0627\u0634\u0647",null)
-                        .show();
-                }
-            });
-        });
-    }
-    private void showV2RayModal(String email){
-        LinearLayout layout=new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(dp(22),dp(12),dp(22),dp(12));
-
-        TextView title=label("\u26a1 V2Ray & iOS Configs",18,GOLD);
-        title.setTypeface(body,Typeface.BOLD);
-        layout.addView(title);
-
-        TextView desc=label("Top 30 ultra-fast, low-ping V2Ray / VLESS nodes ready for iPhone (V2Box / Streisand) with 24/7 cloud uptime.",13,MUTED);
-        desc.setPadding(0,dp(4),0,dp(12));
-        layout.addView(desc);
-
-        Button copy30=button("\ud83d\udccb Copy 30 Ultra-Fast Configs (\u06cc\u06a9\u062c\u0627)",()->fetchAndCopyTop30Configs());
-        copy30.setTextColor(BG);
-        copy30.setBackground(background(GOLD));
-        layout.addView(copy30);
-
-        Button copySub=button("\ud83d\udd17 Copy Subscription Link (Top Nodes)",()->{
-            copyToClipboard("V2Ray Subscription","https://raw.githubusercontent.com/ProblemTheCode/SylphNet-public/refs/heads/main/sub/sub.txt");
-        });
-        layout.addView(copySub);
-
-        if(email!=null&&!email.isEmpty()){
-            TextView fxTitle=label("⚡ Dedicated Secure Proxy (50 GB Quota)",14,TEXT);
-            fxTitle.setTypeface(body,Typeface.BOLD);
-            fxTitle.setPadding(0,dp(12),0,dp(4));
-            layout.addView(fxTitle);
-
-            TextView fxInfo=label("Connected to "+email+". Routes through encrypted Anycast nodes.",12,MUTED);
-            layout.addView(fxInfo);
-
-            Button fxBtn=button("Copy Dedicated Proxy Endpoint",()->{
-                copyToClipboard("III85III Dedicated Proxy","http://proxy.cabicy.lvh.me:10820#Cabicy-VPN");
-            });
-            layout.addView(fxBtn);
-        }
-
-        new AlertDialog.Builder(this)
-            .setView(layout)
-            .setPositiveButton("Close",null)
-            .show();
     }
 
     public static final class AdConfig {

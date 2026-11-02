@@ -6,7 +6,7 @@ import org.json.JSONObject;
 
 final class AccountSetup {
     static final String MESSAGE="Use your own Mozilla email and Mozilla password to sign in.";
-    static boolean shouldShow(boolean seen,int accountCount,boolean updateRequired){return false;}
+    static boolean shouldShow(boolean seen,int accountCount,boolean updateRequired){return !seen&&accountCount==0&&!updateRequired;}
     interface ProvisionCallback { void onSuccess(); void onFailure(String error); }
     static void ensureAccount(Context context,ProvisionCallback callback){
         CoreRuntime.IO.execute(()->{

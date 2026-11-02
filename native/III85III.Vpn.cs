@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.3.19.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.3.19.0")]
+[assembly: System.Reflection.AssemblyVersion("2.3.20.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.3.20.0")]
 
 namespace III85III.Vpn {
     /// <summary>
@@ -1315,7 +1315,7 @@ namespace III85III.Vpn {
 
 
     internal static class AccountSetup {
-        internal const string Message="Use your own Mozilla account to connect. Your service allowance depends on Mozilla eligibility.";
+        internal const string Message="Use your Mozilla email and Mozilla password to sign in. Service access and allowance depend on Mozilla eligibility.";
         internal static bool ShouldShow(bool seen,bool hasAccounts,bool updateRequired){return !seen&&!hasAccounts&&!updateRequired;}
     }
     internal sealed class AccountIntroForm : Form {
@@ -1333,7 +1333,7 @@ namespace III85III.Vpn {
     internal sealed class MainForm : Form {
         readonly Engine engine;
         bool accountIntroSeen;
-        bool updating,requiredUpdate,autoRenewing; DateTime nextRenewalAllowed = DateTime.MinValue;string lastActionError="";LuxuryButton appUpdateButton,requiredUpdateButton;Label requiredUpdateStatus;Panel updateGate; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(2);
+        bool updating,requiredUpdate;string lastActionError="";LuxuryButton appUpdateButton,requiredUpdateButton;Label requiredUpdateStatus;Panel updateGate; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(2);
         internal Task RequireUpdate(string version){
             if(!AppUpdate.Required(Application.ProductVersion,version))return Task.CompletedTask;
             bool first=!requiredUpdate;requiredUpdate=true;
@@ -2491,7 +2491,7 @@ namespace III85III.Vpn {
         private void ShowAbout(){
             using(var dialog=new Form{Text="III85III VPN",BackColor=Theme.Bg,ForeColor=Theme.TextPrimary,ClientSize=new Size(480,230),FormBorderStyle=FormBorderStyle.None,StartPosition=FormStartPosition.CenterParent}){
                 dialog.Controls.Add(new Label{Text="III85III VPN",Font=Theme.Display(24f),ForeColor=Theme.TextPrimary,Bounds=new Rectangle(24,24,432,44)});
-                dialog.Controls.Add(new Label{Text="Version "+Application.ProductVersion,Font=Theme.Font(11f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(24,82,432,30)});
+                dialog.Controls.Add(new Label{Text="Version 1.0",Font=Theme.Font(11f),ForeColor=Theme.TextSecondary,Bounds=new Rectangle(24,82,432,30)});
                 var privacy=new LuxuryButton{Text="Privacy",Bounds=new Rectangle(24,154,132,40)};privacy.Click+=delegate{Process.Start(new ProcessStartInfo(new Uri(Path.Combine(engine.Root,"docs","guide.html")).AbsoluteUri+"#privacy"){UseShellExecute=true});};
                 var licenses=new LuxuryButton{Text="Licenses",Bounds=new Rectangle(168,154,132,40)};licenses.Click+=delegate{Process.Start(new ProcessStartInfo(Path.Combine(engine.Root,"licenses")){UseShellExecute=true});};
                 var close=new LuxuryButton{Text="Done",Variant=ButtonVariant.Primary,Bounds=new Rectangle(312,154,144,40),DialogResult=DialogResult.OK};dialog.Controls.AddRange(new Control[]{privacy,licenses,close});dialog.AcceptButton=close;dialog.CancelButton=close;dialog.ShowDialog(this);

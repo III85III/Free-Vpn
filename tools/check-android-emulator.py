@@ -128,7 +128,7 @@ try:
     screenshot('home')
     tap('Settings')
     tap('Mozilla accounts')
-    tap('Add an account')
+    tap('Sign in with Mozilla')
     fields=[node for node in hierarchy().iter('node') if node.get('class')=='android.widget.EditText']
     if len(fields)!=2:
         raise RuntimeError('Initial sign-in must contain email and password only')
@@ -170,7 +170,7 @@ try:
     adb('shell','am','force-stop',package)
     if options.upgrade:
         # Only this disposable empty-account emulator: persist a synthetic required version.
-        mandatory=b'<?xml version="1.0" encoding="utf-8"?><map><long name="required_update" value="23005" /><boolean name="account_intro_seen" value="true" /></map>'
+        mandatory=b'<?xml version="1.0" encoding="utf-8"?><map><long name="required_update" value="23021" /><boolean name="account_intro_seen" value="true" /></map>'
         adb('shell',f'run-as {package} mkdir -p shared_prefs')
         gate_write=subprocess.run(['adb','shell',f'run-as {package} sh -c "cat > shared_prefs/interface.xml"'],input=mandatory,capture_output=True,timeout=20)
         if gate_write.returncode:raise RuntimeError('Could not stage the mandatory-update fixture')
@@ -210,7 +210,7 @@ try:
         if not confirmed:raise RuntimeError('Android did not present user confirmation for the in-app update')
         for attempt in range(90):
             details=adb('shell','dumpsys','package',package).decode(errors='replace')
-            if 'versionCode=23005 ' in details:break
+            if 'versionCode=23021 ' in details:break
             time.sleep(1)
         else:raise RuntimeError('The in-app PackageInstaller update did not complete')
         validation=adb('exec-out','run-as',package,'cat','cache/update-validation.txt').decode()
