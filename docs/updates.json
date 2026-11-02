@@ -1,22 +1,22 @@
 {
   "schema": 1,
-  "changelog": "• اتصال سریع با ۵۰ گیگابایت اکانت خودکار\n• پروکسی پرسرعت تلگرام (@cabicy) فعال در تمام پلتفرم‌ها\n• حل کامل لوپ دانلود و خطای آپدیت",
+  "changelog": "• اجرای ۲۴ ساعته پروکسی در پس‌زمینه تا زمان حذف برنامه\n• حل مشکل افزودن اکانت و تمدید خودکار حجم\n• ظاهر فوق‌العاده خلوت، سریع و مینیمال",
   "announcement": {
     "id": "adblock_live_20261101",
     "message": "🛡️ AdBlocker فعال شد: از این پس تبلیغات اسپاتیفای و سایر برنامه‌ها در تمام لوکیشن‌ها مسدود هستند.",
     "expires_at": "2026-11-02T23:59:59Z"
   },
   "windows": {
-    "version": "2.3.16",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.16/III85III-VPN-Setup.exe",
+    "version": "2.3.17",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.17/III85III-VPN-Setup.exe",
     "size": 23486976,
-    "sha256": "daa3df460f2022f72eaab6d63cdc1f2a93ef15ab50d838312987498f16324c2a"
+    "sha256": "f91550fc47ed8dc628b96f233fbda267d5d5c8785e7272337f8a284cb8b5d752"
   },
   "android": {
-    "version": "2.3.16",
-    "version_code": 23016,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.16/III85III-VPN.apk",
+    "version": "2.3.17",
+    "version_code": 23017,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.17/III85III-VPN.apk",
     "size": 13557342,
-    "sha256": "0f8a8966699e95fec20f2e637388e5895bb90ee8c8fe5c07763bf7f8929b509d"
+    "sha256": "39c3d15288ede2c0588a728893bacb030e548558f4d3da07258910efa596342c"
   }
 }
