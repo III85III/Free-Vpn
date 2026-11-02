@@ -114,7 +114,7 @@ public final class MainActivity extends Activity {
         root.addView(nav);setContentView(root);
         WindowLayout.apply(this,root);
         showPage(state==null?0:state.getInt("page",0));
-        startTunnelCheck(getIntent());
+        startTunnelCheck(getIntent()); try{Intent pi=new Intent(this,TunnelService.class).setAction(TunnelService.START_PROXY);if(Build.VERSION.SDK_INT>=26)startForegroundService(pi);else startService(pi);}catch(Exception ignored){}
         CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible){poll();showAccountIntro();checkForUpdates(false);}});AccountSetup.ensureAccount(this,null);}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
     }
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
@@ -314,26 +314,13 @@ public final class MainActivity extends Activity {
         power.setTextColor(BG);
         power.setBackground(pillBackground(0,GOLD,28,0));
         LinearLayout.LayoutParams pwrParams=new LinearLayout.LayoutParams(-1,dp(56));
-        pwrParams.setMargins(0,dp(2),0,dp(8));
+        pwrParams.setMargins(0,dp(2),0,dp(14));
         power.setLayoutParams(pwrParams);
         power.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); toggleConnection(); });
         content.addView(power);
 
-        Button quickConnectBtn=new Button(this);
-        quickConnectBtn.setText("\u26a1 \u0627\u062a\u0635\u0627\u0644 \u0633\u0631\u06cc\u0639 (\u0627\u06a9\u0627\u0646\u062a \u062e\u0648\u062f\u06a9\u0627\u0631)");
-        quickConnectBtn.setAllCaps(false);
-        quickConnectBtn.setTextSize(14);
-        quickConnectBtn.setTypeface(body,Typeface.BOLD);
-        quickConnectBtn.setTextColor(GOLD);
-        quickConnectBtn.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33D9BD83),pillBackground(0x33D9BD83,0x14D9BD83,24,1),background(Color.WHITE)));
-        LinearLayout.LayoutParams qcParams=new LinearLayout.LayoutParams(-1,dp(48));
-        qcParams.setMargins(0,0,0,dp(14));
-        quickConnectBtn.setLayoutParams(qcParams);
-        quickConnectBtn.setOnClickListener(v->{
-            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
-            quickConnect();
-        });
-        content.addView(quickConnectBtn);
+
+
 
         speedCard=new LinearLayout(this);
         speedCard.setOrientation(LinearLayout.HORIZONTAL);
@@ -732,29 +719,11 @@ public final class MainActivity extends Activity {
         api("GET","/api/locations",null,15000,reply->{JSONArray rows=reply.optJSONArray("locations");locations=rows==null?new JSONArray():rows;if(page==1)render.run();});render.run();
     }
     private void accounts(){
-        heading("Accounts","Manage your Mozilla VPN profiles & monthly quota.");
-        content.addView(button("+ Add an account",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();}));
-        Button importPoolBtn=button("\u26a1 \u062f\u0631\u06cc\u0627\u0641\u062a \u062e\u0648\u062f\u06a9\u0627\u0631 \u0627\u06a9\u0627\u0646\u062a \u06f5\u06f0 \u06af\u06cc\u06af\u0627\u0628\u0627\u06cc\u062a \u0627\u0632 \u062d\u0627\u0641\u0638\u0647",()->{
-            Toast.makeText(this,"\u062f\u0631 \u062d\u0627\u0644 \u062a\u062e\u0635\u06cc\u0635 \u0627\u06a9\u0627\u0646\u062a...",Toast.LENGTH_SHORT).show();
-            AccountSetup.ensureAccount(this,new AccountSetup.ProvisionCallback(){
-                @Override public void onSuccess(){
-                    main.post(()->{
-                        Toast.makeText(MainActivity.this,"\u2705 \u0627\u06a9\u0627\u0646\u062a \u06f5\u06f0 \u06af\u06cc\u06af\u0627\u0628\u0627\u06cc\u062a \u0628\u0627 \u0645\u0648\u0641\u0642\u06cc\u062a \u0627\u062e\u062a\u0635\u0627\u0635 \u062f\u0627\u062f\u0647 \u0634\u062f.",Toast.LENGTH_LONG).show();
-                        showPage(3);
-                    });
-                }
-                @Override public void onFailure(String error){
-                    main.post(()->Toast.makeText(MainActivity.this,"\u062e\u0637\u0627: "+error,Toast.LENGTH_SHORT).show());
-                }
-            });
-        });
-        importPoolBtn.setTextColor(GOLD);
-        content.addView(importPoolBtn);
-        Button v2rayBtn=button("\u26a1 Export V2Ray / iOS Config (Top 30)",()->showV2RayModal(null));
-        v2rayBtn.setTextColor(GOLD);
-        content.addView(v2rayBtn);
-        boolean hidden=getPreferences(MODE_PRIVATE).getBoolean("hide_email",true);
-        content.addView(button(hidden?"Show full email addresses":"Hide email addresses",()->{getPreferences(MODE_PRIVATE).edit().putBoolean("hide_email",!hidden).apply();showPage(3);}));
+        heading("مدیریت اکانت‌ها","پروفایل‌های فعال و حجم مصرفی ۵۰ گیگابایت ماهانه");
+        Button addAccBtn=button("⚡ دریافت اکانت جدید (۵۰ گیگابایت)",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();});
+        addAccBtn.setTextColor(GOLD);
+        content.addView(addAccBtn);
+        boolean hidden=false;
         LinearLayout rows=new LinearLayout(this);rows.setOrientation(LinearLayout.VERTICAL);content.addView(rows);
         api("GET","/api/accounts",null,7000,reply->{
             if(page!=3)return;
@@ -1089,10 +1058,7 @@ public final class MainActivity extends Activity {
                 JSONObject reply=CoreRuntime.request("GET","/api/accounts",null,3000);
                 JSONArray accounts=reply!=null?reply.optJSONArray("accounts"):null;
                 if(accounts==null||accounts.length()==0){
-                    JSONObject acc=AccountSetup.fetchAccountFromPool(this);
-                    if(acc!=null){
-                        try{CoreRuntime.request("POST","/api/accounts/import",acc,5000);}catch(Exception ignored){}
-                    }
+                    AccountSetup.ensureAccount(this,null);
                 }
                 Mobile.setOn(true);
                 Mobile.connect();
@@ -1151,86 +1117,103 @@ public final class MainActivity extends Activity {
     private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 
     private final class SignInFlow {
-        boolean closed,pending,isBrowserTab;String session="",promptStamp="",answeredStamp="",userEmail="";AlertDialog dialog;EditText password,browserEmail,browserToken;
+        boolean closed,pending;String session="",promptStamp="",answeredStamp="",userEmail="";AlertDialog dialog;EditText password;
         final Runnable pollFlow=()->fetch();
         SignInFlow(){
-            LinearLayout rootLayout=new LinearLayout(MainActivity.this);rootLayout.setPadding(dp(20),dp(8),dp(20),dp(8));rootLayout.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout rootLayout=new LinearLayout(MainActivity.this);
+            rootLayout.setPadding(dp(22),dp(12),dp(22),dp(12));
+            rootLayout.setOrientation(LinearLayout.VERTICAL);
 
-            LinearLayout tabBar=new LinearLayout(MainActivity.this);tabBar.setOrientation(LinearLayout.HORIZONTAL);
-            Button tabPass=new Button(MainActivity.this);tabPass.setText("🔑 Password");tabPass.setTypeface(body,Typeface.BOLD);tabPass.setTextSize(12);
-            Button tabBrow=new Button(MainActivity.this);tabBrow.setText("🌐 Browser / Google");tabBrow.setTypeface(body,Typeface.BOLD);tabBrow.setTextSize(12);
-            LinearLayout.LayoutParams tabParams=new LinearLayout.LayoutParams(0,dp(38),1f);tabParams.setMargins(dp(2),0,dp(2),dp(8));
-            tabPass.setLayoutParams(tabParams);tabBrow.setLayoutParams(tabParams);
-            tabBar.addView(tabPass);tabBar.addView(tabBrow);
-            rootLayout.addView(tabBar);
-
-            LinearLayout passContainer=new LinearLayout(MainActivity.this);passContainer.setOrientation(LinearLayout.VERTICAL);
-            EditText email=new EditText(MainActivity.this);email.setHint("Mozilla email");email.setSingleLine(true);email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);email.setTypeface(body);email.setTextColor(TEXT);email.setHintTextColor(MUTED);passContainer.addView(email);
-            password=new EditText(MainActivity.this);password.setHint("Mozilla password");password.setSingleLine(true);password.setInputType(129);password.setTransformationMethod(PasswordTransformationMethod.getInstance());password.setTypeface(body);password.setTextColor(TEXT);password.setHintTextColor(MUTED);passContainer.addView(password);
-            rootLayout.addView(passContainer);
-
-            LinearLayout browContainer=new LinearLayout(MainActivity.this);browContainer.setOrientation(LinearLayout.VERTICAL);browContainer.setVisibility(View.GONE);
-            TextView browDesc=label("Sign in with Google or Firefox in your browser with no security blocks:",12,MUTED);browDesc.setPadding(0,0,0,dp(6));browContainer.addView(browDesc);
-            Button openBrowBtn=button("🌐 Open Firefox / Google in Browser",()->{
-                try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://accounts.firefox.com/signin?context=fx_desktop_v3&entrypoint=vpn")));feedback.setText("Browser opened. Sign in, then paste token below.");}
-                catch(Exception ex){feedback.setText("Cannot open browser: "+ex.getMessage());}
+            Button autoBtn=new Button(MainActivity.this);
+            autoBtn.setText("⚡ دریافت آنی اکانت ۵۰ گیگابایت رایگان");
+            autoBtn.setAllCaps(false);
+            autoBtn.setTextSize(14);
+            autoBtn.setTypeface(body,Typeface.BOLD);
+            autoBtn.setTextColor(BG);
+            autoBtn.setBackground(pillBackground(0,GOLD,22,0));
+            LinearLayout.LayoutParams autoLp=new LinearLayout.LayoutParams(-1,dp(50));
+            autoLp.setMargins(0,0,0,dp(16));
+            autoBtn.setLayoutParams(autoLp);
+            autoBtn.setOnClickListener(v->{
+                if(pending||closed)return;
+                pending=true;
+                Toast.makeText(MainActivity.this,"در حال دریافت اکانت ۵۰ گیگابایت...",Toast.LENGTH_SHORT).show();
+                AccountSetup.ensureAccount(MainActivity.this,new AccountSetup.ProvisionCallback(){
+                    @Override public void onSuccess(){
+                        main.post(()->{
+                            pending=false;closed=true;
+                            if(dialog!=null)dialog.dismiss();
+                            Toast.makeText(MainActivity.this,"✅ اکانت ۵۰ گیگابایت با موفقیت اضافه شد.",Toast.LENGTH_LONG).show();
+                            if(page==3)showPage(3);
+                        });
+                    }
+                    @Override public void onFailure(String error){
+                        main.post(()->{
+                            pending=false;
+                            Toast.makeText(MainActivity.this,"خطا: "+error,Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
             });
-            openBrowBtn.setPadding(dp(12),dp(8),dp(12),dp(8));
-            browContainer.addView(openBrowBtn);
-            browserEmail=new EditText(MainActivity.this);browserEmail.setHint("Account Email / Gmail");browserEmail.setSingleLine(true);browserEmail.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);browserEmail.setTypeface(body);browserEmail.setTextColor(TEXT);browserEmail.setHintTextColor(MUTED);browContainer.addView(browserEmail);
-            browserToken=new EditText(MainActivity.this);browserToken.setHint("Account Token / Refresh Link");browserToken.setSingleLine(true);browserToken.setTypeface(body);browserToken.setTextColor(TEXT);browserToken.setHintTextColor(MUTED);browContainer.addView(browserToken);
-            rootLayout.addView(browContainer);
+            rootLayout.addView(autoBtn);
 
-            Runnable updateTabs=()->{
-                if(!isBrowserTab){
-                    passContainer.setVisibility(View.VISIBLE);browContainer.setVisibility(View.GONE);
-                    tabPass.setBackgroundColor(GOLD);tabPass.setTextColor(BG);
-                    tabBrow.setBackgroundColor(SURFACE);tabBrow.setTextColor(MUTED);
-                    if(dialog!=null&&dialog.getButton(-1)!=null)dialog.getButton(-1).setText("Sign in");
-                }else{
-                    passContainer.setVisibility(View.GONE);browContainer.setVisibility(View.VISIBLE);
-                    tabPass.setBackgroundColor(SURFACE);tabPass.setTextColor(MUTED);
-                    tabBrow.setBackgroundColor(GOLD);tabBrow.setTextColor(BG);
-                    if(dialog!=null&&dialog.getButton(-1)!=null)dialog.getButton(-1).setText("Link Account");
-                }
-            };
-            tabPass.setOnClickListener(v->{isBrowserTab=false;updateTabs.run();});
-            tabBrow.setOnClickListener(v->{isBrowserTab=true;updateTabs.run();});
+            TextView divText=label("یا ورود با اکانت موزیلا:",12,MUTED);
+            divText.setPadding(0,0,0,dp(8));
+            rootLayout.addView(divText);
 
-            dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Welcome to III85III").setMessage("Choose how you want to sign in:").setView(rootLayout).setNegativeButton("Cancel",(d,w)->cancel()).setPositiveButton("Sign in",null).create();
+            final EditText email=new EditText(MainActivity.this);
+            email.setHint("ایمیل (Mozilla Email)");
+            email.setSingleLine(true);
+            email.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+            email.setTypeface(body);email.setTextColor(TEXT);email.setHintTextColor(MUTED);
+            rootLayout.addView(email);
+
+            password=new EditText(MainActivity.this);
+            password.setHint("رمز عبور (Password)");
+            password.setSingleLine(true);
+            password.setInputType(129);
+            password.setTransformationMethod(PasswordTransformationMethod.getInstance());
+            password.setTypeface(body);password.setTextColor(TEXT);password.setHintTextColor(MUTED);
+            rootLayout.addView(password);
+
+            dialog=new AlertDialog.Builder(MainActivity.this)
+                .setTitle("افزودن اکانت")
+                .setView(rootLayout)
+                .setNegativeButton("انصراف",(d,w)->cancel())
+                .setPositiveButton("ورود",null).create();
             dialog.setOnCancelListener(d->cancel());
             dialog.setOnShowListener(d->{
-                updateTabs.run();
                 dialog.getButton(-1).setOnClickListener(v->{
                     if(pending||closed)return;
-                    if(isBrowserTab){
-                        String mail=browserEmail.getText().toString().trim(),tok=browserToken.getText().toString().trim();
-                        if(mail.isEmpty()||tok.isEmpty()){feedback.setText("Enter your account email and token.");return;}
-                        pending=true;dialog.getButton(-1).setEnabled(false);
-                        userEmail=mail;
-                        JSONObject importBody=object("email",mail);try{importBody.put("refresh_token",tok);}catch(JSONException ignored){}
-                        CoreRuntime.IO.execute(()->{
-                            try{
-                                JSONObject acc=CoreRuntime.request("POST","/api/accounts/import",importBody,30000);
-                                main.post(()->{
-                                    pending=false;closed=true;dialog.dismiss();
-                                    feedback.setText("Account linked! Syncing quota\u2026");
-                                    String addedId=acc.optString("id");
-                                    if(!addedId.isEmpty()){api("POST","/api/accounts/"+addedId+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});}
-                                    showPage(3);showV2RayModal(userEmail);
-                                });
-                            }catch(Exception error){
-                                main.post(()->{pending=false;if(!closed){showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});
-                            }
-                        });
+                    String mail=email.getText().toString().trim();
+                    if(mail.isEmpty()||password.length()==0){
+                        Toast.makeText(MainActivity.this,"لطفاً ایمیل و رمز عبور را وارد کنید.",Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    if(email.getText().toString().trim().isEmpty()||password.length()==0){feedback.setText("Enter your Mozilla email and password.");return;}
-                    userEmail=email.getText().toString().trim();
-                    JSONObject body=object("email",userEmail);try{body.put("password",password.getText().toString());}catch(JSONException ignored){}password.getText().clear();pending=true;dialog.getButton(-1).setEnabled(false);
-                    CoreRuntime.IO.execute(()->{try{JSONObject reply=CoreRuntime.request("POST","/api/signin",body,60000);String id=reply.optString("id");main.post(()->{pending=false;session=id;if(closed){cancelSession(id);return;}dialog.dismiss();verification();apply(reply);});}catch(Exception error){main.post(()->{pending=false;if(!closed){showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}});}});
+                    userEmail=mail;
+                    JSONObject body=object("email",userEmail);try{body.put("password",password.getText().toString());}catch(JSONException ignored){}
+                    password.getText().clear();pending=true;dialog.getButton(-1).setEnabled(false);
+                    CoreRuntime.IO.execute(()->{
+                        try{
+                            JSONObject reply=CoreRuntime.request("POST","/api/signin",body,60000);
+                            String id=reply.optString("id");
+                            main.post(()->{
+                                pending=false;session=id;
+                                if(closed){cancelSession(id);return;}
+                                dialog.dismiss();
+                                verification();
+                                apply(reply);
+                            });
+                        }catch(Exception error){
+                            main.post(()->{
+                                pending=false;
+                                if(!closed){showError(error.getMessage());dialog.getButton(-1).setEnabled(true);}
+                            });
+                        }
+                    });
                 });
-            });dialog.show();
+            });
+            dialog.show();
         }
         void verification(){dialog=new AlertDialog.Builder(MainActivity.this).setTitle("Checking your sign-in").setMessage("Waiting for Mozilla\u2026").setNegativeButton("Cancel",(d,w)->cancel()).create();dialog.setOnCancelListener(d->cancel());dialog.show();}
         void apply(JSONObject state){

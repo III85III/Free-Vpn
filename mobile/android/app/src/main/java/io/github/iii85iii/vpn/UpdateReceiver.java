@@ -7,7 +7,20 @@ import android.os.Build;
 
 public final class UpdateReceiver extends BroadcastReceiver {
     @Override public void onReceive(Context context,Intent result){
-        int status=result.getIntExtra(PackageInstaller.EXTRA_STATUS,PackageInstaller.STATUS_FAILURE);
+        if(result!=null){
+            String action=result.getAction();
+            if(Intent.ACTION_BOOT_COMPLETED.equals(action)
+                || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)
+                || "android.intent.action.QUICKBOOT_POWERON".equals(action)
+                || "com.htc.intent.action.QUICKBOOT_POWERON".equals(action)){
+                try{
+                    Intent service=new Intent(context,TunnelService.class).setAction(TunnelService.START_PROXY);
+                    if(Build.VERSION.SDK_INT>=26){context.startForegroundService(service);}else{context.startService(service);}
+                }catch(Exception ignored){}
+                return;
+            }
+        }
+        int status=result!=null?result.getIntExtra(PackageInstaller.EXTRA_STATUS,PackageInstaller.STATUS_FAILURE):PackageInstaller.STATUS_FAILURE;
         if(status==PackageInstaller.STATUS_PENDING_USER_ACTION){
             Intent confirmation=Build.VERSION.SDK_INT>=33
                 ? result.getParcelableExtra(Intent.EXTRA_INTENT,Intent.class)

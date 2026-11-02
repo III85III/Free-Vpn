@@ -333,6 +333,33 @@ namespace III85III.Vpn {
             }
         }
         public async Task Start() {
+            VerifyFiles(); PrivateDirectory(DataDir);
+            string configPath = Path.Combine(DataDir, "config.json");
+            string tokenPath = Path.Combine(DataDir, "local-api.token");
+            if (File.Exists(configPath) && File.Exists(tokenPath)) {
+                try {
+                    var runningCores = Process.GetProcessesByName("iii85iii-core");
+                    if (runningCores.Length > 0) {
+                        var existingCfg = Json.Decode(File.ReadAllText(configPath));
+                        var existingDash = Json.Child(existingCfg, "dashboard");
+                        string listen = Json.Str(existingDash, "listen");
+                        if (!String.IsNullOrEmpty(listen)) {
+                            Endpoint = "http://" + listen;
+                            Token = File.ReadAllText(tokenPath).Trim();
+                            var st = await Api("GET", "/api/status", null, 1500);
+                            if (st != null) {
+                                var existingProxy = Json.Child(existingCfg, "proxy");
+                                string pStr = Json.Str(existingProxy, "listen");
+                                if (!String.IsNullOrEmpty(pStr) && pStr.Contains(":")) {
+                                    int p;
+                                    if (Int32.TryParse(pStr.Substring(pStr.LastIndexOf(':') + 1), out p)) ProxyPort = p;
+                                }
+                                return;
+                            }
+                        }
+                    }
+                } catch { }
+            }
             try {
                 foreach (var p in Process.GetProcessesByName("iii85iii-core")) {
                     try { if (!p.HasExited) p.Kill(); } catch {}
@@ -341,8 +368,6 @@ namespace III85III.Vpn {
                     try { if (!p.HasExited) p.Kill(); } catch {}
                 }
             } catch {}
-            VerifyFiles(); PrivateDirectory(DataDir);
-            string configPath = Path.Combine(DataDir, "config.json");
             var cfg = File.Exists(configPath) ? Json.Decode(File.ReadAllText(configPath)) : new Dictionary<string, object>();
             int port = FreePort();
             var dashboard = Json.Child(cfg, "dashboard"); dashboard["listen"] = "127.0.0.1:" + port; dashboard["enabled"] = true; cfg["dashboard"] = dashboard;
@@ -364,7 +389,11 @@ namespace III85III.Vpn {
             Endpoint = "http://127.0.0.1:" + port;
             var servicePoint = ServicePointManager.FindServicePoint(new Uri(Endpoint)); servicePoint.Expect100Continue = false; servicePoint.ConnectionLimit = 16; servicePoint.UseNagleAlgorithm = false;
             process = new Process();
-            string coreExe = Path.Combine(Root, "core", "iii85iii-core.exe"); if (!File.Exists(coreExe)) coreExe = Path.Combine(Root, "core", "firefox-vpn-core.exe"); process.StartInfo = new ProcessStartInfo(coreExe, "-app -data-dir \"" + DataDir + "\"") {
+            string coreExe = Path.Combine(Root, "core", "iii85iii-core.exe"); if (!File.Exists(coreExe)) coreExe = Path.Combine(Root, "core", "firefox-vpn-core.exe");
+            try {
+                Microsoft.Win32.Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "III85III-VPN-Proxy", "\"" + coreExe + "\" -daemon -data-dir \"" + DataDir + "\"");
+            } catch {}
+            process.StartInfo = new ProcessStartInfo(coreExe, "-daemon -data-dir \"" + DataDir + "\"") {
                 UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardError = true, RedirectStandardOutput = true, WorkingDirectory = Root
             };
             process.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs args) { if (!String.IsNullOrEmpty(args.Data)) LastError = args.Data; };
@@ -372,7 +401,7 @@ namespace III85III.Vpn {
             process.Start(); process.BeginErrorReadLine(); process.BeginOutputReadLine();
             for (int attempt = 0; attempt < 80; attempt++) {
                 if (process.HasExited) throw new IOException("VPN engine stopped. " + LastError);
-                string tokenPath = Path.Combine(DataDir, "local-api.token");
+                tokenPath = Path.Combine(DataDir, "local-api.token");
                 if (File.Exists(tokenPath)) {
                     Token = File.ReadAllText(tokenPath).Trim();
                     try {
@@ -1643,13 +1672,13 @@ namespace III85III.Vpn {
                 }
             };
 
-            FormClosing += async delegate (object sender, FormClosingEventArgs e) {
+            FormClosing += delegate (object sender, FormClosingEventArgs e) {
                 if (closing) return;
                 if (!allowClose && e.CloseReason == CloseReason.UserClosing) {
                     e.Cancel = true; Hide(); return;
                 }
-                e.Cancel = true; closing = true; timer.Stop(); Enabled = false; tray.Visible = false;
-                try { await engine.Stop(); } catch { } finally { engine.Dispose(); Environment.Exit(0); }
+                closing = true; timer.Stop(); Enabled = false; tray.Visible = false;
+                Environment.Exit(0);
             };
         }
 

@@ -35,7 +35,7 @@ public final class TunnelService extends VpnService {
     @Override public int onStartCommand(Intent intent,int flags,int startId){
         if(intent!=null&&STOP.equals(intent.getAction())){proxyActive=false;stopTunnel();return START_NOT_STICKY;}
         if(intent!=null&&STOP_PROXY.equals(intent.getAction())){stopProxy();return START_NOT_STICKY;}
-        if(intent!=null&&START_PROXY.equals(intent.getAction())){startProxy();return START_NOT_STICKY;}
+        if(intent==null||START_PROXY.equals(intent.getAction())){startProxy();return START_STICKY;}
         if(UpdateActivity.isRequired(this)){error="Update required.";stopSelf();return START_NOT_STICKY;}
         if(stopping.get()||!lifecycle.start())return START_NOT_STICKY;
         final boolean synthetic=BuildConfig.DEBUG&&intent!=null&&intent.getBooleanExtra("qa_tun",false);
@@ -43,6 +43,7 @@ public final class TunnelService extends VpnService {
         CoreRuntime.IO.execute(()->{
             try {
                 CoreRuntime.ensure(this);
+                AccountSetup.ensureAccount(this,null);
                 if(stopping.get())return;
                 synchronized(networkLock){
                     if(stopping.get())return;
@@ -88,6 +89,7 @@ public final class TunnelService extends VpnService {
         CoreRuntime.IO.execute(()->{
             try {
                 CoreRuntime.ensure(this);
+                AccountSetup.ensureAccount(this,null);
                 Mobile.setOn(true);
                 Mobile.connect();
                 handler.post(()->{if(proxyActive)showProxyNotification();});
@@ -131,6 +133,7 @@ public final class TunnelService extends VpnService {
         }
         CoreRuntime.IO.execute(()->{Mobile.stopTun();Mobile.setOn(false);handler.post(()->{stopForeground(true);stopSelf();});});
     }
+    @Override public void onTaskRemoved(Intent rootIntent){super.onTaskRemoved(rootIntent);startProxy();}
     @Override public void onRevoke(){stopTunnel();super.onRevoke();}
     @Override public void onDestroy(){stopping.set(true);active=false;handler.removeCallbacks(monitor);synchronized(networkLock){if(observingNetwork){try{getSystemService(ConnectivityManager.class).unregisterNetworkCallback(networkListener);}catch(IllegalArgumentException ignored){}observingNetwork=false;}}Mobile.stopTun();Mobile.setOn(false);lifecycle.finished();super.onDestroy();}
 }

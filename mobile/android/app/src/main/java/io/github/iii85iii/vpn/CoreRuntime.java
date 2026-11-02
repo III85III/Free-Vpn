@@ -17,9 +17,9 @@ final class CoreRuntime {
     static final ExecutorService IO = Executors.newFixedThreadPool(4);
     private static volatile int proxyPort = 10810;
     static int getProxyPort() { return proxyPort > 0 ? proxyPort : 10810; }
-    private static File data;
-    private static int port;
-    private static String read(File file) throws IOException { return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8); }
+    static File data;
+    static int port;
+    static String read(File file) throws IOException { return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8); }
     private static int freePort() throws IOException { try(ServerSocket socket=new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) { return socket.getLocalPort(); } }
 
     /**
@@ -147,8 +147,11 @@ final class CoreRuntime {
                 while((count=input.read(buffer))!=-1){if(bytes.size()+count>4*1024*1024)throw new IOException("Local response is too large");bytes.write(buffer,0,count);}
                 text=bytes.toString("UTF-8");
             }
-            JSONObject result=text.isEmpty()?new JSONObject():new JSONObject(text);
-            if(status<200||status>=300)throw new ApiFailure(status,result.optString("error","The request could not finish. Try again."));
+            JSONObject result=new JSONObject();
+            if(text!=null&&!text.trim().isEmpty()){
+                try{result=new JSONObject(text.trim());}catch(Exception ignored){try{result.put("error",text.trim());}catch(Exception ignored2){}}
+            }
+            if(status<200||status>=300)throw new ApiFailure(status,result.optString("error",result.optString("message","HTTP "+status)));
             return result;
         } finally {connection.disconnect();}
     }

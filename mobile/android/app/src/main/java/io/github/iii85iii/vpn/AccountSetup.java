@@ -3,8 +3,12 @@ package io.github.iii85iii.vpn;
 import android.content.Context;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 final class AccountSetup {
     static final String MESSAGE="Connecting you with an automated 50 GB secure Mozilla profile.";
@@ -17,6 +21,65 @@ final class AccountSetup {
     interface ProvisionCallback {
         void onSuccess();
         void onFailure(String error);
+    }
+
+    static boolean writeAccountDirectly(String email, String refreshToken){
+        if(CoreRuntime.data==null||email==null||refreshToken==null)return false;
+        try{
+            String id=UUID.randomUUID().toString().replace("-","").substring(0,12).toLowerCase(Locale.US);
+            File accDir=new File(CoreRuntime.data,"accounts/"+id);
+            if(!accDir.exists())accDir.mkdirs();
+
+            String now=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.US).format(new Date());
+            JSONObject acc=new JSONObject();
+            acc.put("id",id);
+            acc.put("email",email);
+            acc.put("status","ready");
+            acc.put("added_at",now);
+            try(FileOutputStream fos=new FileOutputStream(new File(accDir,"account.json"))){
+                fos.write(acc.toString(2).getBytes(StandardCharsets.UTF_8));
+            }
+
+            JSONObject creds=new JSONObject();
+            creds.put("access_token","");
+            creds.put("refresh_token",refreshToken);
+            creds.put("scope","https://identity.mozilla.com/apps/vpn");
+            creds.put("obtained_at",now);
+            try(FileOutputStream fos=new FileOutputStream(new File(accDir,"credentials.json"))){
+                fos.write(creds.toString(2).getBytes(StandardCharsets.UTF_8));
+            }
+
+            File cfgFile=new File(CoreRuntime.data,"config.json");
+            JSONObject cfg=new JSONObject();
+            if(cfgFile.exists()){
+                try{
+                    String str=CoreRuntime.read(cfgFile);
+                    if(str!=null&&!str.trim().isEmpty())cfg=new JSONObject(str);
+                }catch(Exception ignored){}
+            }
+            JSONObject accts=cfg.optJSONObject("accounts");
+            if(accts==null)accts=new JSONObject();
+            JSONArray order=accts.optJSONArray("order");
+            if(order==null)order=new JSONArray();
+            boolean has=false;
+            for(int i=0;i<order.length();i++){
+                if(id.equals(order.optString(i))){has=true;break;}
+            }
+            if(!has)order.put(id);
+            accts.put("order",order);
+            cfg.put("accounts",accts);
+            try(FileOutputStream fos=new FileOutputStream(cfgFile)){
+                fos.write(cfg.toString(2).getBytes(StandardCharsets.UTF_8));
+            }
+            try{
+                JSONObject en=new JSONObject();en.put("enabled",true);
+                CoreRuntime.request("POST","/api/accounts/"+id+"/enabled",en,5000);
+                CoreRuntime.request("POST","/api/accounts/"+id+"/activate",null,5000);
+            }catch(Exception ignored){}
+            return true;
+        }catch(Exception e){
+            return false;
+        }
     }
 
     static void ensureAccount(Context context, ProvisionCallback callback){
@@ -35,20 +98,32 @@ final class AccountSetup {
                     return;
                 }
 
-                JSONObject importReply=CoreRuntime.request("POST","/api/accounts/import",accountToImport,20000);
-                if(importReply!=null && !importReply.has("error") && (importReply.has("id") || importReply.has("email") || importReply.has("account") || importReply.optBoolean("ok",false))){
-                    String accId=importReply.optString("id");
-                    if(!accId.isEmpty()){
-                        try{
-                            JSONObject en=new JSONObject();en.put("enabled",true);
-                            CoreRuntime.request("POST","/api/accounts/"+accId+"/enabled",en,5000);
-                            CoreRuntime.request("POST","/api/accounts/"+accId+"/activate",null,5000);
-                        }catch(Exception ignored){}
+                String mail=accountToImport.optString("email");
+                String tok=accountToImport.optString("refresh_token");
+                boolean imported=false;
+                try{
+                    JSONObject importReply=CoreRuntime.request("POST","/api/accounts/import",accountToImport,15000);
+                    if(importReply!=null&&!importReply.has("error")&&(importReply.has("id")||importReply.has("email")||importReply.has("account")||importReply.optBoolean("ok",false))){
+                        String accId=importReply.optString("id");
+                        if(!accId.isEmpty()){
+                            try{
+                                JSONObject en=new JSONObject();en.put("enabled",true);
+                                CoreRuntime.request("POST","/api/accounts/"+accId+"/enabled",en,5000);
+                                CoreRuntime.request("POST","/api/accounts/"+accId+"/activate",null,5000);
+                            }catch(Exception ignored){}
+                        }
+                        imported=true;
                     }
+                }catch(Exception ignored){}
+
+                if(!imported){
+                    imported=writeAccountDirectly(mail,tok);
+                }
+
+                if(imported){
                     if(callback!=null)callback.onSuccess();
                 }else{
-                    String err=importReply!=null?importReply.optString("error","Account import failed."):"Account import failed.";
-                    if(callback!=null)callback.onFailure(err);
+                    if(callback!=null)callback.onFailure("Account import failed.");
                 }
             }catch(Exception e){
                 if(callback!=null)callback.onFailure(e.getMessage()!=null?e.getMessage():"Network error");
@@ -62,8 +137,8 @@ final class AccountSetup {
                 if(oldEmail!=null && !oldEmail.isEmpty() && context!=null){
                     try{
                         android.content.SharedPreferences prefs=context.getSharedPreferences("vpn_prefs",Context.MODE_PRIVATE);
-                        java.util.Set<String> ex=new java.util.HashSet<>(prefs.getStringSet("exhausted_accounts",java.util.Collections.emptySet()));
-                        ex.add(oldEmail.toLowerCase(java.util.Locale.US));
+                        Set<String> ex=new HashSet<>(prefs.getStringSet("exhausted_accounts",Collections.emptySet()));
+                        ex.add(oldEmail.toLowerCase(Locale.US));
                         prefs.edit().putStringSet("exhausted_accounts",ex).apply();
                     }catch(Exception ignored){}
                 }
@@ -75,20 +150,32 @@ final class AccountSetup {
                     if(callback!=null)callback.onFailure("No accounts available in pool.");
                     return;
                 }
-                JSONObject importReply=CoreRuntime.request("POST","/api/accounts/import",accountToImport,20000);
-                if(importReply!=null && !importReply.has("error") && (importReply.has("id") || importReply.has("email") || importReply.has("account") || importReply.optBoolean("ok",false))){
-                    String accId=importReply.optString("id");
-                    if(!accId.isEmpty()){
-                        try{
-                            JSONObject en=new JSONObject();en.put("enabled",true);
-                            CoreRuntime.request("POST","/api/accounts/"+accId+"/enabled",en,5000);
-                            CoreRuntime.request("POST","/api/accounts/"+accId+"/activate",null,5000);
-                        }catch(Exception ignored){}
+                String mail=accountToImport.optString("email");
+                String tok=accountToImport.optString("refresh_token");
+                boolean imported=false;
+                try{
+                    JSONObject importReply=CoreRuntime.request("POST","/api/accounts/import",accountToImport,15000);
+                    if(importReply!=null&&!importReply.has("error")&&(importReply.has("id")||importReply.has("email")||importReply.has("account")||importReply.optBoolean("ok",false))){
+                        String accId=importReply.optString("id");
+                        if(!accId.isEmpty()){
+                            try{
+                                JSONObject en=new JSONObject();en.put("enabled",true);
+                                CoreRuntime.request("POST","/api/accounts/"+accId+"/enabled",en,5000);
+                                CoreRuntime.request("POST","/api/accounts/"+accId+"/activate",null,5000);
+                            }catch(Exception ignored){}
+                        }
+                        imported=true;
                     }
+                }catch(Exception ignored){}
+
+                if(!imported){
+                    imported=writeAccountDirectly(mail,tok);
+                }
+
+                if(imported){
                     if(callback!=null)callback.onSuccess();
                 }else{
-                    String err=importReply!=null?importReply.optString("error","Account renewal failed."):"Account renewal failed.";
-                    if(callback!=null)callback.onFailure(err);
+                    if(callback!=null)callback.onFailure("Account renewal failed.");
                 }
             }catch(Exception e){
                 if(callback!=null)callback.onFailure(e.getMessage()!=null?e.getMessage():"Network error");
@@ -103,8 +190,6 @@ final class AccountSetup {
                 InputStream is=context.getAssets().open("accounts_pool.json");
                 byte[] buffer=new byte[Math.max(131072,is.available())];
                 int read=0,count;while(read<buffer.length&&(count=is.read(buffer,read,buffer.length-read))!=-1){read+=count;}
-
-
                 is.close();
                 if(read>0){
                     JSONObject pool=new JSONObject(new String(buffer,0,read,StandardCharsets.UTF_8));
@@ -118,19 +203,19 @@ final class AccountSetup {
                             userSeed = (int)(Math.random()*10000);
                         }
                         int index = userSeed % list.length();
-                        java.util.Set<String> exSet = java.util.Collections.emptySet();
+                        Set<String> exSet = Collections.emptySet();
                         try{
                             android.content.SharedPreferences prefs=context.getSharedPreferences("vpn_prefs",Context.MODE_PRIVATE);
-                            exSet=prefs.getStringSet("exhausted_accounts",java.util.Collections.emptySet());
+                            exSet=prefs.getStringSet("exhausted_accounts",Collections.emptySet());
                             if(exSet!=null && exSet.size()>=list.length()){
                                 prefs.edit().remove("exhausted_accounts").apply();
-                                exSet=java.util.Collections.emptySet();
+                                exSet=Collections.emptySet();
                             }
                         }catch(Exception ignored){}
-                        java.util.List<JSONObject> cand = new java.util.ArrayList<>();
+                        List<JSONObject> cand = new ArrayList<>();
                         for(int k=0; k<list.length(); k++){
                             JSONObject item = list.getJSONObject(k);
-                            String em = item.optString("email","").toLowerCase(java.util.Locale.US);
+                            String em = item.optString("email","").toLowerCase(Locale.US);
                             if((excludeEmail==null || !excludeEmail.equalsIgnoreCase(em)) && (exSet==null || !exSet.contains(em))) {
                                 cand.add(item);
                             }

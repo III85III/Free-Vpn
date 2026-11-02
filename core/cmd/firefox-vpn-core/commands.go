@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"bufio"
@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -443,4 +446,123 @@ func statusPlace(st service.TrayStatus) string {
 // statusBytes is n in GB, one decimal (Mozilla's 50 GB is 50 << 30).
 func statusBytes(n int64) string {
 	return fmt.Sprintf("%.1f GB", float64(n)/(1<<30))
+}
+
+func runInstallService(paths service.DataPaths) error {
+	self, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	switch runtime.GOOS {
+	case "linux":
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		unitDir := filepath.Join(home, ".config", "systemd", "user")
+		if err := os.MkdirAll(unitDir, 0755); err != nil {
+			return err
+		}
+		unitPath := filepath.Join(unitDir, "iii85iii-proxy.service")
+		unitContent := fmt.Sprintf(`[Unit]
+Description=III85III VPN Proxy Daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%s -daemon -data-dir %s
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+`, self, paths.Dir)
+		if err := os.WriteFile(unitPath, []byte(unitContent), 0644); err != nil {
+			return err
+		}
+		_ = exec.Command("systemctl", "--user", "daemon-reload").Run()
+		if err := exec.Command("systemctl", "--user", "enable", "--now", "iii85iii-proxy.service").Run(); err != nil {
+			return fmt.Errorf("systemctl enable failed: %w", err)
+		}
+		fmt.Println("Linux systemd service installed and started: iii85iii-proxy.service")
+		return nil
+	case "darwin":
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		agentDir := filepath.Join(home, "Library", "LaunchAgents")
+		if err := os.MkdirAll(agentDir, 0755); err != nil {
+			return err
+		}
+		plistPath := filepath.Join(agentDir, "io.github.iii85iii.proxy.plist")
+		plistContent := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.github.iii85iii.proxy</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>%s</string>
+        <string>-daemon</string>
+        <string>-data-dir</string>
+        <string>%s</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+</dict>
+</plist>`, self, paths.Dir)
+		if err := os.WriteFile(plistPath, []byte(plistContent), 0644); err != nil {
+			return err
+		}
+		_ = exec.Command("launchctl", "unload", plistPath).Run()
+		if err := exec.Command("launchctl", "load", "-w", plistPath).Run(); err != nil {
+			return fmt.Errorf("launchctl load failed: %w", err)
+		}
+		fmt.Println("macOS LaunchAgent installed and loaded: io.github.iii85iii.proxy.plist")
+		return nil
+	case "windows":
+		cmd := exec.Command("reg", "add", `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, "/v", "III85III-VPN-Proxy", "/t", "REG_SZ", "/d", fmt.Sprintf("\"%s\" -daemon -data-dir \"%s\"", self, paths.Dir), "/f")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("windows registry registration failed: %w", err)
+		}
+		fmt.Println("Windows startup registry installed: III85III-VPN-Proxy")
+		return nil
+	default:
+		return fmt.Errorf("unsupported OS for service installation: %s", runtime.GOOS)
+	}
+}
+
+func runUninstallService(paths service.DataPaths) error {
+	switch runtime.GOOS {
+	case "linux":
+		_ = exec.Command("systemctl", "--user", "disable", "--now", "iii85iii-proxy.service").Run()
+		home, _ := os.UserHomeDir()
+		if home != "" {
+			unitPath := filepath.Join(home, ".config", "systemd", "user", "iii85iii-proxy.service")
+			_ = os.Remove(unitPath)
+		}
+		_ = exec.Command("systemctl", "--user", "daemon-reload").Run()
+		fmt.Println("Linux service uninstalled.")
+		return nil
+	case "darwin":
+		home, _ := os.UserHomeDir()
+		if home != "" {
+			plistPath := filepath.Join(home, "Library", "LaunchAgents", "io.github.iii85iii.proxy.plist")
+			_ = exec.Command("launchctl", "unload", "-w", plistPath).Run()
+			_ = os.Remove(plistPath)
+		}
+		fmt.Println("macOS LaunchAgent uninstalled.")
+		return nil
+	case "windows":
+		cmd := exec.Command("reg", "delete", `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, "/v", "III85III-VPN-Proxy", "/f")
+		_ = cmd.Run()
+		fmt.Println("Windows startup registry uninstalled.")
+		return nil
+	default:
+		return fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	}
 }

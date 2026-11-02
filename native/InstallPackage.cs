@@ -6,6 +6,11 @@ using System.IO.Compression;
 
 internal static class InstallPackage {
     internal static void TerminateProcesses(string root){
+        try {
+            using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true)) {
+                if (key != null) key.DeleteValue("III85III-VPN-Proxy", false);
+            }
+        } catch { }
         string[] engineNames = new[] { "iii85iii-core", "firefox-vpn-core", "iii85iii-tun", "firefox-vpn-tun", "III85III VPN" };
         foreach (var name in engineNames) {
             try {

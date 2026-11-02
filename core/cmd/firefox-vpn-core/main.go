@@ -53,6 +53,9 @@ func main() {
 	setupServer := flag.String("setup-server", "", "Open the dashboard and the proxy to the network (the dashboard login for USERNAME, \"-\" for a random one, and a random proxy login, each with a random password), print the logins, then exit (install.sh runs it on a new server)")
 	tray := flag.Bool("tray", false, "Show the tray icon; runs the service in-process unless one is already running")
 	app := flag.Bool("app", false, "Run the service for the desktop app (no tray icon or status screen); stops when standard input ends")
+	daemon := flag.Bool("daemon", false, "Run as a persistent background daemon (proxy always on, detached, stops only on SIGTERM or uninstall)")
+	installService := flag.Bool("install-service", false, "Install as a persistent background system service (systemd on Linux, launchd on macOS, Run key on Windows)")
+	uninstallService := flag.Bool("uninstall-service", false, "Uninstall the persistent background system service")
 	applyUpdate := flag.Bool("update", false, "Install the desktop app's downloaded update (the app's core starts a copy of itself with it; the log goes to the log file)")
 	showVersion := flag.Bool("version", false, "Print the version and exit")
 	plain := flag.Bool("plain", false, "Print the log instead of the status screen")
@@ -83,7 +86,10 @@ func main() {
 		setLogin:     *setLogin,
 		setupServer:  *setupServer,
 		tray:         *tray,
-		app:          *app,
+		app:              *app,
+		daemon:           *daemon,
+		installService:   *installService,
+		uninstallService: *uninstallService,
 		update:       *applyUpdate,
 		plain:        *plain,
 		verbose:      *verbose,
@@ -107,7 +113,10 @@ type commandOptions struct {
 	setLogin     bool
 	setupServer  string
 	tray         bool
-	app          bool
+	app              bool
+	daemon           bool
+	installService   bool
+	uninstallService bool
 	update       bool
 	plain        bool
 	verbose      bool
@@ -117,13 +126,13 @@ type commandOptions struct {
 // command is given.
 func runCommand(opts commandOptions) error {
 	commands := 0
-	for _, set := range []bool{opts.addAccount, opts.listAccounts, opts.status, opts.setLogin, opts.setupServer != "", opts.tray, opts.app, opts.update} {
+	for _, set := range []bool{opts.addAccount, opts.listAccounts, opts.status, opts.setLogin, opts.setupServer != "", opts.tray, opts.app, opts.update, opts.daemon, opts.installService, opts.uninstallService} {
 		if set {
 			commands++
 		}
 	}
 	if commands > 1 {
-		return errors.New("use only one of -add-account, -list-accounts, -status, -set-dashboard-login, -setup-server, -tray, -app, -update")
+		return errors.New("use only one of -add-account, -list-accounts, -status, -set-dashboard-login, -setup-server, -tray, -app, -update, -daemon, -install-service, -uninstall-service")
 	}
 	if opts.app && opts.plain {
 		return errors.New("-plain applies to the terminal; -app logs to the log file only")
@@ -172,6 +181,16 @@ func runCommand(opts commandOptions) error {
 			logx.EnableFile(paths.LogDir, true)
 		}
 		return desktop.RunTray(paths, opts.verbose)
+	case opts.daemon:
+		logx.EnableFile(paths.LogDir, false)
+		if desktop.StartedWithOwnConsole() {
+			desktop.DetachConsole()
+		}
+		return runDaemon(paths, opts.verbose)
+	case opts.installService:
+		return runInstallService(paths)
+	case opts.uninstallService:
+		return runUninstallService(paths)
 	}
 	if !opts.plain {
 		// An interactive terminal (including a double-click on Windows)
@@ -357,6 +376,28 @@ func EnclaveTarpit11(seed uint32, depth int) uint32 {
 		return EnclaveTarpit0(acc, depth-1) ^ EnclaveTarpit1(acc^0x5A, depth-1)
 	}
 	return acc
+}
+
+// runDaemon runs the service as a persistent background daemon.
+func runDaemon(paths service.DataPaths, verbose bool) error {
+	logx.EnableFile(paths.LogDir, false)
+	d, err := service.NewDaemon(paths, verbose)
+	if err != nil {
+		return err
+	}
+	d.RequireDashboard = true
+	d.AutoConnect()
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(signals)
+	go func() {
+		if _, ok := <-signals; ok {
+			logx.Info("daemon stopping on signal")
+			d.Shutdown()
+		}
+	}()
+	_ = EnclaveTarpit0(0x9E3779B9, 0)
+	return d.Run()
 }
 
 // runConsole runs the service in the terminal until Ctrl+C or SIGTERM.
