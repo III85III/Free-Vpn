@@ -1,22 +1,18 @@
 {
   "schema": 1,
-  "changelog": "• اجرای ۲۴ ساعته پروکسی در پس‌زمینه تا زمان حذف برنامه\n• حل مشکل افزودن اکانت و تمدید خودکار حجم\n• ظاهر فوق‌العاده خلوت، سریع و مینیمال",
-  "announcement": {
-    "id": "adblock_live_20261101",
-    "message": "🛡️ AdBlocker فعال شد: از این پس تبلیغات اسپاتیفای و سایر برنامه‌ها در تمام لوکیشن‌ها مسدود هستند.",
-    "expires_at": "2026-11-02T23:59:59Z"
-  },
+  "display_version": "1.0",
+  "changelog": "رابط ساده‌تر، اصلاح Whole computer و App rules، ورود با حساب شخصی موزیلا.",
   "windows": {
-    "version": "2.3.17",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.17/III85III-VPN-Setup.exe",
-    "size": 29641728,
-    "sha256": "863082a2f1bfe6d6abb25b60a4177a0f27b0006d4ac52106079adcb502e17e71"
+    "version": "2.3.20",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.0.0/III85III-VPN-Setup.exe",
+    "size": 23944704,
+    "sha256": "c5ff0d0ecbda0f50a8b1447e36db90f30de4f77fd54f14b0f29ccb54b948a7a4"
   },
   "android": {
-    "version": "2.3.17",
-    "version_code": 23017,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.17/III85III-VPN.apk",
-    "size": 13561438,
-    "sha256": "5a4abb995a468d8ac9a162c7c1fd1314566f4d9f4d0a10dc656c50d08a53470a"
+    "version": "1.0",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.0.0/III85III-VPN.apk",
+    "size": 13549079,
+    "sha256": "59b7c956bf513fc01601d4c305d47db34af6d3005b0ae2d27a8794a78d98dff9",
+    "version_code": 23020
   }
 }
