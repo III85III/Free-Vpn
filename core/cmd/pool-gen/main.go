@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/III85III/III85III-VPN/core/internal/controlplane"
@@ -227,7 +228,7 @@ func generateOneAccount(ctx context.Context) (*PoolAccount, error) {
 	}
 
 	log.Printf("Waiting for Mozilla confirmation email...")
-	verCode, verUid, isLink, err := waitForVerification(token, 90*time.Second)
+	verCode, verUid, isLink, err := waitForVerification(token, 40*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("getting confirmation: %w", err)
 	}
@@ -261,11 +262,129 @@ func generateOneAccount(ctx context.Context) (*PoolAccount, error) {
 	}, nil
 }
 
+func fetchProxies() []string {
+	sources := []struct {
+		url    string
+		prefix string
+	}{
+		{"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt", "http://"},
+		{"https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt", "socks5://"},
+		{"https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt", "socks5://"},
+		{"https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt", "http://"},
+		{"https://raw.githubusercontent.com/roosterkid/openproxylist/main/SOCKS5_RAW.txt", "socks5://"},
+	}
+	var list []string
+	client := &http.Client{Timeout: 6 * time.Second}
+	for _, src := range sources {
+		resp, err := client.Get(src.url)
+		if err != nil {
+			continue
+		}
+		data, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		lines := strings.Split(string(data), "\n")
+		for _, l := range lines {
+			l = strings.TrimSpace(l)
+			if l != "" && !strings.HasPrefix(l, "#") {
+				if !strings.HasPrefix(l, "http://") && !strings.HasPrefix(l, "socks5://") {
+					list = append(list, src.prefix+l)
+				} else {
+					list = append(list, l)
+				}
+			}
+		}
+	}
+	// Shuffle list using crypto/rand
+	for i := len(list) - 1; i > 0; i-- {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		if err == nil {
+			j := int(n.Int64())
+			list[i], list[j] = list[j], list[i]
+		}
+	}
+	return list
+}
+
+func testProxy(proxyStr string) (*http.Transport, error) {
+	pu, err := url.Parse(proxyStr)
+	if err != nil {
+		return nil, err
+	}
+	tr := &http.Transport{
+		Proxy: http.ProxyURL(pu),
+	}
+	testClient := &http.Client{
+		Transport: tr,
+		Timeout:   4 * time.Second,
+	}
+
+	// 1. Verify mail.tm
+	resp, err := testClient.Get("https://api.mail.tm/domains")
+	if err != nil {
+		return nil, err
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("mail.tm status: %d", resp.StatusCode)
+	}
+
+	// 2. Verify Firefox Accounts connectivity
+	req, _ := http.NewRequest(http.MethodGet, "https://api.accounts.firefox.com/v1/client/websocket", nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0")
+	resp2, err := testClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	resp2.Body.Close()
+	if resp2.StatusCode == http.StatusTooManyRequests || resp2.StatusCode == http.StatusForbidden {
+		return nil, fmt.Errorf("fxa blocked: %d", resp2.StatusCode)
+	}
+
+	return tr, nil
+}
+
+func startProxyScanner(ctx context.Context, proxies []string, out chan<- *http.Transport) {
+	jobs := make(chan string, 100)
+	go func() {
+		for {
+			for _, p := range proxies {
+				select {
+				case <-ctx.Done():
+					return
+				case jobs <- p:
+				}
+			}
+		}
+	}()
+
+	const workers = 50
+	for w := 0; w < workers; w++ {
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case p := <-jobs:
+					tr, err := testProxy(p)
+					if err == nil {
+						select {
+						case out <- tr:
+						case <-ctx.Done():
+							return
+						}
+					}
+				}
+			}
+		}()
+	}
+}
+
 func main() {
 	count := flag.Int("count", 1, "Number of accounts to generate")
 	poolPath := flag.String("pool", "dist/provision/pool.json", "Path to pool.json file")
 	proxyFlag := flag.String("proxy", "", "Optional HTTP proxy (e.g. http://127.0.0.1:10810)")
-	delaySec := flag.Int("delay", 6, "Delay in seconds between creations")
+	rotateFlag := flag.Bool("rotate-proxy", false, "Automatically rotate through free proxies")
+	delaySec := flag.Int("delay", 2, "Delay in seconds between creations")
 	flag.Parse()
 
 	if *proxyFlag != "" {
@@ -283,23 +402,66 @@ func main() {
 
 	log.Printf("Account Pool Generator starting (target: %d accounts)...", *count)
 
+	var proxyChan chan *http.Transport
+	if *rotateFlag {
+		log.Printf("Fetching public proxy list for IP rotation...")
+		proxies := fetchProxies()
+		log.Printf("Loaded %d proxies across HTTP and SOCKS5 lists. Starting parallel scanner...", len(proxies))
+		proxyChan = make(chan *http.Transport, 15)
+		startProxyScanner(context.Background(), proxies, proxyChan)
+	}
+
 	var pool AccountPool
 	data, err := os.ReadFile(*poolPath)
 	if err == nil {
 		_ = json.Unmarshal(data, &pool)
 	}
+	existingEmails := make(map[string]bool)
+	for _, acc := range pool.Accounts {
+		existingEmails[acc.Email] = true
+	}
 
 	ctx := context.Background()
 	generated := 0
-	for i := 0; i < *count; i++ {
-		log.Printf("[%d/%d] Generating account...", i+1, *count)
+	consecutiveFails := 0
+
+	for generated < *count {
+		log.Printf("[%d/%d] Generating account...", generated+1, *count)
+
+		if *rotateFlag {
+			log.Printf("Awaiting next verified proxy...")
+			select {
+			case tr := <-proxyChan:
+				http.DefaultClient.Transport = tr
+				controlplane.SetTransport(tr)
+				controlplane.ResetJar()
+				log.Printf("Connected through verified proxy node.")
+			case <-time.After(30 * time.Second):
+				log.Printf("Warning: proxy timeout, retrying proxy channel...")
+				continue
+			}
+		}
+
 		acc, err := generateOneAccount(ctx)
 		if err != nil {
-			log.Printf("Failed to generate account %d: %v", i+1, err)
-			time.Sleep(10 * time.Second)
+			consecutiveFails++
+			log.Printf("Attempt failed (%d): %v", consecutiveFails, err)
+			if consecutiveFails >= 25 {
+				log.Printf("Too many consecutive failures (%d). Pausing 10s...", consecutiveFails)
+				time.Sleep(10 * time.Second)
+				consecutiveFails = 0
+			}
 			continue
 		}
+
+		consecutiveFails = 0
+		if existingEmails[acc.Email] {
+			log.Printf("Duplicate account %s, skipping...", acc.Email)
+			continue
+		}
+
 		pool.Accounts = append(pool.Accounts, *acc)
+		existingEmails[acc.Email] = true
 		generated++
 
 		pool.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -308,18 +470,20 @@ func main() {
 		if err := os.WriteFile(*poolPath, out, 0644); err != nil {
 			log.Printf("Error writing to %s: %v", *poolPath, err)
 		} else {
-			log.Printf("Saved pool to %s (total: %d accounts)", *poolPath, len(pool.Accounts))
+			log.Printf("Saved pool to %s (pool total: %d accounts, %d GB)", *poolPath, len(pool.Accounts), len(pool.Accounts)*50)
 		}
 
-		// Also sync to Android assets if present
-		assetPath := filepath.Join(filepath.Dir(*poolPath), "../mobile/android/app/src/main/assets/accounts_pool.json")
-		if _, err := os.Stat(filepath.Dir(assetPath)); err == nil {
-			_ = os.WriteFile(assetPath, out, 0644)
+		// Sync to Android assets
+		for _, rel := range []string{"../mobile/android/app/src/main/assets/accounts_pool.json", "../../mobile/android/app/src/main/assets/accounts_pool.json"} {
+			assetPath := filepath.Join(filepath.Dir(*poolPath), rel)
+			if _, err := os.Stat(filepath.Dir(assetPath)); err == nil {
+				_ = os.WriteFile(assetPath, out, 0644)
+			}
 		}
 
-		if i < *count-1 && *delaySec > 0 {
+		if generated < *count && *delaySec > 0 {
 			time.Sleep(time.Duration(*delaySec) * time.Second)
 		}
 	}
-	log.Printf("Done. Successfully generated %d/%d accounts.", generated, *count)
+	log.Printf("Done. Successfully generated %d/%d accounts. Total pool: %d accounts.", generated, *count, len(pool.Accounts))
 }

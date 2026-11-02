@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.3.17.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.3.17.0")]
+[assembly: System.Reflection.AssemblyVersion("2.3.19.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.3.19.0")]
 
 namespace III85III.Vpn {
     /// <summary>
@@ -337,17 +337,17 @@ namespace III85III.Vpn {
             string configPath = Path.Combine(DataDir, "config.json");
             string tokenPath = Path.Combine(DataDir, "local-api.token");
             if (File.Exists(configPath) && File.Exists(tokenPath)) {
+                Dictionary<string, object> existingStatus=null;
                 try {
-                    var runningCores = Process.GetProcessesByName("iii85iii-core");
-                    if (runningCores.Length > 0) {
                         var existingCfg = Json.Decode(File.ReadAllText(configPath));
                         var existingDash = Json.Child(existingCfg, "dashboard");
                         string listen = Json.Str(existingDash, "listen");
-                        if (!String.IsNullOrEmpty(listen)) {
+                        if (System.Text.RegularExpressions.Regex.IsMatch(listen??"",@"\A127\.0\.0\.1:\d+\z")) {
                             Endpoint = "http://" + listen;
                             Token = File.ReadAllText(tokenPath).Trim();
                             var st = await Api("GET", "/api/status", null, 1500);
-                            if (st != null) {
+                            existingStatus=st;
+                            if (DesktopHostSupported(st)) {
                                 var existingProxy = Json.Child(existingCfg, "proxy");
                                 string pStr = Json.Str(existingProxy, "listen");
                                 if (!String.IsNullOrEmpty(pStr) && pStr.Contains(":")) {
@@ -357,17 +357,18 @@ namespace III85III.Vpn {
                                 return;
                             }
                         }
-                    }
                 } catch { }
+                if(existingStatus!=null&&!DesktopHostSupported(existingStatus)){
+                    string activeData=Json.Str(existingStatus,"data_dir");
+                    if(!SamePath(activeData,DataDir))throw new IOException("The local engine belongs to another profile. Close its app before restarting.");
+                    using(var owned=FindOwnedCore()){
+                        if(owned==null)throw new IOException("A background proxy without Whole computer support is running. Close that proxy and reopen III85III VPN.");
+                        await Api("POST","/api/power",new{on=false},5000);
+                        owned.Kill();
+                        if(!owned.WaitForExit(5000))throw new IOException("The background proxy is still stopping. Reopen the app in a moment.");
+                    }
+                }
             }
-            try {
-                foreach (var p in Process.GetProcessesByName("iii85iii-core")) {
-                    try { if (!p.HasExited) p.Kill(); } catch {}
-                }
-                foreach (var p in Process.GetProcessesByName("firefox-vpn-core")) {
-                    try { if (!p.HasExited) p.Kill(); } catch {}
-                }
-            } catch {}
             var cfg = File.Exists(configPath) ? Json.Decode(File.ReadAllText(configPath)) : new Dictionary<string, object>();
             int port = FreePort();
             var dashboard = Json.Child(cfg, "dashboard"); dashboard["listen"] = "127.0.0.1:" + port; dashboard["enabled"] = true; cfg["dashboard"] = dashboard;
@@ -391,9 +392,10 @@ namespace III85III.Vpn {
             process = new Process();
             string coreExe = Path.Combine(Root, "core", "iii85iii-core.exe"); if (!File.Exists(coreExe)) coreExe = Path.Combine(Root, "core", "firefox-vpn-core.exe");
             try {
-                Microsoft.Win32.Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "III85III-VPN-Proxy", "\"" + coreExe + "\" -daemon -data-dir \"" + DataDir + "\"");
+                string normalData=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN","user-data");
+                if(SamePath(DataDir,normalData))Microsoft.Win32.Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "III85III-VPN-Proxy", "\"" + coreExe + "\" -tray -data-dir \"" + DataDir + "\"");
             } catch {}
-            process.StartInfo = new ProcessStartInfo(coreExe, "-daemon -data-dir \"" + DataDir + "\"") {
+            process.StartInfo = new ProcessStartInfo(coreExe, "-app -data-dir \"" + DataDir + "\"") {
                 UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardError = true, RedirectStandardOutput = true, WorkingDirectory = Root
             };
             process.ErrorDataReceived += delegate (object sender, DataReceivedEventArgs args) { if (!String.IsNullOrEmpty(args.Data)) LastError = args.Data; };
@@ -405,7 +407,8 @@ namespace III85III.Vpn {
                 if (File.Exists(tokenPath)) {
                     Token = File.ReadAllText(tokenPath).Trim();
                     try {
-                        await Api("GET", "/api/status", null, 1200);
+                        var hostStatus=await Api("GET", "/api/status", null, 1200);
+                        if(!DesktopHostSupported(hostStatus))throw new IOException("The engine did not enable Whole computer support.");
                         await Api("POST", "/api/session/link", null, 1200);
                         if (Json.Str(dashboard, "username") == "") {
                             var view = await Api("GET", "/api/settings"); var current = Json.Child(view, "config");
@@ -433,6 +436,23 @@ namespace III85III.Vpn {
                     return result;
                 }
             }
+        }
+        internal static bool DesktopHostSupported(Dictionary<string,object> status){return status!=null&&Json.Bool(status,"tun_supported");}
+        internal static bool SamePath(string left,string right){
+            if(String.IsNullOrWhiteSpace(left)||String.IsNullOrWhiteSpace(right))return false;
+            try{return String.Equals(Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar),Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar),StringComparison.OrdinalIgnoreCase);}catch{return false;}
+        }
+        private Process FindOwnedCore(){
+            Process match=null;
+            foreach(string name in new[]{"iii85iii-core","firefox-vpn-core"})foreach(var candidate in Process.GetProcessesByName(name)){
+                bool keep=false;
+                try{
+                    if(candidate.SessionId!=Process.GetCurrentProcess().SessionId||!SamePath(Path.GetDirectoryName(candidate.MainModule.FileName),Path.Combine(Root,"core")))continue;
+                    if(match!=null){match.Dispose();return null;}
+                    match=candidate;keep=true;
+                }catch{}finally{if(!keep)candidate.Dispose();}
+            }
+            return match;
         }
         public async Task InstallTun() {
             AllowTunServiceRead();
@@ -952,7 +972,7 @@ namespace III85III.Vpn {
 
     internal sealed class LocationCard : KeyboardActionControl {
         public string LocationName = "Recommended";
-        public string Subtitle = "🛡️ AdBlock Active • Fastly";
+        public string Subtitle = "Select a server";
         public string Latency = "-- ms";
         public string CountryCode = "";
         private bool isHovered, isPressed;
@@ -1295,68 +1315,8 @@ namespace III85III.Vpn {
 
 
     internal static class AccountSetup {
-        private static readonly HashSet<string> exhaustedEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        internal static void MarkExhausted(string email) {
-            if (!String.IsNullOrEmpty(email)) {
-                lock (exhaustedEmails) { exhaustedEmails.Add(email); }
-            }
-        }
-
-        internal const string Message="To use VPN, first create a Firefox/Mozilla account.\nThen enter its email and Mozilla password in the app.";
+        internal const string Message="Use your own Mozilla account to connect. Your service allowance depends on Mozilla eligibility.";
         internal static bool ShouldShow(bool seen,bool hasAccounts,bool updateRequired){return !seen&&!hasAccounts&&!updateRequired;}
-        internal static async Task<Dictionary<string, object>> FetchPoolAccountAsync(string excludeEmail = null) {
-            try {
-                if (!String.IsNullOrEmpty(excludeEmail)) MarkExhausted(excludeEmail);
-                string lp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "provision", "pool.json");
-                if (!File.Exists(lp)) lp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dist", "provision", "pool.json");
-                if (File.Exists(lp)) {
-                    var lpool = Json.Decode(File.ReadAllText(lp));
-                    var lrows = Json.Rows(lpool, "accounts");
-                    var allAccounts = new List<Dictionary<string, object>>();
-                    foreach (var a in lrows) allAccounts.Add(a);
-                    var litems = new List<Dictionary<string, object>>();
-                    lock (exhaustedEmails) {
-                        if (exhaustedEmails.Count >= allAccounts.Count) exhaustedEmails.Clear();
-                        foreach (var a in allAccounts) {
-                            string em = Json.Str(a, "email");
-                            if (!exhaustedEmails.Contains(em) && (String.IsNullOrEmpty(excludeEmail) || em != excludeEmail)) {
-                                litems.Add(a);
-                            }
-                        }
-                    }
-                    if (litems.Count == 0) {
-                        foreach (var a in allAccounts) if (String.IsNullOrEmpty(excludeEmail) || Json.Str(a, "email") != excludeEmail) litems.Add(a);
-                    }
-                    if (litems.Count > 0) {
-                        int s = Math.Abs((Environment.MachineName + "_" + Environment.UserName).GetHashCode());
-                        return litems[s % litems.Count];
-                    }
-                }
-            } catch { }
-            try {
-                using (var client = new System.Net.Http.HttpClient()) {
-                    client.Timeout = TimeSpan.FromSeconds(3.5);
-                    string json = await client.GetStringAsync("https://raw.githubusercontent.com/III85III/III85III-VPN/main/dist/provision/pool.json");
-                    var pool = Json.Decode(json);
-                    var list = Json.Rows(pool, "accounts");
-                    var items = new List<Dictionary<string, object>>();
-                    foreach (var a in list) if (String.IsNullOrEmpty(excludeEmail) || Json.Str(a, "email") != excludeEmail) items.Add(a);
-                    if (items.Count > 0) {
-                        int seed = Math.Abs((Environment.MachineName + "_" + Environment.UserName).GetHashCode());
-                        return items[seed % items.Count];
-                    }
-                }
-            } catch { }
-            try {
-                var fallback = new Dictionary<string, object> {
-                    { "email", "vpn_d3ccy0in@fldubai.com" },
-                    { "refresh_token", "ee4f532751bea5068a7c7fc8fa18535170e11e07b84a057f4e7223056f87edfd" }
-                };
-                return fallback;
-            } catch { }
-            return null; } internal static Task<Dictionary<string, object>> FetchNextPoolAccountAsync(string excludeEmail) { return FetchPoolAccountAsync(excludeEmail);
-        }
     }
     internal sealed class AccountIntroForm : Form {
         internal AccountIntroForm(){
@@ -1547,7 +1507,7 @@ namespace III85III.Vpn {
             resizeGrip.MouseDown += delegate(object sender, MouseEventArgs e) {
                 if (e.Button == MouseButtons.Left) { NativeMethods.ReleaseCapture(); NativeMethods.SendMessage(Handle, 0xA1, 17, 0); }
             };
-            announcementBar.Visible = DateTime.UtcNow < new DateTime(2026, 11, 2, 23, 59, 59, DateTimeKind.Utc) && !File.Exists(Path.Combine(engine.DataDir, "adblock_ann_dismissed.txt"));
+            announcementBar.Visible = false;
             announcementBar.BackColor = Color.FromArgb(28, 46, 213, 115);
             announcementBar.Paint += delegate (object s, PaintEventArgs e) {
                 var r = new Rectangle(0, 0, announcementBar.Width - 1, announcementBar.Height - 1);
@@ -1663,15 +1623,6 @@ namespace III85III.Vpn {
                     timer.Start();
                     await Poll();
                     await RefreshAccounts();
-                    if (accountsList.Items.Count == 0 && !requiredUpdate) {
-                        try {
-                            var acc = await AccountSetup.FetchPoolAccountAsync();
-                            if (acc != null) {
-                                await engine.Api("POST", "/api/accounts/import", acc);
-                                await RefreshAccounts();
-                            }
-                        } catch { }
-                    }
                     try {
                         await LoadLocations();
                     } catch { }
@@ -1860,7 +1811,7 @@ namespace III85III.Vpn {
             p.Controls.Add(metricsPanel);
 
             noticeLabel.Text = "⚡ پروکسی اختصاصی تلگرام (اسپانسر @cabicy)";
-            noticeLabel.Visible = true;
+            noticeLabel.Visible = false;
             noticeLabel.Cursor = Cursors.Hand;
             noticeLabel.AccessibleName = "Telegram proxy";
             noticeLabel.Click += async delegate { await ShowTelegramProxyDialog(); };
@@ -1921,16 +1872,6 @@ namespace III85III.Vpn {
                     using (var brush = new SolidBrush(selected ? Theme.TextPrimary : Theme.TextSecondary))
                     using (var font = Theme.Font(9.5f, selected ? FontStyle.Bold : FontStyle.Regular)) {
                         g.DrawString(item.Name, font, brush, nameRect, sf);
-                    }
-                }
-
-                float nameWidth = Math.Min(r.Width - 195, g.MeasureString(item.Name, Theme.Font(9.5f, FontStyle.Bold)).Width);
-                var badgeRect = new RectangleF(18 + nameWidth + 8, r.Y + 13, 76, 18);
-                using (var bBrush = new SolidBrush(Color.FromArgb(28, 46, 213, 115))) Theme.FillRounded(g, bBrush, Rectangle.Round(badgeRect), 4);
-                using (var bPen = new Pen(Color.FromArgb(80, 46, 213, 115), 1f)) Theme.DrawRounded(g, bPen, Rectangle.Round(badgeRect), 4);
-                using (var bFont = Theme.Font(7.5f, FontStyle.Bold)) using (var tBrush = new SolidBrush(Color.FromArgb(46, 213, 115))) {
-                    using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center }) {
-                        g.DrawString("🛡️ AdBlock", bFont, tBrush, badgeRect, sf);
                     }
                 }
 
@@ -2198,7 +2139,7 @@ namespace III85III.Vpn {
             trayRow.Controls.Add(minimizeToggle); trayRow.Controls.Add(trayLabel);
             p.Controls.Add(trayRow);
 
-            var secWar = new Label { Text = "Anti-censorship & severe DPI bypass", Name = "warHeading", Font = Theme.Font(9f, FontStyle.Bold), ForeColor = Theme.Accent, AutoSize = true, Location = new Point(0, 390) };
+            var secWar = new Label { Text = "Compatibility", Name = "warHeading", Font = Theme.Font(9f, FontStyle.Bold), ForeColor = Theme.TextSubtle, AutoSize = true, Location = new Point(0, 390) };
             p.Controls.Add(secWar);
 
             var warRow = new Panel { Location = new Point(0, 412), Size = new Size(680, 66), BackColor = Theme.Surface, Name = "warPreference" };
@@ -2208,9 +2149,9 @@ namespace III85III.Vpn {
             };
             warToggle.Location = new Point(14, 16);
             warToggle.Checked = true;
-            warToggle.AccessibleName = "Ready for War: TLS fragment and Anycast rescue";
-            var warTitle = new Label { Text = "⚔️ Ready for War (TLS Fragment & Anycast Rescue)", Font = Theme.Font(9.5f, FontStyle.Bold), ForeColor = Theme.TextPrimary, Location = new Point(66, 8), AutoSize = true };
-            var warSub = new Label { Text = "Bypasses SNI filtering with packet micro-splitting & Fastly Anycast rescue in severe censorship.", Font = Theme.Font(8.5f), ForeColor = Theme.TextSecondary, Location = new Point(66, 32), AutoSize = true };
+            warToggle.AccessibleName = "Network compatibility";
+            var warTitle = new Label { Text = "Network compatibility", Font = Theme.Font(9.5f, FontStyle.Bold), ForeColor = Theme.TextPrimary, Location = new Point(66, 8), AutoSize = true };
+            var warSub = new Label { Text = "Connection options for restricted networks.", Font = Theme.Font(8.5f), ForeColor = Theme.TextSecondary, Location = new Point(66, 32), AutoSize = true };
             warRow.Controls.Add(warToggle); warRow.Controls.Add(warTitle); warRow.Controls.Add(warSub);
             p.Controls.Add(warRow);
 
@@ -2489,17 +2430,10 @@ namespace III85III.Vpn {
 
         private async Task ConnectTelegramProxy() {
             noticeLabel.Text = "⏳ در حال آماده‌سازی پروکسی تلگرام..."; noticeLabel.Update();
-            try {
-                if (accountsList.Items.Count == 0) {
-                    var acc = await AccountSetup.FetchPoolAccountAsync();
-                    if (acc != null) {
-                        try { await engine.Api("POST", "/api/accounts/import", acc); await RefreshAccounts(); } catch {}
-                    }
-                }
-                if (Json.Str(Json.Child(lastStatus, "state"), "phase") == "off") {
-                    try { await engine.Api("POST", "/api/power", new { on = true }); } catch {}
-                }
-            } catch {}
+            if(accountsList.Items.Count==0){SwitchPage(3);loginBtn.PerformClick();return;}
+            try{
+                if(Json.Str(Json.Child(lastStatus,"state"),"phase")=="off")await engine.Api("POST","/api/power",new{on=true});
+            }catch(Exception error){ShowFailure(error.Message);return;}
             int targetPort = engine.ProxyPort > 0 ? engine.ProxyPort : 10810;
             bool portReady = false;
             for (int i = 0; i < 35; i++) {
@@ -2549,7 +2483,7 @@ namespace III85III.Vpn {
             applyLocationBtn.Enabled = enabled;
             pingBtn.Enabled = enabled && !pingScanBusy;
             diagPingBtn.Enabled = enabled && !pingScanBusy;
-            splitSave.Enabled = enabled;
+            splitSave.Enabled = enabled&&Json.Bool(Json.Child(lastStatus,"tun"),"programs_supported");
             splitReload.Enabled = enabled;
             splitBrowse.Enabled = enabled;
         }
@@ -2617,17 +2551,7 @@ namespace III85III.Vpn {
             string phase = Json.Str(Json.Child(lastStatus, "state"), "phase");
             var accounts=Json.Child(lastStatus,"accounts");
             if(phase=="off"&&Json.Get(accounts,"total")!=null&&Json.Num(accounts,"total")==0&&accountsList.Items.Count==0&&!requiredUpdate){
-                dialSubtext.Text = "Allocating 50 GB secure profile\u2026"; dialSubtext.Update();
-                var acc = await AccountSetup.FetchPoolAccountAsync();
-                if (acc != null) {
-                    try {
-                        await engine.Api("POST", "/api/accounts/import", acc);
-                        await RefreshAccounts();
-                    } catch { }
-                }
-                if (accountsList.Items.Count == 0) {
-                    SwitchPage(3); loginBtn.PerformClick(); return;
-                }
+                SwitchPage(3);loginBtn.PerformClick();return;
             }
             dial.State=DialState.Connecting;statusPill.State=DialState.Connecting;
             statusPill.StatusText=phase=="off"?"CONNECTING\u2026":"DISCONNECTING\u2026";
@@ -2647,18 +2571,8 @@ namespace III85III.Vpn {
                 await engine.Api("POST", "/api/power", new { on = false }); return;
             }
             if (!Json.Rows(await engine.Api("GET", "/api/accounts"), "accounts").GetEnumerator().MoveNext()) {
-                dialSubtext.Text = "Allocating 50 GB secure profile\u2026"; dialSubtext.Update();
-                var acc = await AccountSetup.FetchPoolAccountAsync();
-                if (acc != null) {
-                    try {
-                        await engine.Api("POST", "/api/accounts/import", acc);
-                        await RefreshAccounts();
-                    } catch { }
-                }
-                if (!Json.Rows(await engine.Api("GET", "/api/accounts"), "accounts").GetEnumerator().MoveNext()) {
-                    SwitchPage(3); loginBtn.Focus();
-                    throw new IOException("Account profile could not be allocated. Add an account on the Account tab.");
-                }
+                SwitchPage(3);loginBtn.Focus();
+                throw new IOException("Sign in with your own Mozilla account before connecting.");
             }
             string mode = pendingModeIndex == 0 ? "tun" : pendingModeIndex == 1 ? "set" : "clear";
             if (mode == "tun") {
@@ -2798,39 +2712,6 @@ namespace III85III.Vpn {
                 if(connected)lastActionError="";
                 string failure=lastActionError!=""?lastActionError:ConnectionState.Failure(lastStatus);
 
-                string acctReason = Json.Str(acct, "reason_code");
-                double limB = Json.Num(usage, "limit_bytes");
-                double remB = Json.Num(usage, "remaining_bytes");
-                string stCode = Json.Str(state, "code");
-                string wError = Json.Str(proxy, "wake_error");
-                bool quotaDepleted = acctReason == "quota_exhausted" || (limB > 0 && remB <= 0) || stCode == "no_usable_account" || wError.IndexOf("quota", StringComparison.OrdinalIgnoreCase) >= 0;
-                if (quotaDepleted && !autoRenewing && !closing && ready && DateTime.UtcNow >= nextRenewalAllowed) {
-                    nextRenewalAllowed = DateTime.UtcNow.AddSeconds(10);
-                    autoRenewing = true;
-                    Task.Run(async () => {
-                        try {
-                            string oldId = Json.Str(acct, "id");
-                            string oldEmail = Json.Str(acct, "email");
-                            if (!String.IsNullOrEmpty(oldId)) {
-                                try { await engine.Api("DELETE", "/api/accounts/" + oldId); } catch {}
-                            }
-                            var newAcc = await AccountSetup.FetchNextPoolAccountAsync(oldEmail);
-                            if (newAcc != null) {
-                                await engine.Api("POST", "/api/accounts/import", newAcc);
-                                await RefreshAccounts();
-                                if (phase != "off") {
-                                    try { await engine.Api("POST", "/api/power", new { on = true }); } catch {}
-                                }
-                                this.BeginInvoke((Action)delegate {
-                                    dialSubtext.Text = "⚡ بسته قبلی مصرف شد؛ ۵۰ گیگابایت جدید فعال گردید.";
-                                    dialSubtext.Update();
-                                });
-                            }
-                            await Task.Delay(5000);
-                        } catch {}
-                        autoRenewing = false;
-                    });
-                }
 
                 timer.Interval = phase != "off" && !connected ? 350 : 1000;
 
@@ -3010,7 +2891,11 @@ namespace III85III.Vpn {
         }
 
         private async Task LoadSplitApps() {
-            if (!Json.Bool(Json.Child(lastStatus, "tun"), "programs_supported")) throw new IOException("App bypass is unavailable on this system.");
+            if (!Json.Bool(Json.Child(lastStatus, "tun"), "programs_supported")) {
+                splitCountLabel.Text="App rules need the desktop VPN engine. Restart the app to load it.";
+                splitSave.Enabled=false;
+                return;
+            }
             if (!splitLoaded) {
                 var config = Json.Child(await engine.Api("GET", "/api/settings"), "config");
                 foreach (var pair in SplitRules.Read(config)) splitSelected[pair.Key] = pair.Value;

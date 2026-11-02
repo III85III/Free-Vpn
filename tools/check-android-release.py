@@ -11,7 +11,7 @@ with zipfile.ZipFile(args.apk) as archive:
     names = archive.namelist()
     is_bundle = any(n.startswith('base/') for n in names)
     prefix = 'base/' if is_bundle else ''
-    forbidden = {'accounts.json', 'local-api.token', 'password.dpapi', 'config.json'}
+    forbidden = {'accounts.json', 'accounts_pool.json', 'pool.json', 'local-api.token', 'password.dpapi', 'config.json'}
     for name in names:
         path = PurePosixPath(name)
         if path.name in forbidden or path.suffix.lower() in {'.p12', '.jks', '.keystore', '.log', '.bat'}:

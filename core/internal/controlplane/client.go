@@ -99,6 +99,12 @@ func Do(req *http.Request) (*http.Response, error) {
 }
 
 // SetCookies stores cookies for u in the shared client's cookie jar.
+// ResetJar clears the shared cookie jar so cookies from a previous IP/proxy do not leak.
+func ResetJar() {
+	jar, _ := cookiejar.New(nil)
+	client.Jar = jar
+}
+
 func SetCookies(u *url.URL, cookies []*http.Cookie) {
 	client.Jar.SetCookies(u, cookies)
 }

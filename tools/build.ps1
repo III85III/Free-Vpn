@@ -71,7 +71,6 @@ if (Test-Path "$root\native\assets\fonts\OFL.txt") { Copy-Item -LiteralPath "$ro
 if (Test-Path "$root\native\assets") { Copy-Item -LiteralPath "$root\native\assets" -Destination $out -Recurse -Force }
 if (Test-Path "$root\docs") { Copy-Item -LiteralPath "$root\docs" -Destination $out -Recurse -Force }
 if (Test-Path "$root\native") { Get-ChildItem -LiteralPath "$root\native" -File | Copy-Item -Destination "$out\source\native" }
-if (Test-Path "$root\tools") { Get-ChildItem -LiteralPath "$root\tools" -File | Copy-Item -Destination "$out\source\tools" }
-if (Test-Path "$root\dist\provision") { Copy-Item -LiteralPath "$root\dist\provision" -Destination $out -Recurse -Force }
+if (Test-Path "$root\tools") { Get-ChildItem -LiteralPath "$root\tools" -File | Where-Object { $_.Extension -in '.ps1','.py','.json','.md' -and $_.Name -notmatch 'pool-gen' } | Copy-Item -Destination "$out\source\tools" }
 
 Write-Output "Built III85III VPN: $out"

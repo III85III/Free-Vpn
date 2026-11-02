@@ -19,6 +19,11 @@ namespace III85III.Vpn {
             Check(!ConnectionState.HasAccounts(Json.Decode("{\"accounts\":{\"total\":0}}")),"an empty account store still requires sign-in");
             Check(ConnectionState.Failure(Json.Decode("{\"system_proxy\":\"tun\",\"state\":{\"phase\":\"running\"},\"tun\":{\"state\":\"error\",\"message\":\"Service could not start\",\"code\":\"service_failed\"}}" )).Contains("Service could not start"),"a working proxy cannot conceal a failed whole-computer tunnel");
             Check(ConnectionState.Failure(Json.Decode("{\"state\":{\"phase\":\"waiting\",\"code\":\"no_usable_account\",\"message\":\"Account needs sign-in\"}}"))=="Account needs sign-in","an unusable saved account is distinguished from no account");
+            Check(Engine.DesktopHostSupported(Json.Decode("{\"tun_supported\":true}")),"desktop host advertises whole-computer capability");
+            Check(!Engine.DesktopHostSupported(Json.Decode("{\"version\":\"2.3.17\",\"state\":{\"phase\":\"off\"}}")),"bare daemon is not accepted as a desktop host");
+            Check(!Engine.DesktopHostSupported(null),"missing host status is not supported");
+            Check(!Engine.SamePath("",@"D:\profile"),"missing profile path is never adopted");
+            Check(!Engine.SamePath(@"D:\profile",@"D:\another-profile"),"another profile is never migrated");
             Check(ConnectionState.Verified(State()),"fresh successful test + TUN on is connected");
             Check(!ConnectionState.Verified(State("off")),"off is disconnected despite previous successful test");
             Check(!ConnectionState.Verified(State("running","error")),"failed TUN never displays connected");
