@@ -114,7 +114,7 @@ public final class MainActivity extends Activity {
         WindowLayout.apply(this,root);
         showPage(state==null?0:state.getInt("page",0));
         startTunnelCheck(getIntent());
-        CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible){poll();showAccountIntro();checkForUpdates(false);}});}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
+        CoreRuntime.IO.execute(()->{try{CoreRuntime.ensure(this);main.post(()->{if(isDestroyed())return;ready=true;feedback.setText("");showPage(page);if(visible){poll();showAccountIntro();checkForUpdates(false);}});AccountSetup.ensureAccount(this,null);}catch(Exception failure){main.post(()->{if(!isDestroyed())feedback.setText("The local engine could not start. Close the app and try again.");});}});
     }
     @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putInt("page",page);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);startTunnelCheck(intent);}
@@ -307,10 +307,26 @@ public final class MainActivity extends Activity {
         power.setTextColor(BG);
         power.setBackground(pillBackground(0,GOLD,28,0));
         LinearLayout.LayoutParams pwrParams=new LinearLayout.LayoutParams(-1,dp(56));
-        pwrParams.setMargins(0,dp(2),0,dp(14));
+        pwrParams.setMargins(0,dp(2),0,dp(8));
         power.setLayoutParams(pwrParams);
         power.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); toggleConnection(); });
         content.addView(power);
+
+        Button quickConnectBtn=new Button(this);
+        quickConnectBtn.setText("\u26a1 \u0627\u062a\u0635\u0627\u0644 \u0633\u0631\u06cc\u0639 (\u0627\u06a9\u0627\u0646\u062a \u062e\u0648\u062f\u06a9\u0627\u0631)");
+        quickConnectBtn.setAllCaps(false);
+        quickConnectBtn.setTextSize(14);
+        quickConnectBtn.setTypeface(body,Typeface.BOLD);
+        quickConnectBtn.setTextColor(GOLD);
+        quickConnectBtn.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33D9BD83),pillBackground(0x33D9BD83,0x14D9BD83,24,1),background(Color.WHITE)));
+        LinearLayout.LayoutParams qcParams=new LinearLayout.LayoutParams(-1,dp(48));
+        qcParams.setMargins(0,0,0,dp(14));
+        quickConnectBtn.setLayoutParams(qcParams);
+        quickConnectBtn.setOnClickListener(v->{
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            quickConnect();
+        });
+        content.addView(quickConnectBtn);
 
         speedCard=new LinearLayout(this);
         speedCard.setOrientation(LinearLayout.HORIZONTAL);
@@ -418,6 +434,34 @@ public final class MainActivity extends Activity {
 
         updateHome();
     }
+    private void quickConnect(){
+        if(!ready){feedback.setText("Your local engine is starting.");return;}
+        AdManager.maybeShowInterstitial(this);
+        if(checkingAccount){checkingAccount=false;connectAttempt++;updateHome();feedback.setText("Connection cancelled.");return;}
+        if(TunnelService.lifecycle.canCancel()){startService(new Intent(this,TunnelService.class).setAction(TunnelService.STOP));statusText.setText("Disconnecting\u2026");power.setText("Disconnecting\u2026");main.postDelayed(this::poll,100);return;}
+        if(TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING){feedback.setText("Finishing the previous connection. Try again in a moment.");return;}
+        checkingAccount=true;final int attempt=++connectAttempt;updateHome();
+        feedback.setText("\u062f\u0631 \u062d\u0627\u0644 \u062a\u062e\u0635\u06cc\u0635 \u0627\u06a9\u0627\u0646\u062a \u0627\u0632 \u062d\u0627\u0641\u0638\u0647 \u0648 \u0627\u062a\u0635\u0627\u0644 \u0633\u0631\u06cc\u0639\u2026");
+        AccountSetup.ensureAccount(this,new AccountSetup.ProvisionCallback(){
+            @Override public void onSuccess(){
+                main.post(()->{
+                    if(isDestroyed()||attempt!=connectAttempt)return;
+                    checkingAccount=false;
+                    updateHome();
+                    feedback.setText("\u2705 \u0627\u06a9\u0627\u0646\u062a \u0622\u0645\u0627\u062f\u0647 \u0634\u062f. \u062f\u0631 \u062d\u0627\u0644 \u0627\u062a\u0635\u0627\u0644\u2026");
+                    explainConnection();
+                });
+            }
+            @Override public void onFailure(String error){
+                main.post(()->{
+                    if(isDestroyed()||attempt!=connectAttempt)return;
+                    checkingAccount=false;
+                    updateHome();
+                    feedback.setText("Account setup: "+error);
+                });
+            }
+        });
+    }
     private void toggleConnection(){
         if(!ready){feedback.setText("Your local engine is starting.");return;}
         AdManager.maybeShowInterstitial(this);
@@ -432,7 +476,7 @@ public final class MainActivity extends Activity {
                     if(isDestroyed()||attempt!=connectAttempt)return;
                     JSONArray rows=reply.optJSONArray("accounts");
                     if(rows==null||rows.length()==0){
-                        feedback.setText("Setting up secure profile\u2026");
+                        feedback.setText("\u062f\u0631 \u062d\u0627\u0644 \u062a\u062e\u0635\u06cc\u0635 \u0627\u06a9\u0627\u0646\u062a \u062e\u0648\u062f\u06a9\u0627\u0631\u2026");
                         AccountSetup.ensureAccount(this,new AccountSetup.ProvisionCallback(){
                             @Override public void onSuccess(){
                                 main.post(()->{
@@ -448,7 +492,6 @@ public final class MainActivity extends Activity {
                                     if(isDestroyed()||attempt!=connectAttempt)return;
                                     checkingAccount=false;
                                     updateHome();
-                                    showPage(3);
                                     feedback.setText("Account setup: "+error);
                                 });
                             }
@@ -684,6 +727,22 @@ public final class MainActivity extends Activity {
     private void accounts(){
         heading("Accounts","Manage your Mozilla VPN profiles & monthly quota.");
         content.addView(button("+ Add an account",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();}));
+        Button importPoolBtn=button("\u26a1 \u062f\u0631\u06cc\u0627\u0641\u062a \u062e\u0648\u062f\u06a9\u0627\u0631 \u0627\u06a9\u0627\u0646\u062a \u06f5\u06f0 \u06af\u06cc\u06af\u0627\u0628\u0627\u06cc\u062a \u0627\u0632 \u062d\u0627\u0641\u0638\u0647",()->{
+            Toast.makeText(this,"\u062f\u0631 \u062d\u0627\u0644 \u062a\u062e\u0635\u06cc\u0635 \u0627\u06a9\u0627\u0646\u062a...",Toast.LENGTH_SHORT).show();
+            AccountSetup.ensureAccount(this,new AccountSetup.ProvisionCallback(){
+                @Override public void onSuccess(){
+                    main.post(()->{
+                        Toast.makeText(MainActivity.this,"\u2705 \u0627\u06a9\u0627\u0646\u062a \u06f5\u06f0 \u06af\u06cc\u06af\u0627\u0628\u0627\u06cc\u062a \u0628\u0627 \u0645\u0648\u0641\u0642\u06cc\u062a \u0627\u062e\u062a\u0635\u0627\u0635 \u062f\u0627\u062f\u0647 \u0634\u062f.",Toast.LENGTH_LONG).show();
+                        showPage(3);
+                    });
+                }
+                @Override public void onFailure(String error){
+                    main.post(()->Toast.makeText(MainActivity.this,"\u062e\u0637\u0627: "+error,Toast.LENGTH_SHORT).show());
+                }
+            });
+        });
+        importPoolBtn.setTextColor(GOLD);
+        content.addView(importPoolBtn);
         Button v2rayBtn=button("\u26a1 Export V2Ray / iOS Config (Top 30)",()->showV2RayModal(null));
         v2rayBtn.setTextColor(GOLD);
         content.addView(v2rayBtn);

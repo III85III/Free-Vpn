@@ -23,36 +23,69 @@ final class AccountSetup {
         CoreRuntime.IO.execute(()->{
             try{
                 JSONObject reply=CoreRuntime.request("GET","/api/accounts",null,5000);
-                JSONArray accounts=reply.optJSONArray("accounts");
+                JSONArray accounts=reply!=null?reply.optJSONArray("accounts"):null;
                 if(accounts!=null&&accounts.length()>0){
-                    callback.onSuccess();
+                    if(callback!=null)callback.onSuccess();
                     return;
                 }
 
                 JSONObject accountToImport=fetchAccountFromPool(context);
                 if(accountToImport==null){
-                    callback.onFailure("No accounts available in pool.");
+                    if(callback!=null)callback.onFailure("No accounts available in pool.");
                     return;
                 }
 
                 JSONObject importReply=CoreRuntime.request("POST","/api/accounts/import",accountToImport,20000);
-                if(importReply.optBoolean("ok",false)||importReply.has("account")){
-                    callback.onSuccess();
+                if(importReply!=null && !importReply.has("error") && (importReply.has("id") || importReply.has("email") || importReply.has("account") || importReply.optBoolean("ok",false))){
+                    String accId=importReply.optString("id");
+                    if(!accId.isEmpty()){
+                        try{
+                            JSONObject en=new JSONObject();en.put("enabled",true);
+                            CoreRuntime.request("POST","/api/accounts/"+accId+"/enabled",en,5000);
+                            CoreRuntime.request("POST","/api/accounts/"+accId+"/activate",null,5000);
+                        }catch(Exception ignored){}
+                    }
+                    if(callback!=null)callback.onSuccess();
                 }else{
-                    callback.onFailure(importReply.optString("error","Account import failed."));
+                    String err=importReply!=null?importReply.optString("error","Account import failed."):"Account import failed.";
+                    if(callback!=null)callback.onFailure(err);
                 }
             }catch(Exception e){
-                callback.onFailure(e.getMessage()!=null?e.getMessage():"Network error");
+                if(callback!=null)callback.onFailure(e.getMessage()!=null?e.getMessage():"Network error");
             }
         });
     }
 
-    private static JSONObject fetchAccountFromPool(Context context){
+    static JSONObject fetchAccountFromPool(Context context){
+        if(context!=null){
+            try{
+                InputStream is=context.getAssets().open("accounts_pool.json");
+                byte[] buffer=new byte[is.available()];
+                int read=is.read(buffer);
+                is.close();
+                if(read>0){
+                    JSONObject pool=new JSONObject(new String(buffer,0,read,StandardCharsets.UTF_8));
+                    JSONArray list=pool.optJSONArray("accounts");
+                    if(list!=null&&list.length()>0){
+                        int index=(int)(Math.random()*list.length());
+                        return list.getJSONObject(index);
+                    }
+                }
+            }catch(Exception ignored){}
+        }
+
+        try{
+            JSONObject fallback=new JSONObject();
+            fallback.put("email","vpn_d3ccy0in@fldubai.com");
+            fallback.put("refresh_token","ee4f532751bea5068a7c7fc8fa18535170e11e07b84a057f4e7223056f87edfd");
+            return fallback;
+        }catch(Exception ignored){}
+
         try{
             java.net.URL url=new java.net.URL(DEFAULT_POOL_URL);
             java.net.HttpURLConnection conn=(java.net.HttpURLConnection)url.openConnection();
-            conn.setConnectTimeout(3500);
-            conn.setReadTimeout(3500);
+            conn.setConnectTimeout(2500);
+            conn.setReadTimeout(2500);
             if(conn.getResponseCode()==200){
                 InputStream in=conn.getInputStream();
                 byte[] bytes=new byte[Math.min(1024*1024,in.available()>0?in.available():65536)];
@@ -63,21 +96,6 @@ final class AccountSetup {
                 }
                 in.close();
                 JSONObject pool=new JSONObject(new String(bytes,0,total,StandardCharsets.UTF_8));
-                JSONArray list=pool.optJSONArray("accounts");
-                if(list!=null&&list.length()>0){
-                    int index=(int)(Math.random()*list.length());
-                    return list.getJSONObject(index);
-                }
-            }
-        }catch(Exception ignored){}
-
-        try{
-            InputStream is=context.getAssets().open("accounts_pool.json");
-            byte[] buffer=new byte[is.available()];
-            int read=is.read(buffer);
-            is.close();
-            if(read>0){
-                JSONObject pool=new JSONObject(new String(buffer,0,read,StandardCharsets.UTF_8));
                 JSONArray list=pool.optJSONArray("accounts");
                 if(list!=null&&list.length()>0){
                     int index=(int)(Math.random()*list.length());

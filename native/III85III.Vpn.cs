@@ -24,8 +24,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyProduct("III85III VPN")]
 [assembly: System.Reflection.AssemblyDescription("III85III VPN desktop client")]
 [assembly: System.Reflection.AssemblyCompany("III85III")]
-[assembly: System.Reflection.AssemblyVersion("2.3.15.0")]
-[assembly: System.Reflection.AssemblyFileVersion("2.3.15.0")]
+[assembly: System.Reflection.AssemblyVersion("2.3.16.0")]
+[assembly: System.Reflection.AssemblyFileVersion("2.3.16.0")]
 
 namespace III85III.Vpn {
     /// <summary>
@@ -1262,6 +1262,13 @@ namespace III85III.Vpn {
                         return items[rng.Next(items.Count)];
                     }
                 }
+            } catch { }
+            try {
+                var fallback = new Dictionary<string, object> {
+                    { "email", "vpn_d3ccy0in@fldubai.com" },
+                    { "refresh_token", "ee4f532751bea5068a7c7fc8fa18535170e11e07b84a057f4e7223056f87edfd" }
+                };
+                return fallback;
             } catch { }
             return null;
         }
