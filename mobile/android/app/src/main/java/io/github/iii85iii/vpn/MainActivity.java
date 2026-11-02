@@ -718,6 +718,9 @@ public final class MainActivity extends Activity {
         search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){render.run();}public void afterTextChanged(Editable value){}});
         api("GET","/api/locations",null,15000,reply->{JSONArray rows=reply.optJSONArray("locations");locations=rows==null?new JSONArray():rows;if(page==1)render.run();});render.run();
     }
+    private void openSignIn(){
+        if(signIn==null||signIn.closed)signIn=new SignInFlow();
+    }
     private void accounts(){
         heading("مدیریت اکانت‌ها","پروفایل‌های فعال و حجم مصرفی ۵۰ گیگابایت ماهانه");
         Button addAccBtn=button("⚡ دریافت اکانت جدید (۵۰ گیگابایت)",()->{
@@ -1178,8 +1181,9 @@ public final class MainActivity extends Activity {
                 });
             });
             rootLayout.addView(autoBtn);
+            autoBtn.setVisibility(View.GONE);
 
-            TextView divText=label("یا ورود با اکانت موزیلا:",12,MUTED);
+            TextView divText=label("ایمیل و رمز حساب موزیلا را وارد کن.",12,MUTED);
             divText.setPadding(0,0,0,dp(8));
             rootLayout.addView(divText);
 
@@ -1191,7 +1195,7 @@ public final class MainActivity extends Activity {
             rootLayout.addView(email);
 
             password=new EditText(MainActivity.this);
-            password.setHint("رمز عبور (Password)");
+            password.setHint("رمز حساب موزیلا");
             password.setSingleLine(true);
             password.setInputType(129);
             password.setTransformationMethod(PasswordTransformationMethod.getInstance());
@@ -1199,7 +1203,7 @@ public final class MainActivity extends Activity {
             rootLayout.addView(password);
 
             dialog=new AlertDialog.Builder(MainActivity.this)
-                .setTitle("افزودن اکانت")
+                .setTitle("ورود با حساب موزیلا")
                 .setView(rootLayout)
                 .setNegativeButton("انصراف",(d,w)->cancel())
                 .setPositiveButton("ورود",null).create();

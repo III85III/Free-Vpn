@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/III85III/III85III-VPN/core/internal/controlplane"
 	"github.com/III85III/III85III-VPN/core/internal/fxa"
 )
 
@@ -263,7 +264,22 @@ func generateOneAccount(ctx context.Context) (*PoolAccount, error) {
 func main() {
 	count := flag.Int("count", 1, "Number of accounts to generate")
 	poolPath := flag.String("pool", "dist/provision/pool.json", "Path to pool.json file")
+	proxyFlag := flag.String("proxy", "", "Optional HTTP proxy (e.g. http://127.0.0.1:10810)")
+	delaySec := flag.Int("delay", 6, "Delay in seconds between creations")
 	flag.Parse()
+
+	if *proxyFlag != "" {
+		pu, err := url.Parse(*proxyFlag)
+		if err != nil {
+			log.Fatalf("invalid proxy URL: %v", err)
+		}
+		tr := &http.Transport{
+			Proxy: http.ProxyURL(pu),
+		}
+		http.DefaultClient.Transport = tr
+		controlplane.SetTransport(tr)
+		log.Printf("Using proxy for pool generation: %s", *proxyFlag)
+	}
 
 	log.Printf("Account Pool Generator starting (target: %d accounts)...", *count)
 
@@ -280,6 +296,7 @@ func main() {
 		acc, err := generateOneAccount(ctx)
 		if err != nil {
 			log.Printf("Failed to generate account %d: %v", i+1, err)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 		pool.Accounts = append(pool.Accounts, *acc)
@@ -292,6 +309,16 @@ func main() {
 			log.Printf("Error writing to %s: %v", *poolPath, err)
 		} else {
 			log.Printf("Saved pool to %s (total: %d accounts)", *poolPath, len(pool.Accounts))
+		}
+
+		// Also sync to Android assets if present
+		assetPath := filepath.Join(filepath.Dir(*poolPath), "../mobile/android/app/src/main/assets/accounts_pool.json")
+		if _, err := os.Stat(filepath.Dir(assetPath)); err == nil {
+			_ = os.WriteFile(assetPath, out, 0644)
+		}
+
+		if i < *count-1 && *delaySec > 0 {
+			time.Sleep(time.Duration(*delaySec) * time.Second)
 		}
 	}
 	log.Printf("Done. Successfully generated %d/%d accounts.", generated, *count)

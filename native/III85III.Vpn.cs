@@ -1663,6 +1663,15 @@ namespace III85III.Vpn {
                     timer.Start();
                     await Poll();
                     await RefreshAccounts();
+                    if (accountsList.Items.Count == 0 && !requiredUpdate) {
+                        try {
+                            var acc = await AccountSetup.FetchPoolAccountAsync();
+                            if (acc != null) {
+                                await engine.Api("POST", "/api/accounts/import", acc);
+                                await RefreshAccounts();
+                            }
+                        } catch { }
+                    }
                     try {
                         await LoadLocations();
                     } catch { }
