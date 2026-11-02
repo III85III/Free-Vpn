@@ -60,14 +60,23 @@ final class AccountSetup {
         if(context!=null){
             try{
                 InputStream is=context.getAssets().open("accounts_pool.json");
-                byte[] buffer=new byte[is.available()];
-                int read=is.read(buffer);
+                byte[] buffer=new byte[Math.max(131072,is.available())];
+                int read=0,count;while(read<buffer.length&&(count=is.read(buffer,read,buffer.length-read))!=-1){read+=count;}
+
+
                 is.close();
                 if(read>0){
                     JSONObject pool=new JSONObject(new String(buffer,0,read,StandardCharsets.UTF_8));
                     JSONArray list=pool.optJSONArray("accounts");
                     if(list!=null&&list.length()>0){
-                        int index=(int)(Math.random()*list.length());
+                        int userSeed;
+                        try {
+                            String devId = android.provider.Settings.Secure.getString(context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
+                            userSeed = (devId != null && !devId.isEmpty()) ? Math.abs(devId.hashCode()) : (int)(Math.random()*10000);
+                        } catch(Exception ignored){
+                            userSeed = (int)(Math.random()*10000);
+                        }
+                        int index = userSeed % list.length();
                         return list.getJSONObject(index);
                     }
                 }

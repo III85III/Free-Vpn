@@ -1,5 +1,6 @@
 {
   "schema": 1,
+  "changelog": "• اتصال سریع با ۵۰ گیگابایت اکانت خودکار\n• پروکسی پرسرعت تلگرام (@cabicy) فعال در تمام پلتفرم‌ها\n• حل کامل لوپ دانلود و خطای آپدیت",
   "announcement": {
     "id": "adblock_live_20261101",
     "message": "🛡️ AdBlocker فعال شد: از این پس تبلیغات اسپاتیفای و سایر برنامه‌ها در تمام لوکیشن‌ها مسدود هستند.",
@@ -8,15 +9,15 @@
   "windows": {
     "version": "2.3.16",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.16/III85III-VPN-Setup.exe",
-    "size": 23480832,
-    "sha256": "d1e60bb96e064909f54aec0cb439675691338a4adb6cba7e7e38e1cb25d42cd4"
+    "size": 23482368,
+    "sha256": "1b1e49278b2ddc045dd65a84148253288ea04eff6827c9339257fd7c31214570"
   },
   "android": {
     "version": "2.3.16",
     "version_code": 23016,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v2.3.16/III85III-VPN.apk",
-    "size": 13553246,
-    "sha256": "17d2da6b7389c1ad83ef2d18fd019851dc965a003c214d2177cd9a3cc2b46ce1"
+    "size": 13557342,
+    "sha256": "26e9a9fccffefe6f944bc544cbeab467c968977b251aed8b6575c809341ee051"
   }
 }
 

@@ -1250,6 +1250,20 @@ namespace III85III.Vpn {
         internal static bool ShouldShow(bool seen,bool hasAccounts,bool updateRequired){return !seen&&!hasAccounts&&!updateRequired;}
         internal static async Task<Dictionary<string, object>> FetchPoolAccountAsync() {
             try {
+                string lp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "provision", "pool.json");
+                if (!File.Exists(lp)) lp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dist", "provision", "pool.json");
+                if (File.Exists(lp)) {
+                    var lpool = Json.Decode(File.ReadAllText(lp));
+                    var lrows = Json.Rows(lpool, "accounts");
+                    var litems = new List<Dictionary<string, object>>();
+                    foreach (var a in lrows) litems.Add(a);
+                    if (litems.Count > 0) {
+                        int s = Math.Abs((Environment.MachineName + "_" + Environment.UserName).GetHashCode());
+                        return litems[s % litems.Count];
+                    }
+                }
+            } catch { }
+            try {
                 using (var client = new System.Net.Http.HttpClient()) {
                     client.Timeout = TimeSpan.FromSeconds(3.5);
                     string json = await client.GetStringAsync("https://raw.githubusercontent.com/III85III/III85III-VPN/main/dist/provision/pool.json");
@@ -1258,8 +1272,8 @@ namespace III85III.Vpn {
                     var items = new List<Dictionary<string, object>>();
                     foreach (var a in list) items.Add(a);
                     if (items.Count > 0) {
-                        var rng = new Random();
-                        return items[rng.Next(items.Count)];
+                        int seed = Math.Abs((Environment.MachineName + "_" + Environment.UserName).GetHashCode());
+                        return items[seed % items.Count];
                     }
                 }
             } catch { }
@@ -2401,10 +2415,10 @@ namespace III85III.Vpn {
             } catch {}
             noticeLabel.Text = "⚡ پروکسی فعال است (کلیک برای اتصال تلگرام)";
             try {
-                Process.Start(new ProcessStartInfo("tg://socks?server=proxy.cabicy.lvh.me&port=10810") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("tg://socks?server=127.0.0.1&port=10810") { UseShellExecute = true });
             } catch (Exception) {
                 try {
-                    Process.Start(new ProcessStartInfo("https://t.me/socks?server=proxy.cabicy.lvh.me&port=10810") { UseShellExecute = true });
+                    Process.Start(new ProcessStartInfo("https://t.me/socks?server=127.0.0.1&port=10810") { UseShellExecute = true });
                 } catch (Exception) {}
             }
         }

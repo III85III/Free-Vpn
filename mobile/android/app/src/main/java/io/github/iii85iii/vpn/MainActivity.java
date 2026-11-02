@@ -186,12 +186,18 @@ public final class MainActivity extends Activity {
                     if(info.code>BuildConfig.VERSION_CODE){
                         latestAvailable=info;
                         updateUpdateBanner();
-                        if(manual){
+                        String dismissed=getSharedPreferences("vpn_prefs",MODE_PRIVATE).getString("dismissed_update","");
+                        if(manual || !info.version.equals(dismissed)){
                             new AlertDialog.Builder(this)
-                                .setTitle("Update Available")
-                                .setMessage("III85III VPN v"+info.version+" is available.\nWould you like to install it now?")
-                                .setPositiveButton("Update Now",(d,w)->startActivity(new Intent(this,UpdateActivity.class)))
-                                .setNegativeButton("Later",null)
+                                .setTitle("✨ به‌روزرسانی اختیاری (v"+info.version+")")
+                                .setMessage("امکانات نسخه جدید:\n\n"+((info.changelog!=null&&!info.changelog.isEmpty())?info.changelog:"• اتصال سریع با ۵۰ گیگابایت اکانت خودکار\n• پروکسی تلگرام پرسرعت (@cabicy)\n• رفع مشکل لوپ دانلود و خطای آپدیت")+"\n\nآیا مایل به دانلود و نصب هستید؟")
+                                .setPositiveButton("دانلود و نصب",(d,w)->startActivity(new Intent(this,UpdateActivity.class)))
+                                .setNeutralButton("دانلود مستقیم با مرورگر",(d,w)->{
+                                    try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(info.url)));}catch(Exception ignored){}
+                                })
+                                .setNegativeButton("بعداً (ادامه کار)",(d,w)->{
+                                    getSharedPreferences("vpn_prefs",MODE_PRIVATE).edit().putString("dismissed_update",info.version).apply();
+                                })
                                 .show();
                         }
                     }else{
@@ -1044,12 +1050,12 @@ public final class MainActivity extends Activity {
         });
         int p = CoreRuntime.getProxyPort();
         try{
-            Intent proxyIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("tg://socks?server=proxy.cabicy.lvh.me&port=" + p));
+            Intent proxyIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("tg://socks?server=127.0.0.1&port=" + p));
             proxyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(proxyIntent);
         }catch(Exception e){
             try{
-                Intent webProxy = new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/socks?server=proxy.cabicy.lvh.me&port=" + p));
+                Intent webProxy = new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/socks?server=127.0.0.1&port=" + p));
                 webProxy.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(webProxy);
             }catch(Exception ignored){}

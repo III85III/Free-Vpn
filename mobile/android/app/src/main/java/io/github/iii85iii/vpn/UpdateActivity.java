@@ -23,12 +23,12 @@ public final class UpdateActivity extends Activity {
     private TextView status;private ProgressBar progress;private Button action;
     private Info available;private File downloaded;private boolean busy;
     private static final java.util.concurrent.atomic.AtomicBoolean downloading=new java.util.concurrent.atomic.AtomicBoolean();
-    static final class Info {String version,url,hash;long size,code;}
+    static final class Info {String version,url,hash,changelog;long size,code;}
     @Override public void onCreate(Bundle state){
         super.onCreate(state);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(0xff101319);int pad=(int)(24*getResources().getDisplayMetrics().density);root.setPadding(pad,pad,pad,pad);
         if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->finish());
         back=new Button(this);back.setText("✕ بستن و ادامه کار با نسخه فعلی");back.setAllCaps(false);back.setOnClickListener(v->finish());root.addView(back);
-        status=new TextView(this);status.setTextColor(0xffefefea);status.setTextSize(18);status.setPadding(0,pad,0,pad);root.addView(status);
+        status=new TextView(this);status.setTextColor(0xffefefea);status.setTextSize(16);status.setPadding(0,pad/2,0,pad/2);root.addView(status);
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(100);root.addView(progress);
         action=new Button(this);action.setAllCaps(false);action.setText("بررسی آپدیت");action.setOnClickListener(v->{if(downloaded!=null)install();else if(available!=null)download();else check();});root.addView(action);
         Button directWebBtn=new Button(this);
@@ -42,9 +42,14 @@ public final class UpdateActivity extends Activity {
             }
         });
         root.addView(directWebBtn);
-        try{android.graphics.Typeface font=android.graphics.Typeface.createFromAsset(getAssets(),"fonts/Lato-Regular.ttf");status.setTypeface(font);action.setTypeface(font);back.setTypeface(font);directWebBtn.setTypeface(font);}catch(RuntimeException ignored){}
+        Button sigHelpBtn=new Button(this);
+        sigHelpBtn.setText("❓ راهنمای رفع خطای امضا یا عدم نصب");
+        sigHelpBtn.setAllCaps(false);
+        sigHelpBtn.setOnClickListener(v->showSignatureHelp());
+        root.addView(sigHelpBtn);
+        try{android.graphics.Typeface font=android.graphics.Typeface.createFromAsset(getAssets(),"fonts/Lato-Regular.ttf");status.setTypeface(font);action.setTypeface(font);back.setTypeface(font);directWebBtn.setTypeface(font);sigHelpBtn.setTypeface(font);}catch(RuntimeException ignored){}
         android.graphics.drawable.GradientDrawable button=new android.graphics.drawable.GradientDrawable();button.setColor(0xffd9bd83);button.setCornerRadius(pad/2f);action.setBackground(button);action.setTextColor(0xff101319);action.setMinHeight((int)(54*getResources().getDisplayMetrics().density));progress.setProgressTintList(android.content.res.ColorStateList.valueOf(0xffd9bd83));
-        TextView note=new TextView(this);note.setTextColor(0xff9fa7b4);note.setText("آپدیت‌ها کاملاً اختیاری هستند و می‌توانید بدون آپدیت به استفاده از فیلترشکن ادامه دهید.");note.setPadding(0,pad,0,0);root.addView(note);setContentView(root);WindowLayout.apply(this,root);
+        TextView note=new TextView(this);note.setTextColor(0xff9fa7b4);note.setText("آپدیت‌ها کاملاً اختیاری هستند و هیچ اجباری برای ارتقا وجود ندارد.");note.setPadding(0,pad/2,0,0);root.addView(note);setContentView(root);WindowLayout.apply(this,root);
         check();
     }
     private void check(){if(busy)return;busy=true;action.setEnabled(false);status.setText("Checking for updates…");progress.setIndeterminate(true);
@@ -69,7 +74,7 @@ public final class UpdateActivity extends Activity {
         HttpURLConnection request=open(UpdatePolicy.FEED);
         try(InputStream stream=request.getInputStream();ByteArrayOutputStream bytes=new ByteArrayOutputStream()){
             byte[] buffer=new byte[4096];int count;while((count=stream.read(buffer))!=-1){if(bytes.size()+count>32768)throw new IOException("Update metadata too large");bytes.write(buffer,0,count);}
-            JSONObject document=new JSONObject(bytes.toString("UTF-8"));if(document.optInt("schema")!=1)throw new IOException("Unknown update format");JSONObject item=document.getJSONObject("android");Info info=new Info();info.version=item.getString("version");info.url=item.getString("url");info.hash=item.getString("sha256");info.size=item.getLong("size");info.code=item.getLong("version_code");UpdatePolicy.validate(info.url,info.hash,info.size,info.code);return info;
+            JSONObject document=new JSONObject(bytes.toString("UTF-8"));if(document.optInt("schema")!=1)throw new IOException("Unknown update format");JSONObject item=document.getJSONObject("android");Info info=new Info();info.version=item.getString("version");info.url=item.getString("url");info.hash=item.getString("sha256");info.size=item.getLong("size");info.code=item.getLong("version_code");info.changelog=item.optString("changelog",document.optString("changelog",""));UpdatePolicy.validate(info.url,info.hash,info.size,info.code);return info;
         }finally{request.disconnect();}
     }
     static void notifyAvailable(Activity owner){
@@ -121,12 +126,26 @@ public final class UpdateActivity extends Activity {
                 });
             } catch(Exception error){
                 runOnUiThread(()->{
-                    status.setText("فایل ناقص بود. مجدداً دانلود می‌شود...");
+                    status.setText("خطا در تطابق فایل دانلود شده. لطفاً از دکمه «دانلود مستقیم فایل نصبی با مرورگر» استفاده کنید.");
+                    action.setText("دانلود مجدد");
+                    downloaded=null;
                     finishWork();
-                    download();
                 });
             }
         });
+    }
+
+    private void showSignatureHelp(){
+        new AlertDialog.Builder(this)
+            .setTitle("راهنمای رفع خطای امضا یا عدم نصب")
+            .setMessage("در صورت مشاهده «خطای امضا (Signature Error)» یا «برنامه نصب نشد»:\n\nبه دلیل ارتقای کلید امنیتی اندروید، لطفاً ابتدا نسخه فعلی فیلترشکن را از گوشی خود حذف (Uninstall) کرده و سپس نسخه جدید را با دکمه زیر دانلود و نصب کنید (تنظیمات محفوظ می‌ماند).")
+            .setPositiveButton("🌐 دانلود مستقیم با مرورگر",(d,w)->{
+                if(available!=null&&available.url!=null){
+                    try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(available.url)));}catch(Exception ignored){}
+                }
+            })
+            .setNegativeButton("متوجه شدم",null)
+            .show();
     }
 
     private void launchInstall(){
@@ -150,6 +169,12 @@ public final class UpdateActivity extends Activity {
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+            for (ResolveInfo resolveInfo : resInfoList) {
+                try{grantUriPermission(resolveInfo.activityInfo.packageName, contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);}catch(Exception ignored){}
+            }
+            try{grantUriPermission("com.google.android.packageinstaller", contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);}catch(Exception ignored){}
+            try{grantUriPermission("com.android.packageinstaller", contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);}catch(Exception ignored){}
             startActivity(intent);
         } catch(Exception e) {
             try {
@@ -159,9 +184,7 @@ public final class UpdateActivity extends Activity {
                 intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             } catch(Exception fallbackError) {
-                if(available != null && available.url != null){
-                    try{startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(available.url)));}catch(Exception ignored){}
-                }
+                showSignatureHelp();
             }
         }
     }
