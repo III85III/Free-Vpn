@@ -216,7 +216,7 @@ public final class MainActivity extends Activity {
     private void showError(String detail){
         if(isDestroyed()||isFinishing())return;
         String message=detail==null?"":detail;
-        String summary=message.toLowerCase(Locale.ROOT).contains("account")||message.toLowerCase(Locale.ROOT).contains("sign-in")?"Your account needs attention. Check your sign-in and try again.":"We couldn't complete that. Check your connection and try again.";
+        String summary=ErrorMessages.summary(message);
         feedback.setText(summary+"  \u00b7  Tap for details");
         Runnable display=()->{
             LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(24),dp(12),dp(24),dp(8));
@@ -224,7 +224,7 @@ public final class MainActivity extends Activity {
             TextView technical=label(message,13,MUTED);technical.setTextIsSelectable(true);technical.setVisibility(View.GONE);
             ScrollView scroll=new ScrollView(this);scroll.addView(technical);scroll.setVisibility(View.GONE);
             panel.addView(button("Technical details",()->{scroll.setVisibility(scroll.getVisibility()==View.GONE?View.VISIBLE:View.GONE);technical.setVisibility(View.VISIBLE);}));panel.addView(scroll,new LinearLayout.LayoutParams(-1,dp(140)));
-            new AlertDialog.Builder(this).setTitle("Connection problem").setView(panel).setPositiveButton("Got it",null).show();
+            new AlertDialog.Builder(this).setTitle(ErrorMessages.title(message)).setView(panel).setPositiveButton("Got it",null).show();
         };
         feedback.setOnClickListener(v->display.run());display.run();
     }
@@ -720,7 +720,25 @@ public final class MainActivity extends Activity {
     }
     private void accounts(){
         heading("مدیریت اکانت‌ها","پروفایل‌های فعال و حجم مصرفی ۵۰ گیگابایت ماهانه");
-        Button addAccBtn=button("⚡ دریافت اکانت جدید (۵۰ گیگابایت)",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();});
+        Button addAccBtn=button("⚡ دریافت اکانت جدید (۵۰ گیگابایت)",()->{
+            Toast.makeText(this,"در حال دریافت و فعال‌سازی اکانت ۵۰ گیگابایت...",Toast.LENGTH_SHORT).show();
+            feedback.setText("در حال دریافت اکانت ۵۰ گیگابایت...");
+            AccountSetup.addFreshAccount(this,new AccountSetup.ProvisionCallback(){
+                @Override public void onSuccess(){
+                    main.post(()->{
+                        Toast.makeText(MainActivity.this,"✅ اکانت ۵۰ گیگابایت جدید با موفقیت اضافه شد",Toast.LENGTH_LONG).show();
+                        feedback.setText("");
+                        if(page==3)showPage(3);
+                    });
+                }
+                @Override public void onFailure(String error){
+                    main.post(()->{
+                        Toast.makeText(MainActivity.this,"خطا در دریافت اکانت: "+error,Toast.LENGTH_LONG).show();
+                        feedback.setText("");
+                    });
+                }
+            });
+        });
         addAccBtn.setTextColor(GOLD);
         content.addView(addAccBtn);
         boolean hidden=false;
@@ -759,7 +777,7 @@ public final class MainActivity extends Activity {
                 emailView.setTypeface(body,Typeface.BOLD);
                 topRow.addView(emailView,new LinearLayout.LayoutParams(0,-2,1));
 
-                TextView badge=label(isActive?"ACTIVE":statusStr.toUpperCase(Locale.ROOT),10,isActive?BG:TEXT);
+                TextView badge=label(isActive?"فعال":statusStr.toUpperCase(Locale.ROOT),10,isActive?BG:TEXT);
                 badge.setTypeface(body,Typeface.BOLD);
                 badge.setPadding(dp(8),dp(3),dp(8),dp(3));
                 badge.setBackground(pillBackground(isActive?GOLD:0x33CBD5E1,isActive?GOLD:0x1ACBD5E1,10,1));
@@ -840,7 +858,7 @@ public final class MainActivity extends Activity {
                 actionsRow.setPadding(0,dp(6),0,0);
 
                 if(!isActive){
-                    Button useBtn=button(isEnabled?"Use This Account":"Enable & Use",()->api("POST","/api/accounts/"+id+"/enabled",object("enabled",true),7000,enabled->api("POST","/api/accounts/"+id+"/activate",new JSONObject(),7000,selected->{feedback.setText("Account selected. You can connect from VPN.");showPage(0);})));
+                    Button useBtn=button(isEnabled?"اتصال به این اکانت":"فعال‌سازی و اتصال",()->api("POST","/api/accounts/"+id+"/enabled",object("enabled",true),7000,enabled->api("POST","/api/accounts/"+id+"/activate",new JSONObject(),7000,selected->{feedback.setText("اکانت فعال شد. در حال اتصال...");showPage(0);})));
                     useBtn.setTextColor(BG);
                     useBtn.setBackground(background(GOLD));
                     LinearLayout.LayoutParams useLp=new LinearLayout.LayoutParams(0,dp(42),1);
@@ -849,8 +867,8 @@ public final class MainActivity extends Activity {
                     actionsRow.addView(useBtn);
                 }
 
-                Button refreshBtn=button("Refresh \u27f3",()->{
-                    feedback.setText("Refreshing quota\u2026");
+                Button refreshBtn=button("بروزرسانی \u27f3",()->{
+                    feedback.setText("در حال استعلام حجم...");
                     autoSyncedAccounts.remove(id);
                     api("POST","/api/accounts/"+id+"/refresh",new JSONObject(),15000,r->{if(page==3)showPage(3);});
                 });
@@ -866,7 +884,7 @@ public final class MainActivity extends Activity {
                 v2rayCardBtn.setLayoutParams(v2rayCardLp);
                 actionsRow.addView(v2rayCardBtn);
 
-                Button removeBtn=button("Remove",()->new AlertDialog.Builder(this).setTitle("Remove this account?").setMessage("This removes its stored session from this device.").setNegativeButton("Cancel",null).setPositiveButton("Remove",(d,w)->api("DELETE","/api/accounts/"+id,null,7000,r->{if(page==3)showPage(3);})).show());
+                Button removeBtn=button("حذف",()->new AlertDialog.Builder(this).setTitle("حذف این اکانت؟").setMessage("این اکانت از دستگاه شما حذف می‌شود.").setNegativeButton("انصراف",null).setPositiveButton("حذف",(d,w)->api("DELETE","/api/accounts/"+id,null,7000,r->{if(page==3)showPage(3);})).show());
                 removeBtn.setTextColor(Color.rgb(255,100,100));
                 LinearLayout.LayoutParams remLp=new LinearLayout.LayoutParams(-2,dp(42));
                 removeBtn.setLayoutParams(remLp);
@@ -875,6 +893,10 @@ public final class MainActivity extends Activity {
                 card.addView(actionsRow);
                 rows.addView(card);
             }
+            Button manualBtn=button("ورود دستی با ایمیل موزیلا",()->{if(signIn==null||signIn.closed)signIn=new SignInFlow();});
+            manualBtn.setTextColor(MUTED);
+            manualBtn.setTextSize(12);
+            content.addView(manualBtn);
         });
     }
     private void appRules(){
@@ -1138,7 +1160,7 @@ public final class MainActivity extends Activity {
                 if(pending||closed)return;
                 pending=true;
                 Toast.makeText(MainActivity.this,"در حال دریافت اکانت ۵۰ گیگابایت...",Toast.LENGTH_SHORT).show();
-                AccountSetup.ensureAccount(MainActivity.this,new AccountSetup.ProvisionCallback(){
+                AccountSetup.addFreshAccount(MainActivity.this,new AccountSetup.ProvisionCallback(){
                     @Override public void onSuccess(){
                         main.post(()->{
                             pending=false;closed=true;
@@ -1232,7 +1254,7 @@ public final class MainActivity extends Activity {
                 showV2RayModal(userEmail);
                 return;
             }
-            if(step.equals("error")||step.equals("failed")||step.equals("cancelled")){feedback.setText(state.optString("error",state.optString("message","Sign-in could not finish.")));cancel();return;}
+            if(step.equals("error")||step.equals("failed")||step.equals("cancelled")){String failure=state.optString("error",state.optString("message","Sign-in could not finish."));cancel();if(!step.equals("cancelled"))showError(failure);return;}
             boolean code=step.equals("need_email_code")||step.equals("need_totp")||step.equals("need_unblock_code")||step.equals("need_captcha");
             if(code){
                 promptStamp=state.optString("updated");

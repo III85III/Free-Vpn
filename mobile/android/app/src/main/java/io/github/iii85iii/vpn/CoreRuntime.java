@@ -149,7 +149,19 @@ final class CoreRuntime {
             }
             JSONObject result=new JSONObject();
             if(text!=null&&!text.trim().isEmpty()){
-                try{result=new JSONObject(text.trim());}catch(Exception ignored){try{result.put("error",text.trim());}catch(Exception ignored2){}}
+                String trimmed=text.trim();
+                if(trimmed.startsWith("{")){
+                    try{result=new JSONObject(trimmed);}catch(Exception ignored){try{result.put("error",trimmed);}catch(Exception ignored2){}}
+                }else if(trimmed.startsWith("[")){
+                    try{
+                        result=new JSONObject();
+                        org.json.JSONArray arr=new org.json.JSONArray(trimmed);
+                        result.put("items",arr);
+                        result.put("data",arr);
+                    }catch(Exception ignored){try{result.put("error",trimmed);}catch(Exception ignored2){}}
+                }else{
+                    try{result.put("raw",trimmed);result.put("message",trimmed);}catch(Exception ignored){}
+                }
             }
             if(status<200||status>=300)throw new ApiFailure(status,result.optString("error",result.optString("message","HTTP "+status)));
             return result;
