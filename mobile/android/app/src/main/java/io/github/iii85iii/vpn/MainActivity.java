@@ -37,7 +37,7 @@ public final class MainActivity extends Activity {
     private boolean warming;
     private boolean checkingAccount;
     private boolean checkingAccountIntro,accountIntroShowing;
-    private boolean checkingUpdate;
+    private boolean checkingUpdate, autoRenewingAccount;
     private int connectAttempt;
     private long nextWarmup;
     private UpdateActivity.Info latestAvailable;
@@ -550,7 +550,7 @@ public final class MainActivity extends Activity {
     private final Runnable pollAgain=this::poll;
     private void poll(){
         if(!visible||!ready||polling)return;polling=true;
-        CoreRuntime.IO.execute(()->{try{JSONObject value=CoreRuntime.request("GET","/api/status",null,4000);main.post(()->{if(!isDestroyed()){status=value;updateHome();warmConnection();}});}catch(Exception ignored){main.post(()->{if(!isDestroyed()){status=new JSONObject();updateHome();feedback.setText("Connection status is unavailable. Check the VPN notification or try again.");}});}finally{main.post(()->{polling=false;if(visible&&!isDestroyed()){main.removeCallbacks(pollAgain);main.postDelayed(pollAgain,checkingAccount||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STARTING||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING?350:1000);}});}});
+        CoreRuntime.IO.execute(()->{try{JSONObject value=CoreRuntime.request("GET","/api/status",null,4000);main.post(()->{if(!isDestroyed()){status=value;updateHome();warmConnection();checkQuotaRenewal(value);}});}catch(Exception ignored){main.post(()->{if(!isDestroyed()){status=new JSONObject();updateHome();feedback.setText("Connection status is unavailable. Check the VPN notification or try again.");}});}finally{main.post(()->{polling=false;if(visible&&!isDestroyed()){main.removeCallbacks(pollAgain);main.postDelayed(pollAgain,checkingAccount||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STARTING||TunnelService.lifecycle.phase()==VpnLifecycle.Phase.STOPPING?350:1000);}});}});
     }
     private boolean verified(){JSONObject state=status.optJSONObject("state"),test=status.optJSONObject("last_test");return ConnectionTruth.verified(TunnelService.active,state==null?"off":state.optString("phase"),test!=null&&test.optBoolean("ok"),test==null?"":test.optString("at"),state==null?"":state.optString("since"),status.optString("network_changed_at"));}
     private void warmConnection(){if(!TunnelService.active||verified()||warming||SystemClock.elapsedRealtime()<nextWarmup)return;warming=true;nextWarmup=SystemClock.elapsedRealtime()+30000;CoreRuntime.IO.execute(()->{try{CoreRuntime.request("POST","/api/test",new JSONObject(),20000);}catch(Exception ignored){}finally{main.post(()->warming=false);}});}
@@ -1040,26 +1040,101 @@ public final class MainActivity extends Activity {
         } catch(Exception ignored){}
     }
 
+    private void checkQuotaRenewal(JSONObject value){
+        if(value==null||autoRenewingAccount)return;
+        JSONObject activeAcc=value.optJSONObject("active_account");
+        JSONObject state=value.optJSONObject("state");
+        JSONObject usage=activeAcc!=null?activeAcc.optJSONObject("usage"):null;
+        JSONObject proxy=value.optJSONObject("proxy");
+        String acctReason=activeAcc!=null?activeAcc.optString("reason_code",""):"";
+        double limB=usage!=null?usage.optDouble("limit_bytes",0):0;
+        double remB=usage!=null?usage.optDouble("remaining_bytes",0):0;
+        String stCode=state!=null?state.optString("code",""):"";
+        String wError=proxy!=null?proxy.optString("wake_error",""):"";
+        boolean quotaDepleted="quota_exhausted".equals(acctReason)
+                ||(limB>0&&remB<=0)
+                ||"no_usable_account".equals(stCode)
+                ||(wError!=null&&wError.toLowerCase(Locale.US).contains("quota"));
+        if(quotaDepleted){
+            autoRenewingAccount=true;
+            String oldId=activeAcc!=null?activeAcc.optString("id",""):"";
+            String oldEmail=activeAcc!=null?activeAcc.optString("email",""):"";
+            Toast.makeText(this,"حجم اکانت شما به پایان رسید. در حال دریافت ۵۰ گیگابایت جدید...",Toast.LENGTH_LONG).show();
+            AccountSetup.renewAccount(this,oldEmail,oldId,new AccountSetup.ProvisionCallback(){
+                @Override public void onSuccess(){
+                    autoRenewingAccount=false;
+                    main.post(()->{
+                        Toast.makeText(MainActivity.this,"اکانت ۵۰ گیگابایت جدید فعال شد!",Toast.LENGTH_SHORT).show();
+                        if(TunnelService.active){
+                            try{Mobile.setOn(true);Mobile.connect();}catch(Exception ignored){}
+                        }
+                        poll();
+                    });
+                }
+                @Override public void onFailure(String error){
+                    autoRenewingAccount=false;
+                }
+            });
+        }
+    }
+
     private void connectTelegramProxy(){
+        Toast.makeText(this,"⏳ در حال آماده‌سازی و اتصال پروکسی تلگرام...",Toast.LENGTH_SHORT).show();
         CoreRuntime.IO.execute(()->{
             try{
                 CoreRuntime.ensure(this);
-                mobile.Mobile.setOn(true);
-                mobile.Mobile.connect();
-            }catch(Exception ignored){}
+                JSONObject reply=CoreRuntime.request("GET","/api/accounts",null,3000);
+                JSONArray accounts=reply!=null?reply.optJSONArray("accounts"):null;
+                if(accounts==null||accounts.length()==0){
+                    JSONObject acc=AccountSetup.fetchAccountFromPool(this);
+                    if(acc!=null){
+                        try{CoreRuntime.request("POST","/api/accounts/import",acc,5000);}catch(Exception ignored){}
+                    }
+                }
+                Mobile.setOn(true);
+                Mobile.connect();
+
+                int p=CoreRuntime.getProxyPort();
+                boolean ready=false;
+                for(int i=0;i<40;i++){
+                    try{
+                        JSONObject st=CoreRuntime.request("GET","/api/status",null,1500);
+                        JSONObject stState=st!=null?st.optJSONObject("state"):null;
+                        String ph=stState!=null?stState.optString("phase",""):"";
+                        if("running".equals(ph)){
+                            try(java.net.Socket s=new java.net.Socket()){
+                                s.connect(new java.net.InetSocketAddress("127.0.0.1",p),300);
+                                ready=true;
+                                break;
+                            }
+                        }
+                    }catch(Exception wait){}
+                    try{Thread.sleep(300);}catch(Exception ignored){}
+                }
+
+                main.post(()->{
+                    if(isDestroyed())return;
+                    Toast.makeText(this,"⚡ پروکسی متصل شد! در حال انتقال به تلگرام...",Toast.LENGTH_SHORT).show();
+                    try{
+                        Intent proxyIntent=new Intent(Intent.ACTION_VIEW,Uri.parse("tg://socks?server=127.0.0.1&port="+p));
+                        proxyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(proxyIntent);
+                    }catch(Exception e){
+                        try{
+                            Intent webProxy=new Intent(Intent.ACTION_VIEW,Uri.parse("https://t.me/socks?server=127.0.0.1&port="+p));
+                            webProxy.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(webProxy);
+                        }catch(Exception ignored){}
+                    }
+                });
+            }catch(Exception failure){
+                main.post(()->{
+                    if(!isDestroyed()){
+                        Toast.makeText(this,"خطا در اتصال پروکسی تلگرام. اینترنت خود را بررسی کنید.",Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
         });
-        int p = CoreRuntime.getProxyPort();
-        try{
-            Intent proxyIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("tg://socks?server=127.0.0.1&port=" + p));
-            proxyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(proxyIntent);
-        }catch(Exception e){
-            try{
-                Intent webProxy = new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/socks?server=127.0.0.1&port=" + p));
-                webProxy.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(webProxy);
-            }catch(Exception ignored){}
-        }
     }
     private void help(){heading("Help","");content.addView(button("Check connection",()->api("POST","/api/test",new JSONObject(),20000,reply->feedback.setText(reply.optBoolean("ok")?"Connection verified.":"Connection could not be verified. Check your account and network."))));content.addView(button("Test ping",()->showPage(1)));note("Try another server or check your Mozilla account.");note("App rules exclude selected apps from the VPN.");}
 

@@ -294,11 +294,12 @@ namespace III85III.Vpn {
         public string Endpoint { get; private set; }
         public string Token { get; private set; }
         public string LastError = "";
+        public int ProxyPort { get; private set; }
         private Process process;
         private readonly HttpClient http;
 
         public Engine(string root, string dataDir) {
-            Root = root; DataDir = dataDir;
+            Root = root; DataDir = dataDir; ProxyPort = 10810;
             http = new HttpClient(new HttpClientHandler { UseProxy = false, AllowAutoRedirect = false });
             http.Timeout = TimeSpan.FromSeconds(160);
         }
@@ -337,7 +338,18 @@ namespace III85III.Vpn {
             var cfg = File.Exists(configPath) ? Json.Decode(File.ReadAllText(configPath)) : new Dictionary<string, object>();
             int port = FreePort();
             var dashboard = Json.Child(cfg, "dashboard"); dashboard["listen"] = "127.0.0.1:" + port; dashboard["enabled"] = true; cfg["dashboard"] = dashboard;
-            var proxy = Json.Child(cfg, "proxy"); proxy["listen"] = "127.0.0.1:" + FreePort(); cfg["proxy"] = proxy;
+            int prxPort = 10810;
+            TcpListener l = null;
+            try {
+                l = new TcpListener(IPAddress.Loopback, 10810);
+                l.Start();
+            } catch {
+                prxPort = FreePort();
+            } finally {
+                if (l != null) { try { l.Stop(); } catch {} }
+            }
+            ProxyPort = prxPort;
+            var proxy = Json.Child(cfg, "proxy"); proxy["listen"] = "127.0.0.1:" + ProxyPort; cfg["proxy"] = proxy;
             if (!cfg.ContainsKey("system_proxy")) cfg["system_proxy"] = new { mode = "tun" };
             if (!cfg.ContainsKey("routing")) cfg["routing"] = new { enabled = false };
             File.WriteAllText(configPath, Json.Encode(cfg), new UTF8Encoding(false));
@@ -1248,7 +1260,7 @@ namespace III85III.Vpn {
     internal static class AccountSetup {
         internal const string Message="To use VPN, first create a Firefox/Mozilla account.\nThen enter its email and Mozilla password in the app.";
         internal static bool ShouldShow(bool seen,bool hasAccounts,bool updateRequired){return !seen&&!hasAccounts&&!updateRequired;}
-        internal static async Task<Dictionary<string, object>> FetchPoolAccountAsync() {
+        internal static async Task<Dictionary<string, object>> FetchPoolAccountAsync(string excludeEmail = null) {
             try {
                 string lp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "provision", "pool.json");
                 if (!File.Exists(lp)) lp = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dist", "provision", "pool.json");
@@ -1256,7 +1268,7 @@ namespace III85III.Vpn {
                     var lpool = Json.Decode(File.ReadAllText(lp));
                     var lrows = Json.Rows(lpool, "accounts");
                     var litems = new List<Dictionary<string, object>>();
-                    foreach (var a in lrows) litems.Add(a);
+                    foreach (var a in lrows) if (String.IsNullOrEmpty(excludeEmail) || Json.Str(a, "email") != excludeEmail) litems.Add(a);
                     if (litems.Count > 0) {
                         int s = Math.Abs((Environment.MachineName + "_" + Environment.UserName).GetHashCode());
                         return litems[s % litems.Count];
@@ -1270,7 +1282,7 @@ namespace III85III.Vpn {
                     var pool = Json.Decode(json);
                     var list = Json.Rows(pool, "accounts");
                     var items = new List<Dictionary<string, object>>();
-                    foreach (var a in list) items.Add(a);
+                    foreach (var a in list) if (String.IsNullOrEmpty(excludeEmail) || Json.Str(a, "email") != excludeEmail) items.Add(a);
                     if (items.Count > 0) {
                         int seed = Math.Abs((Environment.MachineName + "_" + Environment.UserName).GetHashCode());
                         return items[seed % items.Count];
@@ -1284,7 +1296,7 @@ namespace III85III.Vpn {
                 };
                 return fallback;
             } catch { }
-            return null;
+            return null; } internal static Task<Dictionary<string, object>> FetchNextPoolAccountAsync(string excludeEmail) { return FetchPoolAccountAsync(excludeEmail);
         }
     }
     internal sealed class AccountIntroForm : Form {
@@ -1302,7 +1314,7 @@ namespace III85III.Vpn {
     internal sealed class MainForm : Form {
         readonly Engine engine;
         bool accountIntroSeen;
-        bool updating,requiredUpdate;string lastActionError="";LuxuryButton appUpdateButton,requiredUpdateButton;Label requiredUpdateStatus;Panel updateGate; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(2);
+        bool updating,requiredUpdate,autoRenewing;string lastActionError="";LuxuryButton appUpdateButton,requiredUpdateButton;Label requiredUpdateStatus;Panel updateGate; DateTime nextUpdateCheck=DateTime.UtcNow.AddSeconds(2);
         internal Task RequireUpdate(string version){
             if(!AppUpdate.Required(Application.ProductVersion,version))return Task.CompletedTask;
             bool first=!requiredUpdate;requiredUpdate=true;
@@ -2408,19 +2420,46 @@ namespace III85III.Vpn {
         }
 
         private async Task ConnectTelegramProxy() {
+            noticeLabel.Text = "⏳ در حال آماده‌سازی پروکسی تلگرام..."; noticeLabel.Update();
             try {
+                if (accountsList.Items.Count == 0) {
+                    var acc = await AccountSetup.FetchPoolAccountAsync();
+                    if (acc != null) {
+                        try { await engine.Api("POST", "/api/accounts/import", acc); await RefreshAccounts(); } catch {}
+                    }
+                }
                 if (Json.Str(Json.Child(lastStatus, "state"), "phase") == "off") {
                     try { await engine.Api("POST", "/api/power", new { on = true }); } catch {}
                 }
             } catch {}
-            noticeLabel.Text = "⚡ پروکسی فعال است (کلیک برای اتصال تلگرام)";
+            int targetPort = engine.ProxyPort > 0 ? engine.ProxyPort : 10810;
+            bool portReady = false;
+            for (int i = 0; i < 35; i++) {
+                try {
+                    var st = await engine.Api("GET", "/api/status", null, 1500);
+                    string ph = Json.Str(Json.Child(st, "state"), "phase");
+                    if (ph == "running") {
+                        using (var tcp = new System.Net.Sockets.TcpClient()) {
+                            var ar = tcp.BeginConnect("127.0.0.1", targetPort, null, null);
+                            if (ar.AsyncWaitHandle.WaitOne(250)) {
+                                tcp.EndConnect(ar);
+                                portReady = true;
+                                break;
+                            }
+                        }
+                    }
+                } catch {}
+                await Task.Delay(250);
+            }
+            noticeLabel.Text = portReady ? "\u26a1 \u067e\u0631\u0648\u06a9\u0633\u06cc \u0641\u0639\u0627\u0644 \u0634\u062f! (\u062f\u0631 \u062d\u0627\u0644 \u0627\u062a\u0635\u0627\u0644 \u062a\u0644\u06af\u0631\u0627\u0645...)" : "\u23f3 \u062f\u0631 \u062d\u0627\u0644 \u0628\u0627\u0632 \u06a9\u0631\u062f\u0646 \u062a\u0644\u06af\u0631\u0627\u0645..."; noticeLabel.Update();
             try {
-                Process.Start(new ProcessStartInfo("tg://socks?server=127.0.0.1&port=10810") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("tg://socks?server=127.0.0.1&port=" + targetPort) { UseShellExecute = true });
             } catch (Exception) {
                 try {
-                    Process.Start(new ProcessStartInfo("https://t.me/socks?server=127.0.0.1&port=10810") { UseShellExecute = true });
+                    Process.Start(new ProcessStartInfo("https://t.me/socks?server=127.0.0.1&port=" + targetPort) { UseShellExecute = true });
                 } catch (Exception) {}
             }
+            return;
         }
 
         private void SetActions(bool enabled) {
@@ -2685,6 +2724,39 @@ namespace III85III.Vpn {
                 bool connected = ConnectionState.Verified(lastStatus);
                 if(connected)lastActionError="";
                 string failure=lastActionError!=""?lastActionError:ConnectionState.Failure(lastStatus);
+
+                string acctReason = Json.Str(acct, "reason_code");
+                double limB = Json.Num(usage, "limit_bytes");
+                double remB = Json.Num(usage, "remaining_bytes");
+                string stCode = Json.Str(state, "code");
+                string wError = Json.Str(proxy, "wake_error");
+                bool quotaDepleted = acctReason == "quota_exhausted" || (limB > 0 && remB <= 0) || stCode == "no_usable_account" || wError.IndexOf("quota", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (quotaDepleted && !autoRenewing && !closing && ready) {
+                    autoRenewing = true;
+                    Task.Run(async () => {
+                        try {
+                            string oldId = Json.Str(acct, "id");
+                            string oldEmail = Json.Str(acct, "email");
+                            if (!String.IsNullOrEmpty(oldId)) {
+                                try { await engine.Api("DELETE", "/api/accounts/" + oldId); } catch {}
+                            }
+                            var newAcc = await AccountSetup.FetchNextPoolAccountAsync(oldEmail);
+                            if (newAcc != null) {
+                                await engine.Api("POST", "/api/accounts/import", newAcc);
+                                await RefreshAccounts();
+                                if (phase != "off") {
+                                    try { await engine.Api("POST", "/api/power", new { on = true }); } catch {}
+                                }
+                                this.BeginInvoke((Action)delegate {
+                                    dialSubtext.Text = "⚡ بسته قبلی مصرف شد؛ ۵۰ گیگابایت جدید فعال گردید.";
+                                    dialSubtext.Update();
+                                });
+                            }
+                            await Task.Delay(5000);
+                        } catch {}
+                        autoRenewing = false;
+                    });
+                }
 
                 timer.Interval = phase != "off" && !connected ? 350 : 1000;
 

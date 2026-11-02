@@ -56,7 +56,40 @@ final class AccountSetup {
         });
     }
 
-    static JSONObject fetchAccountFromPool(Context context){
+    static void renewAccount(Context context, String oldEmail, String oldId, ProvisionCallback callback){
+        CoreRuntime.IO.execute(()->{
+            try{
+                if(oldId!=null && !oldId.isEmpty()){
+                    try{CoreRuntime.request("DELETE","/api/accounts/"+oldId,null,5000);}catch(Exception ignored){}
+                }
+                JSONObject accountToImport=fetchAccountFromPool(context, oldEmail);
+                if(accountToImport==null){
+                    if(callback!=null)callback.onFailure("No accounts available in pool.");
+                    return;
+                }
+                JSONObject importReply=CoreRuntime.request("POST","/api/accounts/import",accountToImport,20000);
+                if(importReply!=null && !importReply.has("error") && (importReply.has("id") || importReply.has("email") || importReply.has("account") || importReply.optBoolean("ok",false))){
+                    String accId=importReply.optString("id");
+                    if(!accId.isEmpty()){
+                        try{
+                            JSONObject en=new JSONObject();en.put("enabled",true);
+                            CoreRuntime.request("POST","/api/accounts/"+accId+"/enabled",en,5000);
+                            CoreRuntime.request("POST","/api/accounts/"+accId+"/activate",null,5000);
+                        }catch(Exception ignored){}
+                    }
+                    if(callback!=null)callback.onSuccess();
+                }else{
+                    String err=importReply!=null?importReply.optString("error","Account renewal failed."):"Account renewal failed.";
+                    if(callback!=null)callback.onFailure(err);
+                }
+            }catch(Exception e){
+                if(callback!=null)callback.onFailure(e.getMessage()!=null?e.getMessage():"Network error");
+            }
+        });
+    }
+
+    static JSONObject fetchAccountFromPool(Context context){ return fetchAccountFromPool(context, null); }
+    static JSONObject fetchAccountFromPool(Context context, String excludeEmail){
         if(context!=null){
             try{
                 InputStream is=context.getAssets().open("accounts_pool.json");
@@ -77,7 +110,12 @@ final class AccountSetup {
                             userSeed = (int)(Math.random()*10000);
                         }
                         int index = userSeed % list.length();
-                        return list.getJSONObject(index);
+                        java.util.List<JSONObject> cand = new java.util.ArrayList<>();
+                        for(int k=0; k<list.length(); k++){
+                            JSONObject item = list.getJSONObject(k);
+                            if(excludeEmail==null || !excludeEmail.equalsIgnoreCase(item.optString("email"))) cand.add(item);
+                        }
+                        return !cand.isEmpty() ? cand.get(userSeed % cand.size()) : list.getJSONObject(index);
                     }
                 }
             }catch(Exception ignored){}
