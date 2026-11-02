@@ -13,7 +13,10 @@ import mobile.Mobile;
 
 public final class TunnelService extends VpnService {
     static final String STOP="io.github.iii85iii.vpn.STOP";
+    static final String START_PROXY="io.github.iii85iii.vpn.START_PROXY";
+    static final String STOP_PROXY="io.github.iii85iii.vpn.STOP_PROXY";
     static volatile boolean active;
+    static volatile boolean proxyActive;
     static volatile String error="";
     static final VpnLifecycle lifecycle=new VpnLifecycle();
     private final AtomicBoolean stopping=new AtomicBoolean();
@@ -30,7 +33,9 @@ public final class TunnelService extends VpnService {
         else if(active)handler.postDelayed(this,1500);
     }};
     @Override public int onStartCommand(Intent intent,int flags,int startId){
-        if(intent!=null&&STOP.equals(intent.getAction())){stopTunnel();return START_NOT_STICKY;}
+        if(intent!=null&&STOP.equals(intent.getAction())){proxyActive=false;stopTunnel();return START_NOT_STICKY;}
+        if(intent!=null&&STOP_PROXY.equals(intent.getAction())){stopProxy();return START_NOT_STICKY;}
+        if(intent!=null&&START_PROXY.equals(intent.getAction())){startProxy();return START_NOT_STICKY;}
         if(UpdateActivity.isRequired(this)){error="Update required.";stopSelf();return START_NOT_STICKY;}
         if(stopping.get()||!lifecycle.start())return START_NOT_STICKY;
         final boolean synthetic=BuildConfig.DEBUG&&intent!=null&&intent.getBooleanExtra("qa_tun",false);
@@ -77,10 +82,53 @@ public final class TunnelService extends VpnService {
             .setContentText(active?"VPN is active \u2022 tap to open":"Starting VPN \u2022 tap Disconnect to cancel").setContentIntent(open).setOngoing(true)
             .addAction(new Notification.Action.Builder(null,"Disconnect",stop).build()).build());
     }
+    private void startProxy(){
+        proxyActive=true;
+        showProxyNotification();
+        CoreRuntime.IO.execute(()->{
+            try {
+                CoreRuntime.ensure(this);
+                Mobile.setOn(true);
+                Mobile.connect();
+                handler.post(()->{if(proxyActive)showProxyNotification();});
+            } catch(Exception ignored){}
+        });
+    }
+    private void stopProxy(){
+        proxyActive=false;
+        if(!active){
+            CoreRuntime.IO.execute(()->{try{Mobile.setOn(false);}catch(Exception ignored){}});
+            stopForeground(true);
+            stopSelf();
+        }
+    }
+    private void showProxyNotification(){
+        String channel="proxy";
+        NotificationManager manager=getSystemService(NotificationManager.class);
+        if(manager!=null){
+            manager.createNotificationChannel(new NotificationChannel(channel,"Telegram Proxy",NotificationManager.IMPORTANCE_LOW));
+            PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent stop=PendingIntent.getService(this,2,new Intent(this,TunnelService.class).setAction(STOP_PROXY),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
+            Notification.Builder notice=new Notification.Builder(this,channel);
+            startForeground(86,notice.setSmallIcon(io.github.iii85iii.vpn.R.drawable.ic_notification)
+                .setContentTitle("III85III VPN • Telegram Proxy")
+                .setContentText("پروکسی تلگرام در پس‌زمینه فعال است")
+                .setContentIntent(open).setOngoing(true)
+                .addAction(new Notification.Action.Builder(null,"خاموش کردن پروکسی",stop).build()).build());
+        }
+    }
     private void stopTunnel(){
         if(!stopping.compareAndSet(false,true))return;
         synchronized(lifecycle){lifecycle.stop();active=false;}
         handler.removeCallbacks(monitor);
+        if(proxyActive){
+            CoreRuntime.IO.execute(()->{
+                Mobile.stopTun();
+                stopping.set(false);
+                handler.post(this::showProxyNotification);
+            });
+            return;
+        }
         CoreRuntime.IO.execute(()->{Mobile.stopTun();Mobile.setOn(false);handler.post(()->{stopForeground(true);stopSelf();});});
     }
     @Override public void onRevoke(){stopTunnel();super.onRevoke();}

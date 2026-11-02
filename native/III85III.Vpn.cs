@@ -1453,7 +1453,7 @@ namespace III85III.Vpn {
         // Settings View Controls
         readonly LuxuryRadioCard[] modeCards = new LuxuryRadioCard[3];
         readonly LuxuryButton applyModeBtn = new LuxuryButton { Text = "Apply", Variant = ButtonVariant.Primary };
-        readonly LuxuryToggle minimizeToggle = new LuxuryToggle();
+        readonly LuxuryToggle minimizeToggle = new LuxuryToggle { Checked = true };
         readonly LuxuryToggle warToggle = new LuxuryToggle();
         int pendingModeIndex = 0;
 
@@ -1645,7 +1645,7 @@ namespace III85III.Vpn {
 
             FormClosing += async delegate (object sender, FormClosingEventArgs e) {
                 if (closing) return;
-                if (minimizeToggle.Checked && !allowClose && e.CloseReason == CloseReason.UserClosing) {
+                if (!allowClose && e.CloseReason == CloseReason.UserClosing) {
                     e.Cancel = true; Hide(); return;
                 }
                 e.Cancel = true; closing = true; timer.Stop(); Enabled = false; tray.Visible = false;

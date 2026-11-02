@@ -1082,6 +1082,7 @@ public final class MainActivity extends Activity {
 
     private void connectTelegramProxy(){
         Toast.makeText(this,"⏳ در حال آماده‌سازی و اتصال پروکسی تلگرام...",Toast.LENGTH_SHORT).show();
+        try{startForegroundService(new Intent(this,TunnelService.class).setAction(TunnelService.START_PROXY));}catch(Exception ignored){}
         CoreRuntime.IO.execute(()->{
             try{
                 CoreRuntime.ensure(this);
