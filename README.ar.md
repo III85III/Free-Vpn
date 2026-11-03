@@ -1,5 +1,5 @@
 <!-- language-selector:start -->
-🇬🇧 [English](README.md) · 🇮🇷 [فارسی](README.fa.md) · 🇸🇦 [العربية](README.ar.md) · 🇷🇺 [Русский](README.ru.md) · 🇹🇷 [Türkçe](README.tr.md) · 🇨🇳 [简体中文](README.zh.md)
+🇬🇧 [English](https://github.com/III85III/Free-Vpn/blob/main/README.md) · 🇮🇷 [فارسی](https://github.com/III85III/Free-Vpn/blob/main/README.fa.md) · 🇸🇦 [العربية](https://github.com/III85III/Free-Vpn/blob/main/README.ar.md) · 🇷🇺 [Русский](https://github.com/III85III/Free-Vpn/blob/main/README.ru.md) · 🇹🇷 [Türkçe](https://github.com/III85III/Free-Vpn/blob/main/README.tr.md) · 🇨🇳 [简体中文](https://github.com/III85III/Free-Vpn/blob/main/README.zh.md)
 <!-- language-selector:end -->
 
 # Free VPN (+100TB حركة مرور فائقة السرعة)
