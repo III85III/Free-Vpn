@@ -16,7 +16,7 @@ for arch in arm64 amd64; do
     (cd core && GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go build -trimpath \
         -ldflags='-s -w -X github.com/III85III/III85III-VPN/core/internal/version.Current=1.0.0' \
         -o "$output/slices/tun-$arch" ./cmd/firefox-vpn-tun)
-    xcrun swiftc -O -target "$swift_arch-apple-macosx13.0" -framework Cocoa -framework WebKit \
+    xcrun swiftc -O -target "$swift_arch-apple-macosx13.0" -framework Cocoa \
         macOS/main.swift -o "$output/slices/app-$arch"
 done
 lipo -create "$output/slices/core-arm64" "$output/slices/core-amd64" -output "$app/Contents/Resources/core/iii85iii-core"

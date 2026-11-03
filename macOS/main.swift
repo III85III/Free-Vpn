@@ -258,7 +258,7 @@ final class App: NSObject, NSApplicationDelegate, NSWindowDelegate {
         return url
     }
 
-    @MainActor private func openDashboard(_ page: String) {
+    private func openDashboard(_ page: String) {
         Task { @MainActor in
             do {
                 guard NSWorkspace.shared.open(try await dashboardURL(page)) else { throw AppFailure.unavailable }
