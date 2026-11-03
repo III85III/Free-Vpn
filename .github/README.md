@@ -6,7 +6,9 @@
 
 Free VPN for Windows and Android using your Firefox/Mozilla account.
 
-[Windows](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [Android](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk)
+[Windows](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [Android](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk) · [Mac — initial build](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-macOS.dmg)
+
+Mac: Apple Silicon and Intel, macOS 13+. Not Apple notarized. [Setup and limitations](../macOS/README.md).
 
 ## Get started
 

@@ -6,7 +6,9 @@
 
 برنامهٔ رایگان VPN برای ویندوز و اندروید با حساب Firefox/Mozilla خودتان.
 
-[ویندوز](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [اندروید](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk)
+[ویندوز](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [اندروید](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk) · [مک — نسخهٔ اولیه](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-macOS.dmg)
+
+مک: Intel و Apple Silicon، سیستم‌عامل ۱۳ به بالا؛ بدون تأیید رسمی اپل. [راهنما و محدودیت‌ها](../../macOS/README.md).
 
 ## روش استفاده
 
