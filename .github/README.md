@@ -1,3 +1,7 @@
+<!-- language-selector:start -->
+**[English](README.md)** | [فارسی](README.fa.md) | [العربية](README.ar.md) | [Русский](README.ru.md) | [Türkçe](README.tr.md) | [简体中文](README.zh.md)
+<!-- language-selector:end -->
+
 # Free VPN (+100TB High-Speed Traffic)
 
 Fast, secure, and multi-platform VPN for Windows, Android, and macOS. High speed connection with pre-provisioned pool and automatic account allocation.
@@ -11,5 +15,5 @@ Fast, secure, and multi-platform VPN for Windows, Android, and macOS. High speed
 - **No Manual Configuration:** Zero complex setups or credentials required.
 
 ## Support & Community
-For questions, server status and community updates:  
+For questions, server status and community updates:
 👉 [Telegram Channel](https://t.me/cabicy)
