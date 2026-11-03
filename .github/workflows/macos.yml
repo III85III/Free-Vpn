@@ -1,0 +1,48 @@
+name: Mac app
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.3'
+          cache-dependency-path: core/go.sum
+      - name: Build Apple Silicon and Intel app
+        run: bash tools/build-macos.sh
+      - name: Test backend account and local API behavior
+        run: go -C core test ./internal/service ./internal/desktop ./internal/tunapi
+      - name: Test app launch with empty temporary profile
+        run: python3 tools/check-macos.py '.build/macos/III85III VPN.app'
+      - name: Inspect and package
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          app=Path('.build/macos/III85III VPN.app')
+          forbidden={'accounts_pool.json','pool.json','credentials.json','account.json','local-api.token','.env'}
+          assert not any(p.name in forbidden for p in app.rglob('*'))
+          assert not any(p.suffix in {'.jks','.p12','.keystore','.log'} for p in app.rglob('*') if p.is_file())
+          print('PASS: no packaged account bank, private account files, signing keys or logs.')
+          PY
+          mkdir -p .build/macos/disk
+          cp -R '.build/macos/III85III VPN.app' .build/macos/disk/
+          cp macOS/README.md '.build/macos/disk/Read me.md'
+          ln -s /Applications .build/macos/disk/Applications
+          hdiutil create -volname 'III85III VPN' -srcfolder .build/macos/disk -ov -format UDZO .build/macos/III85III-VPN-macOS.dmg
+          hdiutil verify .build/macos/III85III-VPN-macOS.dmg
+          shasum -a 256 .build/macos/III85III-VPN-macOS.dmg > .build/macos/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: III85III-VPN-macOS
+          path: |
+            .build/macos/III85III-VPN-macOS.dmg
+            .build/macos/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
