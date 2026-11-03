@@ -1,6 +1,7 @@
 import Cocoa
 import WebKit
 import Darwin
+import UniformTypeIdentifiers
 
 enum AppFailure: Error { case unavailable, invalidAccountFile, engineStopped }
 
@@ -104,7 +105,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
         address.sin_family = sa_family_t(AF_INET)
         address.sin_addr.s_addr = inet_addr("127.0.0.1")
         let result = withUnsafePointer(to: &address) {
-            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) }
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) }
         }
         guard result == 0 else { throw AppFailure.unavailable }
         var length = socklen_t(MemoryLayout<sockaddr_in>.size)
@@ -161,7 +162,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
             child.standardOutput = FileHandle.nullDevice
             child.standardError = FileHandle.nullDevice
             child.terminationHandler = { [weak self] _ in
-                DispatchQueue.main.async {
+                DispatchQueue.main.async { [weak self] in
                     guard let self = self, !self.stopping else { return }
                     self.fail("The local engine stopped. Close the app and try again.")
                 }
@@ -246,7 +247,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
     @objc private func importAccount() {
         let panel = NSOpenPanel()
         panel.title = "Import a private account file"
-        panel.allowedFileTypes = ["json"]
+        panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let file = panel.url else { return }
         Task { @MainActor in
