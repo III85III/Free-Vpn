@@ -10,5 +10,8 @@ passed = result.returncode == 0 and 'PASS: macOS app opens' in result.stdout
 if not passed:
     # Never print arbitrary engine logs, account data, or local API tokens.
     print(f'FAIL: macOS empty-profile check exited {result.returncode}.')
+    for line in (result.stdout + '\n' + result.stderr).splitlines():
+        if line.startswith(('FAIL: macOS application check failed at ', 'CHECK: WebView ')):
+            print(line)
     raise SystemExit(1)
 print(result.stdout.strip())

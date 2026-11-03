@@ -11,5 +11,9 @@
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
-<key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
+<key>NSAppTransportSecurity</key><dict>
+<key>NSAllowsLocalNetworking</key><true/>
+<!-- The WebView is restricted to the app's authenticated loopback port. -->
+<key>NSAllowsArbitraryLoadsInWebContent</key><true/>
+</dict>
 </dict></plist>

@@ -13,6 +13,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
     private var base: URL!
     private var localToken = ""
     private var stopping = false
+    private var checkStage = "window"
     private let smoke = CommandLine.arguments.contains("--smoke-test")
     private let session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
@@ -169,6 +170,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
             }
             engine = child
             parentPipe = input
+            checkStage = "engine-start"
             try child.run()
             var ready = false
             for _ in 0..<100 {
@@ -180,6 +182,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
                 try await Task.sleep(nanoseconds: 100_000_000)
             }
             guard ready else { throw AppFailure.unavailable }
+            checkStage = "local-api"
             if smoke {
                 let status = try await request("GET", "/api/status")
                 let accounts = try await request("GET", "/api/accounts")
@@ -193,7 +196,8 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
             let link = try await request("POST", "/api/session/link", [:])
             guard let path = link["path"] as? String, path.hasPrefix("/app/login/"),
                   let url = URL(string: path, relativeTo: base) else { throw AppFailure.unavailable }
-            web.load(URLRequest(url: url))
+            checkStage = "web-interface"
+            web.load(URLRequest(url: url.absoluteURL))
             if smoke {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 35) { [weak self] in
                     guard let self = self, !self.stopping else { return }
@@ -242,6 +246,16 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
                 NSApp.terminate(nil)
             }
         }
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        if smoke { fputs("CHECK: WebView navigation error code \((error as NSError).code).\n", stderr) }
+        fail("The local interface could not open. Close the app and try again.")
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        if smoke { fputs("CHECK: WebView load error code \((error as NSError).code).\n", stderr) }
+        fail("The local interface could not finish loading. Close the app and try again.")
     }
 
     @objc private func importAccount() {
@@ -322,7 +336,7 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
         if smoke { try? FileManager.default.removeItem(at: data) }
     }
     private func fail(_ message: String) {
-        if smoke { fputs("FAIL: macOS application check failed.\n", stderr); stop(); exit(1) }
+        if smoke { fputs("FAIL: macOS application check failed at \(checkStage).\n", stderr); stop(); exit(1) }
         let alert = NSAlert()
         alert.messageText = "Connection problem"
         alert.informativeText = message
