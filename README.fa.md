@@ -1,5 +1,5 @@
 <!-- language-selector:start -->
-**[English](README.md)** | [فارسی](README.fa.md) | [العربية](README.ar.md) | [Русский](README.ru.md) | [Türkçe](README.tr.md) | [简体中文](README.zh.md)
+🇬🇧 [English](README.md) · 🇮🇷 [فارسی](README.fa.md) · 🇸🇦 [العربية](README.ar.md) · 🇷🇺 [Русский](README.ru.md) · 🇹🇷 [Türkçe](README.tr.md) · 🇨🇳 [简体中文](README.zh.md)
 <!-- language-selector:end -->
 
 # فیلترشکن رایگان III85III (بیش از ۱۰۰ ترابایت ترافیک پرسرعت)
