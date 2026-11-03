@@ -1,0 +1,55 @@
+name: Publish tested Mac installer
+on:
+  workflow_dispatch:
+    inputs:
+      build_run:
+        description: Successful Mac app workflow run ID
+        type: string
+        required: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Require a successful Mac build from this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_RUN: ${{ inputs.build_run }}
+        run: |
+          [[ "$BUILD_RUN" =~ ^[0-9]+$ ]]
+          gh api "repos/$GH_REPO/actions/runs/$BUILD_RUN" > run.json
+          python3 - <<'PY'
+          import json
+          run=json.load(open('run.json'))
+          assert run['name']=='Mac app' and run['conclusion']=='success'
+          assert run['event']=='workflow_dispatch' and run['head_branch']=='main'
+          print('Validated successful Mac build:',run['head_sha'])
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.build_run }}
+          name: III85III-VPN-macOS
+          path: .build/macos
+      - name: Verify and upload the single Mac download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          root=Path('.build/macos')
+          files={p.name for p in root.iterdir()}
+          assert files=={'III85III-VPN-macOS.dmg','SHA256SUMS'}
+          expected=(root/'SHA256SUMS').read_text().split()[0].lower()
+          assert len(expected)==64
+          actual=hashlib.sha256((root/'III85III-VPN-macOS.dmg').read_bytes()).hexdigest()
+          assert actual==expected
+          print('Verified Mac DMG SHA256:',actual)
+          PY
+          gh release upload v1.0.0 .build/macos/III85III-VPN-macOS.dmg
