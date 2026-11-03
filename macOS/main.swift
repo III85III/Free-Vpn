@@ -32,6 +32,19 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
         makeMenu()
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .nonPersistent()
+        let branding = """
+        (() => {
+          const apply = () => {
+            if (document.title.includes('Firefox VPN')) document.title = document.title.replace('Firefox VPN', 'III85III VPN');
+            document.querySelectorAll('.brand-name, #version-tag, h1').forEach(node => {
+              if (node.textContent.includes('Firefox VPN')) node.textContent = node.textContent.replace('Firefox VPN', 'III85III VPN');
+            });
+          };
+          apply();
+          new MutationObserver(apply).observe(document.documentElement, {childList: true, subtree: true, characterData: true});
+        })();
+        """
+        config.userContentController.addUserScript(WKUserScript(source: branding, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1080, height: 760),
@@ -132,7 +145,9 @@ final class App: NSObject, NSApplicationDelegate, WKNavigationDelegate, NSWindow
             dashboard["password_hash"] = auth["password_hash"]!
             config["dashboard"] = dashboard
             var proxy = config["proxy"] as? [String: Any] ?? [:]
-            proxy["listen"] = "127.0.0.1:\(try freePort())"
+            var proxyPort = try freePort()
+            while proxyPort == port { proxyPort = try freePort() }
+            proxy["listen"] = "127.0.0.1:\(proxyPort)"
             config["proxy"] = proxy
             // First launch never silently changes macOS network settings.
             if config["system_proxy"] == nil { config["system_proxy"] = ["mode": "set"] }
