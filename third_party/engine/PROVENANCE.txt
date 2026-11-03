@@ -1,4 +1,0 @@
-Project: https://github.com/III85III/Free-Vpn
-Native frontend: source/native/III85III.Vpn.cs
-Core Engine: III85III Go Core, see core/
-License: GPL-3.0-only; see licenses/GPL-3.0.txt.
