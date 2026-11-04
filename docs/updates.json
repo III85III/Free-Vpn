@@ -1,18 +1,18 @@
 {
-  "schema": 1,
-  "display_version": "1.1.1",
-  "changelog": "Visible WireGuard route selector on Windows; Android setup and connect flow; Anti-Filter tools restored with accurate status. Real-device WireGuard routing remains unverified.",
-  "windows": {
-    "version": "2.3.24",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.1/III85III-VPN-Setup.exe",
-    "size": 25514496,
-    "sha256": "ba5b7041ef01687c420332fe10d1e949614530d98b6c3e3083ed1b687f909035"
-  },
-  "android": {
-    "version": "1.1.1",
-    "version_code": 23024,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.1/III85III-VPN.apk",
-    "size": 17441820,
-    "sha256": "90d6aaf048125f2b7773e99d9aef977b7f08ee614a23994cc9e1159a34e63f51"
-  }
+    "schema":  1,
+    "display_version":  "1.1.2",
+    "changelog":  "Android: choose a DNS server and apply it to the VPN tunnel; WireGuard removed from Android. Windows installer remains 2.3.24.",
+    "windows":  {
+                    "version":  "2.3.24",
+                    "url":  "https://github.com/III85III/Free-Vpn/releases/download/v1.1.1/III85III-VPN-Setup.exe",
+                    "size":  25514496,
+                    "sha256":  "ba5b7041ef01687c420332fe10d1e949614530d98b6c3e3083ed1b687f909035"
+                },
+    "android":  {
+                    "version":  "1.1.2",
+                    "version_code":  23025,
+                    "url":  "https://github.com/III85III/Free-Vpn/releases/download/v1.1.2/III85III-VPN.apk",
+                    "size":  13713085,
+                    "sha256":  "cd52d07a8ac5417987397af59e7b1153d781493ff4af43ffd14ef48cf5e7745c"
+                }
 }
