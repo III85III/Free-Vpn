@@ -2,18 +2,12 @@
 🇬🇧 [English](https://github.com/III85III/Free-Vpn/blob/main/README.md) · 🇮🇷 [فارسی](https://github.com/III85III/Free-Vpn/blob/main/README.fa.md) · 🇸🇦 [العربية](https://github.com/III85III/Free-Vpn/blob/main/README.ar.md) · 🇷🇺 [Русский](https://github.com/III85III/Free-Vpn/blob/main/README.ru.md) · 🇹🇷 [Türkçe](https://github.com/III85III/Free-Vpn/blob/main/README.tr.md) · 🇨🇳 [简体中文](https://github.com/III85III/Free-Vpn/blob/main/README.zh.md)
 <!-- language-selector:end -->
 
-# Free VPN (+100TB High-Speed Traffic)
+# 85 ? Free VPN
 
-Fast, secure, and multi-platform VPN for Windows, Android, and macOS. High speed connection with pre-provisioned pool and automatic account allocation.
+Free client for Mozilla-account connections and WireGuard profiles. Mozilla eligibility and quotas apply. WARP depends on Cloudflare availability; no guaranteed country or gaming ping.
 
-[Windows Download](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [Android APK](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk) · [macOS Package](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-macOS.dmg)
+[Windows](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) ? [Android APK](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk) ? [macOS](https://github.com/III85III/Free-Vpn/releases/download/v1.0.0/III85III-VPN-macOS.dmg)
 
-## Features
-- **Instant Connection:** Ready to use immediately upon installation. Accounts are automatically assigned.
-- **Whole-Computer Routing:** Full TUN support on Windows and VpnService on Android.
-- **Smart Quota Balancer:** Seamless auto-switch and rotation between high-capacity profiles.
-- **No Manual Configuration:** Zero complex setups or credentials required.
+Windows: WireGuard mode requires the official WireGuard application. Android: Android 8+ and a 64-bit device. Real-device WireGuard testing is pending.
 
-## Support & Community
-For questions, server status and community updates:
-👉 [Telegram Channel](https://t.me/cabicy)
+[Telegram](https://t.me/cabicy) ? [Source](https://github.com/III85III/Free-Vpn/releases/download/v1.1.0/85-Source.zip)
