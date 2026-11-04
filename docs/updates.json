@@ -3,10 +3,10 @@
   "display_version": "1.1",
   "changelog": "85 interface, appearance settings and WireGuard profile support. Real-device WireGuard routing remains unverified.",
   "windows": {
-    "version": "2.3.22",
+    "version": "2.3.23",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.0/III85III-VPN-Setup.exe",
     "size": 25511424,
-    "sha256": "d4144e30c0dd0bd3bab85206b99f001ac83079985eb48b81a95bacf0763165a3"
+    "sha256": "d673c6738284fe605044af4bbc8437c08e002de8a80c109daf19ac3de5201487"
   },
   "android": {
     "version": "1.1",
