@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "display_version": "1.1.5",
-  "changelog": "Clean, ad-free UI overhaul with luxury Obsidian and Gold theme. Removed WireGuard in favor of streamlined Firefox uTLS/HTTP3 tunnels. Fixed 127.0.0.1 local engine connectivity, eliminated startup race condition, fixed HTTP 415 JSON media type error on account deletion, and direct OAuth token refresh bypassing Fastly anti-bot WAF.",
+  "display_version": "1.1.6",
+  "changelog": "Clean, ad-free UI overhaul with luxury Obsidian and Gold theme. Fixed Fastly anti-bot WAF 406 challenge resolution for all Mozilla domains (firefox.com, api.accounts.firefox.com, oauth.accounts.firefox.com), resolved account token refresh failure, eliminated startup race conditions, fixed local 127.0.0.1 engine connectivity, and enabled automatic invalid account recovery.",
   "windows": {
     "version": "2.3.25",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
@@ -9,10 +9,10 @@
     "sha256": "c75b66cbb1cc07726934a87173eabb554d5265a53c081c5f9b4fbd1b03a5913b"
   },
   "android": {
-    "version": "1.1.5",
-    "version_code": 23031,
+    "version": "1.1.6",
+    "version_code": 23032,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
     "size": 16662110,
-    "sha256": "2781cfdb352666248c8c250985df6709b523b99517e0617d9f060da4707fce81"
+    "sha256": "a016379d1ffb1e50450139323ba9c343ae26115d61c92212515d11be98933ffb"
   }
 }
