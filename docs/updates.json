@@ -1,18 +1,18 @@
 {
   "schema": 1,
-  "display_version": "1.1.4",
-  "changelog": "Android: Fixed connection errors with 40 verified active pool accounts (2TB high-speed quota). Single pool account enforced per device. Allowed adding personal Mozilla accounts. Enabled screenshots and screen recording.",
+  "display_version": "1.1.5",
+  "changelog": "Clean, ad-free UI overhaul with luxury Obsidian and Gold theme. Removed WireGuard in favor of streamlined Firefox uTLS/HTTP3 tunnels. Added instant Telegram background proxy and automatic 50GB quota rotation.",
   "windows": {
-    "version": "2.3.24",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.4/III85III-VPN-Setup.exe",
-    "size": 25514496,
-    "sha256": "ba5b7041ef01687c420332fe10d1e949614530d98b6c3e3083ed1b687f909035"
+    "version": "2.3.25",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
+    "size": 26956288,
+    "sha256": "c75b66cbb1cc07726934a87173eabb554d5265a53c081c5f9b4fbd1b03a5913b"
   },
   "android": {
-    "version": "1.1.4",
-    "version_code": 23028,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.4/III85III-VPN.apk",
-    "size": 17450211,
-    "sha256": "c767401f213589b5051fd357a038e5e37d30e66e79f7d9419a7464aedbd4fe60"
+    "version": "1.1.5",
+    "version_code": 23029,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
+    "size": 13569630,
+    "sha256": "2c05d373fb7d01b64f76c022fe619f40209125c7ffa80760c2ef0531e65e707a"
   }
 }

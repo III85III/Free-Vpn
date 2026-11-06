@@ -1,19 +1,21 @@
 <!-- language-selector:start -->
-🇬🇧 [English](https://github.com/III85III/Free-Vpn/blob/main/README.md) · 🇮🇷 [فارسی](https://github.com/III85III/Free-Vpn/blob/main/README.fa.md) · 🇸🇦 [العربية](https://github.com/III85III/Free-Vpn/blob/main/README.ar.md) · 🇷🇺 [Русский](https://github.com/III85III/Free-Vpn/blob/main/README.ru.md) · 🇹🇷 [Türkçe](https://github.com/III85III/Free-Vpn/blob/main/README.tr.md) · 🇨🇳 [简体中文](https://github.com/III85III/Free-Vpn/blob/main/README.zh.md)
+🇬🇧 [English](https://github.com/III85III/Free-Vpn/blob/main/README.md) · 🇮🇷 [فارسی](https://github.com/III85III/Free-Vpn/blob/main/README.fa.md)
 <!-- language-selector:end -->
 
-# Free VPN (+100TB High-Speed Traffic)
+# III85III VPN
 
-Fast, secure, and multi-platform VPN for Windows, Android, and macOS. High speed connection with pre-provisioned pool and automatic account allocation.
+High-speed, ad-free anti-censorship VPN client for Windows, Android, and macOS powered by Mozilla's edge network and Fastly's global infrastructure over HTTP/2 and HTTP/3 tunnels.
 
-[Windows Download](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [Android APK](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk) · [macOS Package](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-macOS.dmg)
+[Windows Setup (.exe)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [Android APK (.apk)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk) · [macOS Package (.dmg)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-macOS.dmg)
 
-## Features
-- **Instant Connection:** Ready to use immediately upon installation. Accounts are automatically assigned.
-- **Whole-Computer Routing:** Full TUN support on Windows and VpnService on Android.
-- **Smart Quota Balancer:** Seamless auto-switch and rotation between high-capacity profiles.
-- **No Manual Configuration:** Zero complex setups or credentials required.
+## Core Capabilities
+- **Firefox uTLS Camouflage:** Matches authentic browser TLS fingerprints to bypass Deep Packet Inspection (DPI).
+- **Anti-Censorship Suite:** TLS fragmentation, Tor Snowflake fallback, clean IP scanner, and Port 53 DNS tunneling.
+- **Instant Connection:** High-capacity pre-provisioned pool (~50 GB/month per Mozilla account) with seamless automatic rotation.
+- **Telegram Direct Proxy:** 24/7 background MTProto/Socks5 proxy for instant messaging without full tunnel battery drain.
+- **Smart Routing (Split Tunneling):** Bypass banking applications and domestic services.
+- **100% Ad-Free:** Zero banner ads, zero tracking, and zero popups.
 
 ## Support & Community
-For questions, server status and community updates:
-👉 [Telegram Channel](https://t.me/cabicy)
+For server status and community updates:
+👉 [Telegram Channel: @cabicy](https://t.me/cabicy)
