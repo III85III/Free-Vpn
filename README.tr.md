@@ -10,4 +10,4 @@ Mozilla hesab? ve WireGuard profilleri i?in ?cretsiz istemci. Mozilla ko?ullar? 
 
 Android 8+, 64 bit cihaz. Windows WireGuard modu resmi uygulamay? gerektirir. Ger?ek telefonda ba?lant? testi hen?z yap?lmad?.
 
-[Telegram](https://t.me/cabicy) ? [Source](https://github.com/III85III/Free-Vpn/releases/download/v1.1.0/85-Source.zip)
+[Telegram](https://t.me/cabicy)
