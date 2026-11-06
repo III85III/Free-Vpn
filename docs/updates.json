@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "display_version": "1.1.5",
-  "changelog": "Clean, ad-free UI overhaul with luxury Obsidian and Gold theme. Removed WireGuard in favor of streamlined Firefox uTLS/HTTP3 tunnels. Added instant Telegram background proxy and automatic 50GB quota rotation.",
+  "changelog": "Clean, ad-free UI overhaul with luxury Obsidian and Gold theme. Removed WireGuard in favor of streamlined Firefox uTLS/HTTP3 tunnels. Added instant Telegram background proxy, direct OAuth token refresh bypassing Fastly anti-bot WAF, and resilient account removal.",
   "windows": {
     "version": "2.3.25",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
@@ -12,7 +12,7 @@
     "version": "1.1.5",
     "version_code": 23029,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
-    "size": 13569630,
-    "sha256": "2c05d373fb7d01b64f76c022fe619f40209125c7ffa80760c2ef0531e65e707a"
+    "size": 16658014,
+    "sha256": "da4fc7eae72385c55d38d58048ff19a4a075ed2d2ed892224f4d18c1b0a52c9c"
   }
 }
