@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "display_version": "1.1.8",
-  "changelog": "New Obsidian Gold Luxury Brand Identity & 3D Icons across Windows & Android; Hardware-grade AdBlocker on all servers; Zero-Drop 9s network resilience.",
+  "changelog": "Integrated ad blocker, connection stability improvements, and UI refinements.",
   "windows": {
     "version": "2.3.26",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
