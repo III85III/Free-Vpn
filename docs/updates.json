@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "display_version": "1.1.8",
-  "changelog": "Official 3D luxury gold brand emblem, iOS & V2Ray Gateway sharing, integrated ad blocker, and stability improvements.",
+  "changelog": "Dual Home & Outside V2Ray Gateway mode, official 3D luxury gold brand emblem, and stability improvements.",
   "windows": {
     "version": "2.3.26",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
-    "size": 29755904,
-    "sha256": "27175ae4071cedd86440ad4d4321438fe01dab30fc32c583902588f8886d62ad"
+    "size": 29757952,
+    "sha256": "00a933770df1fe97bc7ed994242e2f96371607a0bacb10bc8e6c249687f5aea5"
   },
   "android": {
     "version": "1.1.8",
