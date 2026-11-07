@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "display_version": "1.1.7",
-  "changelog": "Resolved Fastly anti-bot 406 loop via direct HTTP/2 probe and uTLS Firefox ALPN; resolved Guardian HTTP 403 quota errors via automatic GET fallback and safe account status reset; fixed device registration and local loopback IPC.",
+  "display_version": "1.1.8",
+  "changelog": "Hardened VPN connection resilience: added 9s grace period to prevent premature disconnects during network switches and server reconnects; added automatic account pool auto-replenishment with 3 concurrent active accounts to prevent disconnection on quota exhaustion.",
   "windows": {
     "version": "2.3.25",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
@@ -9,10 +9,10 @@
     "sha256": "c75b66cbb1cc07726934a87173eabb554d5265a53c081c5f9b4fbd1b03a5913b"
   },
   "android": {
-    "version": "1.1.7",
-    "version_code": 23035,
+    "version": "1.1.8",
+    "version_code": 23036,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
     "size": 16666206,
-    "sha256": "4247c590123e50b68dd7e7c24890469721da0ad0aa07aa63ea31a314d5b2ffd5"
+    "sha256": "47a5e539b15deef5e287a071826c0412952c47efb031f6b20ea94f011138b70c"
   }
 }
