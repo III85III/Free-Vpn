@@ -3,10 +3,10 @@
   "display_version": "1.1.8",
   "changelog": "Hardened VPN connection resilience: added 9s grace period to prevent premature disconnects during network switches and server reconnects; added automatic account pool auto-replenishment with 3 concurrent active accounts to prevent disconnection on quota exhaustion.",
   "windows": {
-    "version": "2.3.25",
+    "version": "2.3.26",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
-    "size": 26956288,
-    "sha256": "c75b66cbb1cc07726934a87173eabb554d5265a53c081c5f9b4fbd1b03a5913b"
+    "size": 26962432,
+    "sha256": "3946bfbdbf09c3a68a2de7f6f6da8a1b305200bb22b4e5c6d01c962b5a5977d6"
   },
   "android": {
     "version": "1.1.8",
