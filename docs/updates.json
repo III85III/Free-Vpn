@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "display_version": "1.1.8",
-  "changelog": "Hardened VPN connection resilience: added 9s grace period to prevent premature disconnects during network switches and server reconnects; added automatic account pool auto-replenishment with 3 concurrent active accounts to prevent disconnection on quota exhaustion.",
+  "changelog": "Global DNS-level AdBlocker across all servers: in-app ads, mobile video ads, trackers and Iranian ad networks blocked natively with zero overhead; removed cosmetic UI tags.",
   "windows": {
     "version": "2.3.26",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
-    "size": 26967552,
-    "sha256": "89c36e9f22b643da8c7d92694fc5de5bad0dbbe9d1d50bc7bf0e5f2e67b19ca5"
+    "size": 26968064,
+    "sha256": "b31588434865649d645e65be9a680d387cd3edd7fd527671780f8e6898870730"
   },
   "android": {
     "version": "1.1.8",
     "version_code": 23036,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
-    "size": 51089128,
-    "sha256": "73e91cac55e450f4a839921a21ce31246c9bb71213786d14525ded420f997bdf"
+    "size": 31416040,
+    "sha256": "ecbb257c0952a6086163232a11807a951e433bd306378efb9dee07f1973f0d88"
   }
 }
