@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "display_version": "1.1.8",
-  "changelog": "iOS & V2Ray Gateway sharing, integrated ad blocker, connection stability improvements, and UI refinements.",
+  "changelog": "Official 3D luxury gold brand emblem, iOS & V2Ray Gateway sharing, integrated ad blocker, and stability improvements.",
   "windows": {
     "version": "2.3.26",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
-    "size": 27813888,
-    "sha256": "980bbe265c06600adeb4e96aad773aa4d4ea60af44eda450790a5fd6aabc4d37"
+    "size": 29755904,
+    "sha256": "27175ae4071cedd86440ad4d4321438fe01dab30fc32c583902588f8886d62ad"
   },
   "android": {
     "version": "1.1.8",
     "version_code": 23036,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
-    "size": 32050920,
-    "sha256": "4cabbb10d78e16a0397f24868ce3418abc552b97e9aee9dba134f4df5b2c070c"
+    "size": 32502040,
+    "sha256": "87fa119075d84421438e6d8c3b08a42c6cacd4ebf06f94b1a4c52aabd9634d76"
   }
 }
