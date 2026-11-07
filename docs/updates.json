@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "display_version": "1.1.8",
-  "changelog": "Global DNS-level AdBlocker across all servers: in-app ads, mobile video ads, trackers and Iranian ad networks blocked natively with zero overhead; removed cosmetic UI tags.",
+  "changelog": "New Obsidian Gold Luxury Brand Identity & 3D Icons across Windows & Android; Hardware-grade AdBlocker on all servers; Zero-Drop 9s network resilience.",
   "windows": {
     "version": "2.3.26",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
-    "size": 26968064,
-    "sha256": "b31588434865649d645e65be9a680d387cd3edd7fd527671780f8e6898870730"
+    "size": 28906496,
+    "sha256": "b8c4aaa3e53ebce4493cec6717d529334998505226532c2a7aa688a979c4bb37"
   },
   "android": {
     "version": "1.1.8",
     "version_code": 23036,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
-    "size": 31416040,
-    "sha256": "ecbb257c0952a6086163232a11807a951e433bd306378efb9dee07f1973f0d88"
+    "size": 32030440,
+    "sha256": "0a83a2155da8666b11ffa8d14fa1b2c1a3b26587d462dd9a3d3abcce484bced6"
   }
 }

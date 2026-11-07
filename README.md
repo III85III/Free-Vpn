@@ -5,6 +5,10 @@
 </div>
 <br>
 
+<p align="center">
+  <img src="docs/images/header-banner.jpg" alt="III85III VPN Luxury Header Banner" width="100%" style="border-radius: 12px; max-width: 900px;" />
+</p>
+
 <h1 align="center">III85III VPN</h1>
 
 <h3 align="center">Next-Generation Anti-Censorship Tunnel Powered by Mozilla Global Infrastructure</h3>
