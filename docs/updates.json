@@ -10,9 +10,9 @@
   },
   "android": {
     "version": "1.1.6",
-    "version_code": 23033,
+    "version_code": 23034,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
     "size": 16662110,
-    "sha256": "368216325d04a16b5166c60b0a2f865baee95ebfa58ed8bfc76061cf47264608"
+    "sha256": "f5aadf44e9b998042a8456d811a2d800f13da0e7d86e364e9ab9ec3017162301"
   }
 }
