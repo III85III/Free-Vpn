@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "display_version": "1.1.8",
-  "changelog": "Integrated ad blocker, connection stability improvements, and UI refinements.",
+  "changelog": "iOS & V2Ray Gateway sharing, integrated ad blocker, connection stability improvements, and UI refinements.",
   "windows": {
     "version": "2.3.26",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
-    "size": 28905984,
-    "sha256": "07c8ac66a6687b5737d2f7c0bf2190eab752b5b409cb16daadb37cf2c1095fb4"
+    "size": 27813888,
+    "sha256": "980bbe265c06600adeb4e96aad773aa4d4ea60af44eda450790a5fd6aabc4d37"
   },
   "android": {
     "version": "1.1.8",
     "version_code": 23036,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
-    "size": 32030440,
-    "sha256": "a46dd1bbd0db90018242b8454327a321853c3432364849b393ed60c30c5c665f"
+    "size": 32050920,
+    "sha256": "4cabbb10d78e16a0397f24868ce3418abc552b97e9aee9dba134f4df5b2c070c"
   }
 }
