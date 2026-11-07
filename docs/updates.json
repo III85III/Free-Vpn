@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "display_version": "1.1.8",
-  "changelog": "Dual Home & Outside V2Ray Gateway mode, official 3D luxury gold brand emblem, and stability improvements.",
+  "changelog": "Official 3D luxury gold brand emblem, high-performance TUN engine, DNS ad-blocking, and stability enhancements.",
   "windows": {
     "version": "2.3.26",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN-Setup.exe",
-    "size": 29757952,
-    "sha256": "00a933770df1fe97bc7ed994242e2f96371607a0bacb10bc8e6c249687f5aea5"
+    "size": 31554048,
+    "sha256": "88809cd1d5db4ec9843ac2123d6c692dba580dcc57987fd2852cc2319fc5ec86"
   },
   "android": {
     "version": "1.1.8",
     "version_code": 23036,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.5/III85III-VPN.apk",
-    "size": 32502040,
-    "sha256": "87fa119075d84421438e6d8c3b08a42c6cacd4ebf06f94b1a4c52aabd9634d76"
+    "size": 32497944,
+    "sha256": "babb2d12c0514d142e0e268688f6eaf62fd8c4290bb7d0a042434a2202657faa"
   }
 }
