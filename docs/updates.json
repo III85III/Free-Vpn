@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "display_version": "1.1.8",
-  "changelog": "Official 3D luxury gold brand emblem, high-performance TUN engine, DNS ad-blocking, and stability enhancements.",
+  "changelog": "Custom proxy listen address & port, destination routing rules, Minimal Glass theme, and 3D luxury gold emblem.",
   "windows": {
     "version": "1.1.8",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.8/III85III-VPN-Setup.exe",
-    "size": 31559168,
-    "sha256": "83e83847283dad21d39500874a799a70ac92c98c3628ba26c9852d4781685c0b"
+    "size": 31568384,
+    "sha256": "18931477aa038aea9e9a3423ba8153270d3da35bd4b32dd5ac5f12ca8ec19eff"
   },
   "android": {
     "version": "1.1.8",
