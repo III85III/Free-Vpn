@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "display_version": "1.1.8",
-  "changelog": "Custom proxy listen address & port, destination routing rules, Minimal Glass theme, and 3D luxury gold emblem.",
+  "display_version": "1.1.9",
+  "changelog": "Fixes Fastly 406 refresh, prevents traffic stat font inflation, removes harmful dropper permissions, and adds multi-scheme v1+v2+v3 signing for seamless installation across all Android devices.",
   "windows": {
-    "version": "1.1.8",
+    "version": "1.1.9",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.8/III85III-VPN-Setup.exe",
-    "size": 26755072,
-    "sha256": "9b30f8852ff93510ea66ca2718dc7f431738ef096344cc610bea8f112d17f049"
+    "size": 26885120,
+    "sha256": "f9222e6748a7c9590e6c1b52cae44321582230fc0ec7c522aea088959b6207ea"
   },
   "android": {
     "version": "1.1.9",
     "version_code": 23037,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.9-android/III85III-VPN.apk",
-    "size": 32493833,
-    "sha256": "ce2c37952e38724ca50f6bc2533f49492bddf41e23e9227d4c83bfa66583061d",
-    "changelog": "Live download and upload readouts, with the 85 icon across Android."
+    "size": 32522388,
+    "sha256": "68a15705d0ee36bb80128ed9d5acb0107f3275b13c2a6f684b38f40c621b61e7",
+    "changelog": "Seamless installation across all Android devices with v1+v2+v3 signing and removed harmful package permissions."
   }
 }
