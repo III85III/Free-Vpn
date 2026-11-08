@@ -9,10 +9,11 @@
     "sha256": "9b30f8852ff93510ea66ca2718dc7f431738ef096344cc610bea8f112d17f049"
   },
   "android": {
-    "version": "1.1.8",
-    "version_code": 23036,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.8/III85III-VPN.apk",
-    "size": 32497944,
-    "sha256": "babb2d12c0514d142e0e268688f6eaf62fd8c4290bb7d0a042434a2202657faa"
+    "version": "1.1.9",
+    "version_code": 23037,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.9-android/III85III-VPN.apk",
+    "size": 32493833,
+    "sha256": "ce2c37952e38724ca50f6bc2533f49492bddf41e23e9227d4c83bfa66583061d",
+    "changelog": "Live download and upload readouts, with the 85 icon across Android."
   }
 }
