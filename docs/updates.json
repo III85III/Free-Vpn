@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "display_version": "1.1.10",
-  "changelog": "Bypasses Fastly 451 geo-restrictions via direct double-slash routing, implements direct-first relay fallback eliminating token refresh timeouts, extends connection stabilization window, and optimizes simultaneous multi-user performance.",
+  "display_version": "1.1.11",
+  "changelog": "Fixes WinForms ContextMenuStrip ObjectDisposedException crash, moves Check for updates button to Help page, upgrades to 4 multi-stream upstream TCP sockets, optimizes keepalive timeouts, and prioritizes low-latency European servers for ultra-fast throughput.",
   "windows": {
-    "version": "1.1.10",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.10/III85III-VPN-Setup.exe",
-    "size": 36790272,
-    "sha256": "e5e48dbd2107a8bc892c8e250646edd6dc551cb985c54711b15d31d8d4a0defa"
+    "version": "1.1.11",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.11/III85III-VPN-Setup.exe",
+    "size": 36790784,
+    "sha256": "4bd53fd94aefbc43b606be61bc18cce2058cfad601d3ab67f9c2a6f869f06cf6"
   },
   "android": {
-    "version": "1.1.10",
+    "version": "1.1.11",
     "version_code": 23038,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.10/III85III-VPN.apk",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.11/III85III-VPN.apk",
     "size": 17809606,
-    "sha256": "cfc6d76c0ad76ab91ea1e071ae16222e56fe26347eaeb6caa56e7b08f264fef7",
-    "changelog": "Bypasses Fastly 451 geo-restriction, adds direct-first control-plane routing, and extends connection stability."
+    "sha256": "1ba3d72551209a1ced1ff426286dbbc06b0dd7d0bfdfb479d45cb13ecb8bf3b6",
+    "changelog": "Upgrades core engine with 4 parallel sockets, increases keepalive resilience, pins Fastest server at the top, and improves connection speed."
   }
 }
