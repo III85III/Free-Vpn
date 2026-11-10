@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "display_version": "1.1.9",
-  "changelog": "Fixes Fastly 406 refresh, prevents traffic stat font inflation, removes harmful dropper permissions, and adds multi-scheme v1+v2+v3 signing for seamless installation across all Android devices.",
+  "display_version": "1.1.10",
+  "changelog": "Bypasses Fastly 451 geo-restrictions via direct double-slash routing, implements direct-first relay fallback eliminating token refresh timeouts, extends connection stabilization window, and optimizes simultaneous multi-user performance.",
   "windows": {
-    "version": "1.1.9",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.9/III85III-VPN-Setup.exe",
-    "size": 35561472,
-    "sha256": "d60701d23f9cbbf4873ff1bde2fee2b1c8cdb6b3354430243013b2206d4dcc30"
+    "version": "1.1.10",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.10/III85III-VPN-Setup.exe",
+    "size": 36790272,
+    "sha256": "e5e48dbd2107a8bc892c8e250646edd6dc551cb985c54711b15d31d8d4a0defa"
   },
   "android": {
-    "version": "1.1.9",
-    "version_code": 23037,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.9/III85III-VPN.apk",
-    "size": 17748166,
-    "sha256": "eb25f3420e1b8395a8eb5fffee6d489c5746d2c71aa0d873add4dea34e5897e1",
-    "changelog": "Seamless installation across all Android devices with v1+v2+v3 signing and removed harmful package permissions."
+    "version": "1.1.10",
+    "version_code": 23038,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.10/III85III-VPN.apk",
+    "size": 17809606,
+    "sha256": "cfc6d76c0ad76ab91ea1e071ae16222e56fe26347eaeb6caa56e7b08f264fef7",
+    "changelog": "Bypasses Fastly 451 geo-restriction, adds direct-first control-plane routing, and extends connection stability."
   }
 }
