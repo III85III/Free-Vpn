@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "display_version": "1.1.11",
-  "changelog": "Fixes WinForms ContextMenuStrip ObjectDisposedException crash, moves Check for updates button to Help page, upgrades to 4 multi-stream upstream TCP sockets, optimizes keepalive timeouts, and prioritizes low-latency European servers for ultra-fast throughput.",
+  "display_version": "1.1.12",
+  "changelog": "Automatically upgrades all existing Windows and Android configs to 4 parallel upstream sockets, enables true multi-socket round-robin for local traffic (127.0.0.1), improves Help page responsive layout, and falls back to all servers if top European latency checks fail.",
   "windows": {
-    "version": "1.1.11",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.11/III85III-VPN-Setup.exe",
-    "size": 36790784,
-    "sha256": "4bd53fd94aefbc43b606be61bc18cce2058cfad601d3ab67f9c2a6f869f06cf6"
+    "version": "1.1.12",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.12/III85III-VPN-Setup.exe",
+    "size": 36791296,
+    "sha256": "897bd2a6513506d198f83f3fd308931dae15059532bac27f2d2cb9d42eeb7f0a"
   },
   "android": {
-    "version": "1.1.11",
-    "version_code": 23038,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.11/III85III-VPN.apk",
+    "version": "1.1.12",
+    "version_code": 23039,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.12/III85III-VPN.apk",
     "size": 17809606,
-    "sha256": "1ba3d72551209a1ced1ff426286dbbc06b0dd7d0bfdfb479d45cb13ecb8bf3b6",
-    "changelog": "Upgrades core engine with 4 parallel sockets, increases keepalive resilience, pins Fastest server at the top, and improves connection speed."
+    "sha256": "0aea2595aa0751209e6e059728d5bce8e91b67030a71490c724ebfb8b28aae33",
+    "changelog": "Automatically upgrades Android config to 4 parallel upstream sockets, distributes local loopback connections across all 4 sockets, prioritizes low-latency European servers, and bumps version_code cleanly."
   }
 }

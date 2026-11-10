@@ -130,3 +130,9 @@ To maintain network integrity, Mozilla's gateway infrastructure enforces specifi
 For server status updates, assistance, or feedback:
 * **Telegram Channel:** [@cabicy](https://t.me/cabicy)
 * **GitHub Issues:** [Report a Bug or Request a Feature](https://github.com/III85III/Free-Vpn/issues)
+
+---
+
+## 🤝 Credits
+
+* Built by **[III85III](https://github.com/III85III)** in collaboration with **Google Antigravity** (powered by **Gemini**).

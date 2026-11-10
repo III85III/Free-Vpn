@@ -120,4 +120,10 @@
 * **کانال رسمی تلگرام:** [@cabicy](https://t.me/cabicy)
 * **بخش گزارش مشکلات در گیت‌هاب:** [ثبت ایشو و گزارش خطا](https://github.com/III85III/Free-Vpn/issues)
 
+---
+
+## 🤝 توسعه‌دهندگان و مشارکت
+
+* ساخته‌شده توسط **[III85III](https://github.com/III85III)** با همکاری و هم‌فکری **Google Antigravity** (مبتنی بر **Gemini**).
+
 </div>
