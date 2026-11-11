@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "display_version": "1.1.12",
-  "changelog": "Automatically upgrades all existing Windows and Android configs to 4 parallel upstream sockets, enables true multi-socket round-robin for local traffic (127.0.0.1), improves Help page responsive layout, and falls back to all servers if top European latency checks fail.",
+  "display_version": "1.1.13",
+  "changelog": "Direct-first API connections with relay fallback; Windows routing fixes, mode reconnection and session totals; updated Android engine; Linux CLI packages.",
   "windows": {
-    "version": "1.1.12",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.12/III85III-VPN-Setup.exe",
-    "size": 36791296,
-    "sha256": "897bd2a6513506d198f83f3fd308931dae15059532bac27f2d2cb9d42eeb7f0a"
+    "version": "1.1.13",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.13/III85III-VPN-Setup.exe",
+    "size": 29462016,
+    "sha256": "25aa3d4c7f79d33bacd6379cc7467b682dd0b50989b8f2b6414112a41dae952c"
   },
   "android": {
-    "version": "1.1.12",
-    "version_code": 23039,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.12/III85III-VPN.apk",
-    "size": 17809606,
-    "sha256": "0aea2595aa0751209e6e059728d5bce8e91b67030a71490c724ebfb8b28aae33",
-    "changelog": "Automatically upgrades Android config to 4 parallel upstream sockets, distributes local loopback connections across all 4 sockets, prioritizes low-latency European servers, and bumps version_code cleanly."
+    "version": "1.1.13",
+    "version_code": 23040,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.13/III85III-VPN.apk",
+    "size": 52203785,
+    "sha256": "50a76fdc48fe30d93fd56cf33ca985b0ab0d23f6c9931fbaec3b22d3bfc1f625",
+    "changelog": "Updated shared engine: direct-first API connections and safe relay fallback."
   }
 }
