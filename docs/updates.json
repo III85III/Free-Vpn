@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "display_version": "1.1.13",
-  "changelog": "Direct-first API connections with relay fallback; Windows routing fixes, mode reconnection and session totals; updated Android engine; Linux CLI packages.",
+  "display_version": "1.1.14",
+  "changelog": "Private Cloudflare account allocation for fresh Windows and Android installations; existing accounts preserved. Account availability is limited; automatic quota replacement is not implemented.",
   "windows": {
-    "version": "1.1.13",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.13/III85III-VPN-Setup.exe",
-    "size": 29462016,
-    "sha256": "25aa3d4c7f79d33bacd6379cc7467b682dd0b50989b8f2b6414112a41dae952c"
+    "version": "1.1.14",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.14/III85III-VPN-Setup.exe",
+    "size": 29460992,
+    "sha256": "38f2f7c4728ea0c367850545d0870836568c9c7bfd6efe24699629f00496cf94"
   },
   "android": {
-    "version": "1.1.13",
-    "version_code": 23040,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.13/III85III-VPN.apk",
-    "size": 52203785,
-    "sha256": "50a76fdc48fe30d93fd56cf33ca985b0ab0d23f6c9931fbaec3b22d3bfc1f625",
-    "changelog": "Updated shared engine: direct-first API connections and safe relay fallback."
+    "version": "1.1.14",
+    "version_code": 23041,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.14/III85III-VPN.apk",
+    "size": 52199689,
+    "sha256": "54a8f922cb21bbeaffd683ff3a5a8f0a0b23a5cbd3b171239f93e2d8f7d58e33",
+    "changelog": "Private Cloudflare account allocation for fresh Windows and Android installations; existing accounts preserved. Account availability is limited; automatic quota replacement is not implemented."
   }
 }
