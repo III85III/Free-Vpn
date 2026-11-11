@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "display_version": "1.1.14",
-  "changelog": "Private Cloudflare account allocation for fresh Windows and Android installations; existing accounts preserved. Account availability is limited; automatic quota replacement is not implemented.",
+  "display_version": "1.1.15",
+  "changelog": "Raises the upstream connection pool to 16 and removes the local proxy connection cap on Windows, Android and Linux. Existing profiles migrate without removing accounts or settings. Actual speed depends on network and service conditions.",
   "windows": {
-    "version": "1.1.14",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.14/III85III-VPN-Setup.exe",
-    "size": 29460992,
-    "sha256": "38f2f7c4728ea0c367850545d0870836568c9c7bfd6efe24699629f00496cf94"
+    "version": "1.1.15",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.15/III85III-VPN-Setup.exe",
+    "size": 29465600,
+    "sha256": "e7302d240d7529b5880453325442d1dd68149ffb47a3e1b6c2536d42a2a91142"
   },
   "android": {
-    "version": "1.1.14",
-    "version_code": 23041,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.14/III85III-VPN.apk",
+    "version": "1.1.15",
+    "version_code": 23042,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.15/III85III-VPN.apk",
     "size": 52199689,
-    "sha256": "54a8f922cb21bbeaffd683ff3a5a8f0a0b23a5cbd3b171239f93e2d8f7d58e33",
-    "changelog": "Private Cloudflare account allocation for fresh Windows and Android installations; existing accounts preserved. Account availability is limited; automatic quota replacement is not implemented."
+    "sha256": "33abddce2ca7f5b480edc7beb7f04a0a6a7b030cc22fd72fd80c2802788b872f",
+    "changelog": "Raises the upstream connection pool to 16 and removes the local proxy connection cap on Windows, Android and Linux. Existing profiles migrate without removing accounts or settings. Actual speed depends on network and service conditions."
   }
 }
