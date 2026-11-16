@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "display_version": "1.1.16",
-  "changelog": "Fixes a Windows version-label mismatch that could repeat the same update. Retains the 16-connection pool and uncapped local proxy setting from 1.1.15. Existing profiles and accounts remain in place.",
+  "display_version": "1.1.17",
+  "changelog": "Android: account refresh now switches to the configured relay once only when the direct TCP connection times out. This improves connection recovery on networks that block Mozilla directly; it does not promise higher download speed.",
   "windows": {
     "version": "1.1.16",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.16/III85III-VPN-Setup.exe",
@@ -9,11 +9,11 @@
     "sha256": "7ac9bdaec6c56f32bddc50396d07d7ac40d1c3d4dd41bd9b170ef54d40ce9394"
   },
   "android": {
-    "version": "1.1.16",
-    "version_code": 23043,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.16/III85III-VPN.apk",
-    "size": 52199689,
-    "sha256": "549aa76405c63a655f0304873283d245e58429cd61f7c26728c7d43676996994",
-    "changelog": "Fixes a Windows version-label mismatch that could repeat the same update. Retains the 16-connection pool and uncapped local proxy setting from 1.1.15. Existing profiles and accounts remain in place."
+    "version": "1.1.17",
+    "version_code": 23044,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.17/III85III-VPN.apk",
+    "size": 52207881,
+    "sha256": "2e193694fdd5f7482bd53678812f2b1e894f26fa07c34f27f82cb1b5e4cb6509",
+    "changelog": "Direct account TCP connect timeout is 2 seconds; if that TCP dial fails, the app retries the token refresh once through the configured relay. No retry is made after TLS, write or response errors. Download speed is not guaranteed to increase."
   }
 }
