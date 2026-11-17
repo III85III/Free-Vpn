@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "display_version": "1.1.19",
-  "changelog": "Fixes an incorrect connection-startup timeout after a successful connection test. Includes dedicated advertising-domain filtering.",
+  "changelog": "Fixes Fastly bot mitigation & image CAPTCHAs with native Firefox TLS fingerprints and relay fallback; keeps games, voice calls, and other apps connected without interruption.",
   "windows": {
     "version": "1.1.19",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN-Setup.exe",
-    "size": 31812608,
-    "sha256": "53c0a805824be1f0e2e3709e69072729bcdbd29d5aefe1b5ff10fbfda8020f75"
+    "size": 36812288,
+    "sha256": "c35a72e70a544670b766b2521cf94567db9fcb36a0a72e828ecfbcbf59003979"
   },
   "android": {
     "version": "1.1.19",
     "version_code": 23046,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN.apk",
-    "size": 52211977,
-    "sha256": "ee07f1992994ee80f7ef242ac1ba0d3c9c14fe3b399c446b34c74f80cfcef76e",
-    "changelog": "Fixes an incorrect connection-startup timeout after a successful connection test. Includes dedicated advertising-domain filtering."
+    "size": 17748095,
+    "sha256": "37ff519a7b51a41116405d33480f37676ad22f476ed49f43978c0cc3bc3651ac",
+    "changelog": "Fixes Fastly bot mitigation & image CAPTCHAs with native Firefox TLS fingerprints and relay fallback; keeps games, voice calls, and other apps connected without interruption."
   }
 }
