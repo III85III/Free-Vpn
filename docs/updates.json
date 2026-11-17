@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "display_version": "1.1.18",
-  "changelog": "Blocks dedicated advertising domains in proxy connections and built-in VPN DNS. Same-host video ads may remain.",
+  "display_version": "1.1.19",
+  "changelog": "Fixes an incorrect connection-startup timeout after a successful connection test. Includes dedicated advertising-domain filtering.",
   "windows": {
-    "version": "1.1.18",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.18/III85III-VPN-Setup.exe",
+    "version": "1.1.19",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN-Setup.exe",
     "size": 31812608,
-    "sha256": "b2776c3907f39d8572bd10da2f7b7299214650616d59ba90dd7008dce2221bc9"
+    "sha256": "53c0a805824be1f0e2e3709e69072729bcdbd29d5aefe1b5ff10fbfda8020f75"
   },
   "android": {
-    "version": "1.1.18",
-    "version_code": 23045,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.18/III85III-VPN.apk",
-    "size": 52207881,
-    "sha256": "552f17c78b1f0bf517d1743d316e26b2e0eb1ff8a22290b9b61060a863348918",
-    "changelog": "Blocks dedicated advertising domains in proxy connections and built-in VPN DNS. Same-host video ads may remain."
+    "version": "1.1.19",
+    "version_code": 23046,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN.apk",
+    "size": 52211977,
+    "sha256": "ee07f1992994ee80f7ef242ac1ba0d3c9c14fe3b399c446b34c74f80cfcef76e",
+    "changelog": "Fixes an incorrect connection-startup timeout after a successful connection test. Includes dedicated advertising-domain filtering."
   }
 }
