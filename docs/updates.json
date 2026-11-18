@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "display_version": "1.1.19",
-  "changelog": "High-speed multi-socket pooling, 16MB gVisor window, 15s TCP keepalive heartbeats, zero idle drops, and 1420 MTU stability update.",
+  "changelog": "ARMv8 hardware AES acceleration, full RFC 9298 CONNECT-UDP tunneling (calls/gaming/QUIC), instant European stand-in failover, and sub-10s disconnect recovery.",
   "windows": {
     "version": "1.1.19",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN-Setup.exe",
-    "size": 36812288,
-    "sha256": "8af1ca5615ca21fc25e5d3d37fb4ab012637c2b2f66805d358242396123b7519"
+    "size": 37061632,
+    "sha256": "ca813db079a8d5de48f46b7cdc267834ad8bd188d1aec71f36138eadb3ea93c1"
   },
   "android": {
     "version": "1.1.19",
     "version_code": 23046,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN.apk",
-    "size": 52216073,
-    "sha256": "8efcc686d1da6235fe41da0b10e291abd8ffaa22eee96500f5721b56f6a357e2",
-    "changelog": "High-speed multi-socket pooling, 16MB gVisor window, 15s TCP keepalive heartbeats, zero idle drops, and 1420 MTU stability update."
+    "size": 53072137,
+    "sha256": "a7198936c4a07300ca4c1fa263ed5e102c16ae6a73d84c6d99d7e8dd5202232f",
+    "changelog": "ARMv8 hardware AES acceleration, full RFC 9298 CONNECT-UDP tunneling (calls/gaming/QUIC), instant European stand-in failover, and sub-10s disconnect recovery."
   }
 }
