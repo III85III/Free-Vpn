@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "display_version": "1.1.19",
-  "changelog": "Fixes Fastly bot mitigation & image CAPTCHAs with native Firefox TLS fingerprints and relay fallback; keeps games, voice calls, and other apps connected without interruption.",
+  "changelog": "High-speed multi-socket pooling, 16MB gVisor window, 15s TCP keepalive heartbeats, zero idle drops, and 1420 MTU stability update.",
   "windows": {
     "version": "1.1.19",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN-Setup.exe",
     "size": 36812288,
-    "sha256": "c35a72e70a544670b766b2521cf94567db9fcb36a0a72e828ecfbcbf59003979"
+    "sha256": "8af1ca5615ca21fc25e5d3d37fb4ab012637c2b2f66805d358242396123b7519"
   },
   "android": {
     "version": "1.1.19",
     "version_code": 23046,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN.apk",
-    "size": 52211977,
-    "sha256": "ee07f1992994ee80f7ef242ac1ba0d3c9c14fe3b399c446b34c74f80cfcef76e",
-    "changelog": "Fixes Fastly bot mitigation & image CAPTCHAs with native Firefox TLS fingerprints and relay fallback; keeps games, voice calls, and other apps connected without interruption."
+    "size": 52216073,
+    "sha256": "8efcc686d1da6235fe41da0b10e291abd8ffaa22eee96500f5721b56f6a357e2",
+    "changelog": "High-speed multi-socket pooling, 16MB gVisor window, 15s TCP keepalive heartbeats, zero idle drops, and 1420 MTU stability update."
   }
 }
