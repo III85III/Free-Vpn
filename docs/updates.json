@@ -12,8 +12,8 @@
     "version": "1.1.19",
     "version_code": 23046,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN.apk",
-    "size": 17748095,
-    "sha256": "37ff519a7b51a41116405d33480f37676ad22f476ed49f43978c0cc3bc3651ac",
+    "size": 52211977,
+    "sha256": "ee07f1992994ee80f7ef242ac1ba0d3c9c14fe3b399c446b34c74f80cfcef76e",
     "changelog": "Fixes Fastly bot mitigation & image CAPTCHAs with native Firefox TLS fingerprints and relay fallback; keeps games, voice calls, and other apps connected without interruption."
   }
 }
