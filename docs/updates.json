@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "display_version": "1.1.20",
-  "changelog": "Resolves the Windows tunnel address conflict and improves automatic server recovery.",
+  "changelog": "Built-in YouTube ad shield, network-level adblock, and anti-abuse account renewal.",
   "windows": {
     "version": "1.1.20",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.20/III85III-VPN-Setup.exe",
-    "size": 17763328,
-    "sha256": "984a960d3c78c864a10e281c4bcc1b60ab73aa01471c3f3b95e3737a0543253d"
+    "size": 28245504,
+    "sha256": "d5afc1e8548a5cd89e47f6707d23f2944faecd3c74b4e3d4cb187ecc4aa43684"
   },
   "android": {
     "version": "1.1.20",
     "version_code": 23047,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.20/III85III-VPN.apk",
-    "size": 53076233,
-    "sha256": "41f50a2d79e54cf5bba809aef230a1e2fa9afc9e780e75d9dd0735ae055d0e0e",
-    "changelog": "Automatic server recovery skips repeated dials to the same unreachable server."
+    "size": 53084425,
+    "sha256": "5aa4d040955e045839f148905a460d9027abf84c591b887905e5796456dcb8c6",
+    "changelog": "Built-in YouTube ad shield, network-level adblock, and anti-abuse account renewal."
   }
 }
