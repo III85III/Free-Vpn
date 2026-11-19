@@ -6,14 +6,14 @@
     "version": "1.1.20",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.20/III85III-VPN-Setup.exe",
     "size": 28245504,
-    "sha256": "d5afc1e8548a5cd89e47f6707d23f2944faecd3c74b4e3d4cb187ecc4aa43684"
+    "sha256": "a0ee6250dae042393580149ae5a68754e7715950601a76bf76509e3135ed995b"
   },
   "android": {
     "version": "1.1.20",
     "version_code": 23047,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.20/III85III-VPN.apk",
-    "size": 53084425,
-    "sha256": "5aa4d040955e045839f148905a460d9027abf84c591b887905e5796456dcb8c6",
+    "size": 53113168,
+    "sha256": "63d293fd7af4aefc00545c72eac4758ffd76e4161558d53a78c907b9e2a8debd",
     "changelog": "Built-in YouTube ad shield, network-level adblock, and anti-abuse account renewal."
   }
 }
