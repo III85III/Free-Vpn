@@ -1,19 +1,19 @@
 {
   "schema": 1,
-  "display_version": "1.1.19",
-  "changelog": "Zero-drop continuous streaming update: eliminated idle ping timeout disconnects, active-stream protection, and full line-rate stability.",
+  "display_version": "1.1.20",
+  "changelog": "Resolves the Windows tunnel address conflict and improves automatic server recovery.",
   "windows": {
-    "version": "1.1.19",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN-Setup.exe",
-    "size": 37061632,
-    "sha256": "7e1cb72f26166df2938041ea6b9334d21bef912fcafc7c75cfcf5bdca57a4d03"
+    "version": "1.1.20",
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.20/III85III-VPN-Setup.exe",
+    "size": 17763328,
+    "sha256": "984a960d3c78c864a10e281c4bcc1b60ab73aa01471c3f3b95e3737a0543253d"
   },
   "android": {
-    "version": "1.1.19",
-    "version_code": 23046,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN.apk",
+    "version": "1.1.20",
+    "version_code": 23047,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.20/III85III-VPN.apk",
     "size": 53076233,
-    "sha256": "88e2ef56d900117e6aed71a0d8b0d756f880e62aa9bdd494fe8ef3ac073a9c5b",
-    "changelog": "Zero-drop continuous streaming update: eliminated idle ping timeout disconnects, active-stream protection, and full line-rate stability."
+    "sha256": "41f50a2d79e54cf5bba809aef230a1e2fa9afc9e780e75d9dd0735ae055d0e0e",
+    "changelog": "Automatic server recovery skips repeated dials to the same unreachable server."
   }
 }
