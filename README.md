@@ -61,7 +61,7 @@ Designed from the ground up for **Windows, Android, and macOS**, featuring an ul
 | :--- | :--- | :--- | :--- |
 | **Windows** | `III85III-VPN-Setup.exe` | Windows 10/11 (64-bit) • Standard Installer | [Download Setup (.exe)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) |
 | **Windows Portable** | `III85III-VPN-v1.0.0-windows-x64.zip` | Windows 10/11 (64-bit) • Portable (No install) | [Download ZIP](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-v1.0.0-windows-x64.zip) |
-| **Android** | `III85III-VPN.apk` | Android 8.0+ • Universal (ARM64 & x86_64) | [Download APK (.apk)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk) |
+| **Android** | `III85III-VPN.apk` | Android 8.0+ • Universal (ARM64 & x86_64) | [Download APK (.apk)](https://github.com/III85III/Free-Vpn/releases/download/v1.1.23/III85III-VPN.apk) |
 | **macOS** | `III85III-VPN-macOS.dmg` | macOS 12+ (Apple Silicon & Intel) | [Download DMG (.dmg)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-macOS.dmg) |
 
 ### Which file should I download?

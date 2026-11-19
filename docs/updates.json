@@ -9,11 +9,11 @@
     "sha256": "a0ee6250dae042393580149ae5a68754e7715950601a76bf76509e3135ed995b"
   },
   "android": {
-    "version": "1.1.20",
-    "version_code": 23047,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.20/III85III-VPN.apk",
-    "size": 53113168,
-    "sha256": "63d293fd7af4aefc00545c72eac4758ffd76e4161558d53a78c907b9e2a8debd",
-    "changelog": "Built-in YouTube ad shield, network-level adblock, and anti-abuse account renewal."
+    "version": "1.1.23",
+    "version_code": 23050,
+    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.23/III85III-VPN.apk",
+    "size": 53092617,
+    "sha256": "a6772162be0a0a4c667cee287afe723db7ee77cd0a33839b0b12c031e54fd18a",
+    "changelog": "Verifies the connection in the background, keeps the selected account after network timeouts, and shows when Mozilla requires account verification."
   }
 }
