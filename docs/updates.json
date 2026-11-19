@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "display_version": "1.1.19",
-  "changelog": "ARMv8 hardware AES acceleration, full RFC 9298 CONNECT-UDP tunneling (calls/gaming/QUIC), instant European stand-in failover, and sub-10s disconnect recovery.",
+  "changelog": "Zero-drop continuous streaming update: eliminated idle ping timeout disconnects, active-stream protection, and full line-rate stability.",
   "windows": {
     "version": "1.1.19",
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN-Setup.exe",
     "size": 37061632,
-    "sha256": "ca813db079a8d5de48f46b7cdc267834ad8bd188d1aec71f36138eadb3ea93c1"
+    "sha256": "7e1cb72f26166df2938041ea6b9334d21bef912fcafc7c75cfcf5bdca57a4d03"
   },
   "android": {
     "version": "1.1.19",
     "version_code": 23046,
     "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.19/III85III-VPN.apk",
-    "size": 53072137,
-    "sha256": "a7198936c4a07300ca4c1fa263ed5e102c16ae6a73d84c6d99d7e8dd5202232f",
-    "changelog": "ARMv8 hardware AES acceleration, full RFC 9298 CONNECT-UDP tunneling (calls/gaming/QUIC), instant European stand-in failover, and sub-10s disconnect recovery."
+    "size": 53076233,
+    "sha256": "88e2ef56d900117e6aed71a0d8b0d756f880e62aa9bdd494fe8ef3ac073a9c5b",
+    "changelog": "Zero-drop continuous streaming update: eliminated idle ping timeout disconnects, active-stream protection, and full line-rate stability."
   }
 }
