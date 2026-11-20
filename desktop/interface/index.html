@@ -6,7 +6,9 @@
 
   <meta charset="UTF-8" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#06070a" />
+  <meta name="mobile-web-app-capable" content="yes" />
 
   <title>ONYX // VPN</title>
 
@@ -1386,6 +1388,127 @@
 
     body.zen-mode .zen-hint { opacity: 1; }
 
+
+    /* ========================================================= */
+    /* Android & Mobile UI/UX Optimizations                      */
+    /* ========================================================= */
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+    }
+
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Touch optimizations */
+    button, input, select, textarea, .win-icon-btn, .mini-action-btn, .drawer-tab-btn, .quick-pill, .swatch-btn, #btn-enter {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Smooth touch scrolling */
+    .drawer-scroll {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    /* Android & Narrow Screen Adaptations */
+    @media (max-width: 640px), (hover: none) and (pointer: coarse) {
+      .app-header {
+        height: calc(54px + var(--sat)) !important;
+        padding-top: max(12px, var(--sat)) !important;
+        padding-left: max(16px, var(--sal)) !important;
+        padding-right: max(16px, var(--sar)) !important;
+        -webkit-app-region: no-drag !important;
+      }
+
+      /* Hide desktop-only window controls on Android */
+      #btn-minimize,
+      #btn-close,
+      #btn-mini {
+        display: none !important;
+      }
+
+      /* Adjust status headline & telemetry */
+      .status-cluster {
+        top: calc(56px + var(--sat)) !important;
+        width: calc(100% - 24px) !important;
+        max-width: 380px !important;
+      }
+
+      .state-headline {
+        font-size: 28px !important;
+      }
+
+      .state-headline.is-connected {
+        font-size: 30px !important;
+      }
+
+      /* Bottom controls positioned safely above Android home gesture bar */
+      .controls-cluster {
+        bottom: max(12px, calc(10px + var(--sab))) !important;
+        padding-left: max(8px, var(--sal)) !important;
+        padding-right: max(8px, var(--sar)) !important;
+        width: 100% !important;
+      }
+
+      #btn-enter {
+        width: min(260px, calc(100vw - 40px)) !important;
+        max-width: 260px !important;
+      }
+
+      .quick-pills-row {
+        gap: 6px !important;
+        max-width: calc(100vw - 24px) !important;
+      }
+
+      .drawer-tabs-bar {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 4px !important;
+        max-width: calc(100vw - 16px) !important;
+        padding: 0 4px !important;
+      }
+
+      .drawer-tab-btn {
+        height: 28px !important;
+        min-height: 28px !important;
+        padding: 0 8px !important;
+        font-size: 9.5px !important;
+        white-space: nowrap !important;
+      }
+
+      /* Glass Drawers for Android: fit screen, safe areas, responsive max-height */
+      .glass-drawer {
+        left: max(10px, calc(10px + var(--sal))) !important;
+        right: max(10px, calc(10px + var(--sar))) !important;
+        bottom: calc(142px + var(--sab)) !important;
+        max-height: calc(100dvh - 195px - var(--sat) - var(--sab)) !important;
+        padding: 12px 12px !important;
+        border-radius: 20px !important;
+      }
+
+      .drawer-scroll {
+        max-height: min(240px, calc(100dvh - 275px - var(--sat) - var(--sab))) !important;
+      }
+
+      .glass-input {
+        font-size: 14px !important;
+        height: 34px !important;
+      }
+
+      .cmd-palette-box {
+        width: calc(100% - 20px) !important;
+        margin-top: var(--sat) !important;
+      }
+    }
   </style>
 
   <script>
@@ -2287,6 +2410,10 @@
 
     window.addEventListener('DOMContentLoaded', () => {
 
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.matchMedia('(pointer: coarse)').matches) {
+        document.body.classList.add('is-mobile');
+        if (/Android/i.test(navigator.userAgent)) document.body.classList.add('is-android');
+      }
       const audio = new GlassAudio();
 
       const canvasEl = document.getElementById('app-canvas');

@@ -29,8 +29,20 @@ namespace Onyx.Vpn {
             Text = "ONYX // VPN";
             var iconPath = Path.Combine(engine.Root, "assets", "brand", "onyx.ico");
             if (File.Exists(iconPath)) Icon = new Icon(iconPath);
-            onyxView = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.FromArgb(6, 7, 10), Visible = false };
+
+            // Configure Onyx window dimensions and hide legacy WinForms UI immediately to avoid startup flicker
+            MinimumSize = new Size(380, 520);
+            Size = new Size(460, 650);
+            CenterToScreen();
+            BackColor = Color.FromArgb(6, 7, 10);
+            if (titleBar != null) titleBar.Visible = false;
+            if (sidebar != null) sidebar.Visible = false;
+            if (contentArea != null) contentArea.Visible = false;
+
+            onyxView = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.FromArgb(6, 7, 10), Visible = true };
             Controls.Add(onyxView);
+            onyxView.BringToFront();
+
             var stateTimer = new Timer { Interval = 600 };
             stateTimer.Tick += delegate { PublishOnyxState(); };
             FormClosed += delegate { stateTimer.Dispose(); };
@@ -63,6 +75,12 @@ namespace Onyx.Vpn {
                     web.Navigate(OnyxOrigin);
                 } catch (Exception) {
                     onyxView.Visible = false;
+                    if (titleBar != null) titleBar.Visible = true;
+                    if (sidebar != null) sidebar.Visible = true;
+                    if (contentArea != null) contentArea.Visible = true;
+                    MinimumSize = new Size(740, 540);
+                    Size = new Size(840, 670);
+                    CenterToScreen();
                 }
             };
             KeyPreview = true;
@@ -79,6 +97,9 @@ namespace Onyx.Vpn {
             Size = new Size(460, 650);
             onyxView.Visible = true;
             onyxView.BringToFront();
+            if (titleBar != null) titleBar.Visible = false;
+            if (sidebar != null) sidebar.Visible = false;
+            if (contentArea != null) contentArea.Visible = false;
         }
 
         void OpenDesktopControls(int page) {
