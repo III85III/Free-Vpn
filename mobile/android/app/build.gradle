@@ -1,0 +1,33 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'io.github.iii85iii.vpn'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'io.github.iii85iii.vpn'
+        minSdk 26
+        targetSdk 34
+        versionCode = (project.findProperty('versionCodeOverride') ?: '23050').toInteger()
+        versionName = project.findProperty('versionNameOverride') ?: '1.1.23'
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    buildTypes { release { minifyEnabled false } }
+    buildFeatures { buildConfig true }
+    androidResources { ignoreAssetsPattern 'accounts_pool.json:pool.json:*.dpapi:*.token:*.log' }
+    packaging {
+        resources {
+            excludes += [
+                '/META-INF/com/android/build/gradle/app-metadata.properties',
+                '/META-INF/version-control-info.textproto'
+            ]
+        }
+        jniLibs { useLegacyPackaging true }
+    }
+    lint { checkReleaseBuilds false }
+}
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+dependencies {
+    implementation files('libs/core.aar')
+    testImplementation 'junit:junit:4.13.2'
+}

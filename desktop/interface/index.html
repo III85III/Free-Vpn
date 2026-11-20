@@ -1,0 +1,3062 @@
+<!DOCTYPE html>
+
+<html lang="en" class="dark">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ONYX // VPN</title>
+
+  
+
+  
+
+  
+
+  
+
+  <style>
+
+    :root {
+
+      --accent-rgb: 228, 232, 240;
+
+      --accent-sec-rgb: 130, 145, 175;
+
+      --bg-deep: #06070a;
+
+      --text-primary: #f5f7fa;
+
+    }
+
+
+
+    * {
+
+      box-sizing: border-box;
+
+      margin: 0;
+
+      padding: 0;
+
+      user-select: none;
+
+      -webkit-user-select: none;
+
+    }
+
+
+
+    html, body {
+
+      width: 100%;
+
+      height: 100%;
+
+      overflow: hidden;
+
+      background: var(--bg-deep);
+
+      font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      color: var(--text-primary);
+
+    }
+
+
+
+    #app-root {
+
+      position: relative;
+
+      width: 100%;
+
+      height: 100%;
+
+      overflow: hidden;
+
+      background: var(--bg-deep);
+
+      box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.14);
+
+    }
+
+
+
+    #app-canvas {
+
+      position: absolute;
+
+      inset: 0;
+
+      width: 100%;
+
+      height: 100%;
+
+      display: block;
+
+      z-index: 1;
+
+    }
+
+
+
+    #ui-layer {
+
+      position: relative;
+
+      z-index: 10;
+
+      width: 100%;
+
+      height: 100%;
+
+      pointer-events: none;
+
+    }
+
+
+
+    /* Frameless Draggable Top Bar */
+
+    .app-header {
+
+      position: absolute;
+
+      top: 0;
+
+      left: 0;
+
+      right: 0;
+
+      height: 56px;
+
+      padding: 14px 18px 0 22px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      pointer-events: auto;
+
+      -webkit-app-region: drag;
+
+    }
+
+
+
+    .brand-signature {
+
+      display: inline-flex;
+
+      align-items: baseline;
+
+      gap: 6px;
+
+      color: rgba(245, 247, 250, 0.88);
+
+      transition: opacity 0.4s ease;
+
+    }
+
+
+
+    .brand-85 {
+
+      font-family: 'Cormorant Garamond', Georgia, serif;
+
+      font-weight: 700;
+
+      font-size: 22px;
+
+      line-height: 1;
+
+      color: rgb(var(--accent-rgb));
+
+    }
+
+
+
+    .brand-name {
+
+      font-size: 10.5px;
+
+      font-weight: 500;
+
+      letter-spacing: 0.24em;
+
+      color: rgba(245, 247, 250, 0.64);
+
+    }
+
+
+
+    body.zen-mode .brand-signature {
+
+      opacity: 0.25;
+
+    }
+
+
+
+    .window-controls {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 6px;
+
+      -webkit-app-region: no-drag;
+
+    }
+
+
+
+    .win-icon-btn {
+
+      width: 28px;
+
+      height: 28px;
+
+      border-radius: 9999px;
+
+      background: rgba(255, 255, 255, 0.035);
+
+      border: 1px solid rgba(255, 255, 255, 0.09);
+
+      color: rgba(245, 247, 250, 0.76);
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      cursor: pointer;
+
+      backdrop-filter: blur(10px);
+
+      transition: all 0.2s ease;
+
+    }
+
+
+
+    .win-icon-btn:hover,
+
+    .win-icon-btn.is-active-tool {
+
+      background: rgba(var(--accent-rgb), 0.16);
+
+      border-color: rgba(var(--accent-rgb), 0.42);
+
+      color: #ffffff;
+
+    }
+
+
+
+    .win-icon-btn:active {
+
+      transform: scale(0.94);
+
+    }
+
+
+
+    .win-icon-btn.is-muted {
+
+      color: rgba(245, 247, 250, 0.34);
+
+    }
+
+
+
+    body.zen-mode .win-icon-btn:not(#btn-zen) {
+
+      opacity: 0.15;
+
+    }
+
+
+
+    body.zen-mode .win-icon-btn:not(#btn-zen):hover {
+
+      opacity: 0.95;
+
+    }
+
+
+
+    /* Compact Mini-Widget Mode */
+
+    body.is-mini #ui-layer {
+
+      opacity: 0;
+
+      pointer-events: none !important;
+
+    }
+
+
+
+    #mini-widget-bar {
+
+      position: fixed;
+
+      inset: 0;
+
+      z-index: 40;
+
+      padding: 0 10px 0 16px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 8px;
+
+      opacity: 0;
+
+      pointer-events: none;
+
+      -webkit-app-region: drag;
+
+      transition: opacity 0.22s ease;
+
+    }
+
+
+
+    body.is-mini #mini-widget-bar {
+
+      opacity: 1;
+
+      pointer-events: auto;
+
+    }
+
+
+
+    .mini-pill-btn {
+
+      height: 30px;
+
+      padding: 0 10px;
+
+      border-radius: 9999px;
+
+      border: 1px solid rgba(var(--accent-rgb), 0.24);
+
+      background: rgba(255, 255, 255, 0.06);
+
+      color: #f5f7fa;
+
+      font-size: 10px;
+
+      font-weight: 600;
+
+      letter-spacing: 0.08em;
+
+      cursor: pointer;
+
+      -webkit-app-region: no-drag;
+
+      transition: all 0.18s ease;
+
+    }
+
+
+
+    .mini-pill-btn.is-on {
+
+      background: rgba(16, 48, 38, 0.9);
+
+      border-color: rgba(52, 211, 153, 0.55);
+
+      color: #a7f3d0;
+
+    }
+
+
+
+    /* Command Palette (Ctrl+K) */
+
+    #cmd-palette-backdrop {
+
+      position: fixed;
+
+      inset: 0;
+
+      z-index: 45;
+
+      background: rgba(4, 5, 8, 0.74);
+
+      backdrop-filter: blur(10px);
+
+      display: flex;
+
+      align-items: flex-start;
+
+      justify-content: center;
+
+      padding-top: 64px;
+
+      opacity: 0;
+
+      pointer-events: none;
+
+      transition: opacity 0.2s ease;
+
+    }
+
+
+
+    #cmd-palette-backdrop.open {
+
+      opacity: 1;
+
+      pointer-events: auto;
+
+    }
+
+
+
+    .cmd-palette-box {
+
+      width: calc(100% - 32px);
+
+      max-width: 410px;
+
+      border-radius: 20px;
+
+      background: rgba(13, 15, 22, 0.97);
+
+      border: 1px solid rgba(var(--accent-rgb), 0.28);
+
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.92);
+
+      overflow: hidden;
+
+    }
+
+
+
+    .cmd-item {
+
+      width: 100%;
+
+      padding: 8px 12px;
+
+      border-radius: 11px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 8px;
+
+      text-align: left;
+
+      font-size: 11px;
+
+      color: rgba(226, 232, 240, 0.85);
+
+      background: transparent;
+
+      border: 1px solid transparent;
+
+      cursor: pointer;
+
+    }
+
+
+
+    .cmd-item.selected,
+
+    .cmd-item:hover {
+
+      background: rgba(var(--accent-rgb), 0.14);
+
+      border-color: rgba(var(--accent-rgb), 0.26);
+
+      color: #ffffff;
+
+    }
+
+
+
+    /* Status & Telemetry */
+
+    .status-cluster {
+
+      position: absolute;
+
+      top: 56px;
+
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      width: 92%;
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      pointer-events: none;
+
+      transition: top 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+
+    }
+
+
+
+    body.zen-mode .status-cluster {
+
+      top: 15%;
+
+    }
+
+
+
+    .state-headline {
+
+      font-weight: 200;
+
+      font-size: 34px;
+
+      line-height: 1.08;
+
+      letter-spacing: 0.04em;
+
+      color: rgba(245, 247, 250, 0.95);
+
+      font-variant-numeric: tabular-nums;
+
+      transition: color 0.35s ease, font-size 0.35s ease;
+
+    }
+
+
+
+    .state-headline.is-connected {
+
+      color: #a7f3d0;
+
+    }
+
+
+
+    body.zen-mode .state-headline {
+
+      font-size: 46px;
+
+      color: rgba(245, 247, 250, 0.92);
+
+    }
+
+
+
+    .status-pill {
+
+      margin-top: 7px;
+
+      padding: 4px 14px;
+
+      border-radius: 9999px;
+
+      background: rgba(14, 16, 22, 0.78);
+
+      border: 1px solid rgba(255, 255, 255, 0.08);
+
+      backdrop-filter: blur(14px);
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 7px;
+
+      transition: opacity 0.4s ease;
+
+    }
+
+
+
+    body.zen-mode .status-pill {
+
+      opacity: 0;
+
+    }
+
+
+
+    @keyframes pulseDot {
+
+      0%, 100% { opacity: 1; transform: scale(1); }
+
+      50% { opacity: 0.48; transform: scale(0.84); }
+
+    }
+
+
+
+    .status-dot {
+
+      width: 6px;
+
+      height: 6px;
+
+      border-radius: 9999px;
+
+      background-color: #34d399;
+
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.85);
+
+      animation: pulseDot 2.4s ease-in-out infinite;
+
+    }
+
+
+
+    .status-text {
+
+      font-size: 9.5px;
+
+      font-weight: 600;
+
+      letter-spacing: 0.14em;
+
+      color: rgba(226, 232, 240, 0.84);
+
+      text-transform: uppercase;
+
+    }
+
+
+
+    .telemetry-card {
+
+      margin-top: 8px;
+
+      padding: 6px 12px;
+
+      border-radius: 16px;
+
+      background: rgba(11, 13, 19, 0.68);
+
+      border: 1px solid rgba(255, 255, 255, 0.07);
+
+      backdrop-filter: blur(12px);
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      gap: 3px;
+
+      font-size: 10px;
+
+      font-variant-numeric: tabular-nums;
+
+      color: rgba(226, 232, 240, 0.86);
+
+      opacity: 0;
+
+      transform: translateY(-4px);
+
+      transition: opacity 0.35s ease, transform 0.35s ease;
+
+    }
+
+
+
+    .telemetry-card.visible {
+
+      opacity: 1;
+
+      transform: translateY(0);
+
+    }
+
+
+
+    body.zen-mode .telemetry-card {
+
+      opacity: 0 !important;
+
+    }
+
+
+
+    #sparkline-canvas {
+
+      width: 58px;
+
+      height: 15px;
+
+      display: block;
+
+    }
+
+
+
+    /* Bottom Controls */
+
+    .controls-cluster {
+
+      position: absolute;
+
+      bottom: 14px;
+
+      left: 0;
+
+      right: 0;
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      pointer-events: none;
+
+      transition: opacity 0.45s ease, transform 0.45s ease;
+
+    }
+
+
+
+    body.zen-mode .controls-cluster {
+
+      opacity: 0;
+
+      transform: translateY(14px) scale(0.97);
+
+      pointer-events: none !important;
+
+    }
+
+
+
+    .enter-outer-ring {
+
+      position: relative;
+
+      padding: 4px;
+
+      border-radius: 9999px;
+
+      border: 1px solid rgba(var(--accent-rgb), 0.28);
+
+      background: rgba(255, 255, 255, 0.015);
+
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.78), 0 0 36px rgba(var(--accent-rgb), 0.1);
+
+      pointer-events: auto;
+
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.18s ease;
+
+    }
+
+
+
+    .enter-outer-ring.is-active {
+
+      border-color: rgba(52, 211, 153, 0.48);
+
+      box-shadow: 0 20px 46px rgba(0, 0, 0, 0.8), 0 0 40px rgba(52, 211, 153, 0.18);
+
+    }
+
+
+
+    #btn-enter {
+
+      position: relative;
+
+      width: 264px;
+
+      height: 52px;
+
+      border-radius: 9999px;
+
+      overflow: hidden;
+
+      border: 1px solid rgba(255, 255, 255, 0.38);
+
+      background: linear-gradient(180deg, rgba(236, 240, 248, 0.96) 0%, rgba(178, 186, 202, 0.9) 52%, rgba(134, 142, 158, 0.92) 100%);
+
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9), inset 0 -2px 5px rgba(0, 0, 0, 0.35);
+
+      cursor: pointer;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      transition: background 0.4s ease, border-color 0.4s ease, transform 0.15s ease;
+
+    }
+
+
+
+    body[data-theme="champagne"] #btn-enter {
+
+      background: linear-gradient(180deg, rgba(244, 226, 192, 0.96) 0%, rgba(202, 174, 128, 0.91) 52%, rgba(164, 134, 88, 0.93) 100%);
+
+    }
+
+
+
+    body[data-theme="sapphire"] #btn-enter {
+
+      background: linear-gradient(180deg, rgba(218, 234, 255, 0.96) 0%, rgba(148, 182, 232, 0.91) 52%, rgba(104, 142, 204, 0.93) 100%);
+
+    }
+
+
+
+    #btn-enter.is-connecting {
+
+      background: linear-gradient(180deg, rgba(22, 25, 34, 0.96) 0%, rgba(13, 15, 21, 0.98) 100%);
+
+      border-color: rgba(var(--accent-rgb), 0.42);
+
+    }
+
+
+
+    #btn-enter.is-active {
+
+      background: linear-gradient(180deg, rgba(20, 34, 31, 0.95) 0%, rgba(12, 22, 20, 0.98) 100%);
+
+      border-color: rgba(52, 211, 153, 0.55);
+
+    }
+
+
+
+    #btn-enter:active { transform: scale(0.975); }
+
+
+
+    #enter-progress-fill {
+
+      position: absolute;
+
+      left: 0; top: 0; bottom: 0;
+
+      width: 0%;
+
+      background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.18) 0%, rgba(var(--accent-rgb), 0.4) 100%);
+
+      pointer-events: none;
+
+    }
+
+
+
+    #enter-sheen {
+
+      position: absolute;
+
+      inset: 0;
+
+      pointer-events: none;
+
+      opacity: 0;
+
+      transition: opacity 0.25s ease;
+
+      background: radial-gradient(115px circle at var(--sheen-x, 50%) var(--sheen-y, 50%), rgba(255, 255, 255, 0.6), transparent 72%);
+
+    }
+
+
+
+    #btn-enter:hover #enter-sheen { opacity: 1; }
+
+
+
+    #enter-label {
+
+      position: relative;
+
+      z-index: 2;
+
+      font-size: 13px;
+
+      font-weight: 600;
+
+      letter-spacing: 0.32em;
+
+      padding-left: 0.32em;
+
+      color: #090b10;
+
+    }
+
+
+
+    #btn-enter.is-connecting #enter-label { color: rgb(var(--accent-rgb)); letter-spacing: 0.22em; }
+
+    #btn-enter.is-active #enter-label { color: #ecfdf5; letter-spacing: 0.24em; padding-left: 0.24em; }
+
+
+
+    .quick-pills-row {
+
+      margin-top: 9px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 8px;
+
+      pointer-events: auto;
+
+    }
+
+
+
+    .quick-pill {
+
+      height: 31px;
+
+      padding: 0 13px;
+
+      border-radius: 9999px;
+
+      background: rgba(16, 18, 25, 0.82);
+
+      border: 1px solid rgba(255, 255, 255, 0.09);
+
+      backdrop-filter: blur(12px);
+
+      color: rgba(235, 240, 248, 0.88);
+
+      font-size: 11px;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 6px;
+
+      cursor: pointer;
+
+      transition: all 0.2s ease;
+
+    }
+
+
+
+    .quick-pill:hover {
+
+      background: rgba(var(--accent-rgb), 0.13);
+
+      border-color: rgba(var(--accent-rgb), 0.35);
+
+      color: #fff;
+
+    }
+
+
+
+    .drawer-tabs-bar {
+
+      margin-top: 9px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 5px;
+
+      pointer-events: auto;
+
+    }
+
+
+
+    .drawer-tab-btn {
+
+      height: 27px;
+
+      padding: 0 10px;
+
+      border-radius: 9999px;
+
+      background: rgba(12, 14, 20, 0.68);
+
+      border: 1px solid rgba(255, 255, 255, 0.07);
+
+      color: rgba(226, 232, 240, 0.68);
+
+      font-size: 10px;
+
+      font-weight: 500;
+
+      cursor: pointer;
+
+      transition: all 0.2s ease;
+
+    }
+
+
+
+    .drawer-tab-btn:hover,
+
+    .drawer-tab-btn.active {
+
+      background: rgba(var(--accent-rgb), 0.16);
+
+      border-color: rgba(var(--accent-rgb), 0.42);
+
+      color: #ffffff;
+
+    }
+
+
+
+    .account-line {
+
+      margin-top: 6px;
+
+      font-size: 9.5px;
+
+      letter-spacing: 0.06em;
+
+      color: rgba(var(--accent-rgb), 0.46);
+
+    }
+
+
+
+    .toast-slot {
+
+      height: 15px;
+
+      margin-top: 2px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+    }
+
+
+
+    #toast-msg {
+
+      font-size: 8.5px;
+
+      font-weight: 600;
+
+      letter-spacing: 0.15em;
+
+      text-transform: uppercase;
+
+      color: rgba(var(--accent-rgb), 0.92);
+
+      opacity: 0;
+
+      transform: translateY(3px);
+
+      transition: opacity 0.25s ease, transform 0.25s ease;
+
+    }
+
+
+
+    #toast-msg.visible {
+
+      opacity: 1;
+
+      transform: translateY(0);
+
+    }
+
+
+
+    .theme-swatches {
+
+      margin-top: 2px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      gap: 12px;
+
+      pointer-events: auto;
+
+    }
+
+
+
+    .swatch-btn {
+
+      width: 17px;
+
+      height: 17px;
+
+      border-radius: 9999px;
+
+      background: transparent;
+
+      border: 1px solid transparent;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      cursor: pointer;
+
+    }
+
+
+
+    .swatch-btn.active { border-color: rgba(var(--accent-rgb), 0.6); }
+
+    .swatch-dot { width: 8.5px; height: 8.5px; border-radius: 9999px; }
+
+
+
+    /* Frosted Glass Drawers */
+
+    .glass-drawer {
+
+      position: absolute;
+
+      left: 14px;
+
+      right: 14px;
+
+      bottom: 138px;
+
+      max-height: 360px;
+
+      border-radius: 22px;
+
+      background: rgba(11, 13, 19, 0.95);
+
+      border: 1px solid rgba(var(--accent-rgb), 0.22);
+
+      box-shadow: 0 26px 64px rgba(0, 0, 0, 0.92), inset 0 1px 0 rgba(255, 255, 255, 0.11);
+
+      backdrop-filter: blur(26px);
+
+      padding: 13px 14px;
+
+      z-index: 30;
+
+      pointer-events: none;
+
+      opacity: 0;
+
+      transform: translateY(18px) scale(0.97);
+
+      transition: opacity 0.24s ease, transform 0.24s ease;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 9px;
+
+    }
+
+
+
+    .glass-drawer.open {
+
+      opacity: 1;
+
+      transform: translateY(0) scale(1);
+
+      pointer-events: auto;
+
+    }
+
+
+
+    .drawer-scroll {
+
+      overflow-y: auto;
+
+      max-height: 255px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 5px;
+
+    }
+
+
+
+    .glass-input {
+
+      width: 100%;
+
+      height: 31px;
+
+      padding: 0 11px;
+
+      border-radius: 11px;
+
+      background: rgba(255, 255, 255, 0.04);
+
+      border: 1px solid rgba(255, 255, 255, 0.09);
+
+      color: #f5f7fa;
+
+      font-size: 11px;
+
+      outline: none;
+
+      user-select: text;
+
+      -webkit-user-select: text;
+
+    }
+
+
+
+    .mini-action-btn {
+
+      height: 27px;
+
+      padding: 0 10px;
+
+      border-radius: 9px;
+
+      background: rgba(var(--accent-rgb), 0.09);
+
+      border: 1px solid rgba(var(--accent-rgb), 0.22);
+
+      color: #f5f7fa;
+
+      font-size: 10px;
+
+      font-weight: 500;
+
+      cursor: pointer;
+
+    }
+
+
+
+    .mini-action-btn.primary {
+
+      background: rgba(var(--accent-rgb), 0.22);
+
+      border-color: rgba(var(--accent-rgb), 0.52);
+
+      font-weight: 600;
+
+    }
+
+
+
+    .toggle-switch {
+
+      width: 32px;
+
+      height: 18px;
+
+      border-radius: 999px;
+
+      background: rgba(255, 255, 255, 0.14);
+
+      border: 1px solid rgba(255, 255, 255, 0.12);
+
+      position: relative;
+
+      cursor: pointer;
+
+      flex-shrink: 0;
+
+    }
+
+
+
+    .toggle-switch.on {
+
+      background: rgba(52, 211, 153, 0.35);
+
+      border-color: rgba(52, 211, 153, 0.7);
+
+    }
+
+
+
+    .toggle-switch::after {
+
+      content: "";
+
+      position: absolute;
+
+      top: 1.5px;
+
+      left: 2px;
+
+      width: 13px;
+
+      height: 13px;
+
+      border-radius: 50%;
+
+      background: #f5f7fa;
+
+      transition: transform 0.2s ease;
+
+    }
+
+
+
+    .toggle-switch.on::after {
+
+      transform: translateX(13px);
+
+      background: #a7f3d0;
+
+    }
+
+
+
+    .zen-hint {
+
+      position: absolute;
+
+      bottom: 22px;
+
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      font-size: 9px;
+
+      letter-spacing: 0.22em;
+
+      color: rgba(255, 255, 255, 0.28);
+
+      white-space: nowrap;
+
+      opacity: 0;
+
+      pointer-events: none;
+
+      transition: opacity 0.45s ease;
+
+    }
+
+
+
+    body.zen-mode .zen-hint { opacity: 1; }
+
+  </style>
+
+  <script>
+    window.__onyxEmblem = new Image();
+    window.__onyxEmblem.src = 'icon.png';
+  </script>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <link rel="stylesheet" href="tailwind.css">
+  <style>.desktop-tools { border: 1px solid #363843; border-radius: 8px; padding: 5px 8px; color: #e4e8f0; font-size: 11px; cursor: pointer; }</style>
+</head>
+
+<body data-theme="platinum">
+
+  <div id="app-root">
+
+    <canvas id="app-canvas"></canvas>
+
+
+
+    <!-- Compact Mini-Widget Bar -->
+
+    <div id="mini-widget-bar">
+
+      <div class="flex items-center gap-2 min-w-0">
+
+        <span style="font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 700; font-size: 20px; color: rgb(var(--accent-rgb));">85</span>
+
+        <span id="mini-status-dot" class="status-dot"></span>
+
+        <div class="truncate">
+
+          <div id="mini-server-ping" class="text-[11px] font-medium text-slate-100 truncate">UK • 24ms</div>
+
+          <div id="mini-speed-text" class="text-[9px] text-slate-400 font-mono truncate">↓ 0.0 MB/s</div>
+
+        </div>
+
+      </div>
+
+      <div class="flex items-center gap-1.5" style="-webkit-app-region: no-drag;">
+
+        <button id="mini-toggle-conn" type="button" class="mini-pill-btn">OFF</button>
+
+        <button id="mini-expand-btn" type="button" class="win-icon-btn" title="Expand Window (Ctrl+M)">
+
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+
+            <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+
+            <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+
+          </svg>
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- Command Palette (Ctrl+K) -->
+
+    <div id="cmd-palette-backdrop">
+
+      <div class="cmd-palette-box">
+
+        <div class="px-3.5 py-2.5 border-b border-white/10 flex items-center gap-2">
+
+          <input id="cmd-input" type="text" class="w-full bg-transparent text-[12px] text-white outline-none placeholder-slate-500" style="user-select:text;-webkit-user-select:text;" placeholder="Search server, command, preset, or app..." />
+
+          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-slate-400">ESC</span>
+
+        </div>
+
+        <div id="cmd-results" class="p-2 max-h-64 overflow-y-auto flex flex-col gap-1"></div>
+
+      </div>
+
+    </div>
+
+
+
+    <div id="ui-layer">
+
+      <header class="app-header">
+
+            <div class="brand-signature flex items-center gap-2">
+      <img src="icon.png" alt="ONYX" class="w-6 h-6 object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" />
+      <span class="brand-85 font-bold tracking-wider text-[#f5f7fa]">ONYX</span>
+      <span class="brand-name text-slate-400 font-medium">// VPN</span>
+    </div>
+
+        <div class="window-controls">
+
+          <button id="btn-cmd" class="win-icon-btn" title="Command Palette (Ctrl+K)">
+
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+
+              <circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.2" y2="16.2" />
+
+            </svg>
+
+          </button>
+
+          <button id="btn-mini" class="win-icon-btn" title="Compact Mini-Widget (Ctrl+M)">
+
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+
+              <rect x="3" y="8" width="18" height="8" rx="4" /><circle cx="8" cy="12" r="1.5" />
+
+            </svg>
+
+          </button>
+
+          <button id="btn-sound" class="win-icon-btn" title="Toggle Glass Chimes">
+
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+
+            </svg>
+
+          </button>
+
+          <button id="btn-zen" class="win-icon-btn" title="Zen Wallpaper Mode">
+
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+
+              <path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z" />
+
+              <circle cx="12" cy="12" r="2.6" />
+
+            </svg>
+
+          </button>
+
+          <button id="btn-minimize" class="win-icon-btn" title="Minimize">
+
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+
+              <line x1="5" y1="12" x2="19" y2="12" />
+
+            </svg>
+
+          </button>
+
+          <button id="btn-close" class="win-icon-btn" title="Close">
+
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+
+            </svg>
+
+          </button>
+
+        </div>
+
+      </header>
+
+
+
+      <div class="status-cluster">
+
+        <div id="state-headline" class="state-headline">Ready</div>
+
+        <div class="status-pill">
+
+          <span id="status-dot" class="status-dot"></span>
+
+          <span id="status-text" class="status-text">READY</span>
+
+        </div>
+
+
+
+        <div id="telemetry-card" class="telemetry-card">
+
+          <div class="flex items-center gap-2">
+
+            <span id="link-health-readout" class="text-emerald-300 font-medium">Ping unavailable</span>
+
+            <span style="opacity:0.32;">•</span>
+
+            <span id="dl-readout" class="text-sky-200">↓ 0.0 MB/s</span>
+
+            <span style="opacity:0.32;">•</span>
+
+            <span id="ul-readout" class="text-emerald-200">↑ 0.0 KB/s</span>
+
+            <canvas id="sparkline-canvas" width="116" height="30"></canvas>
+
+          </div>
+
+          <div class="flex items-center gap-2.5 text-[9px] text-slate-400">
+
+            <span id="dl-total">DL Total: 0.0 MB</span>
+
+            <span>•</span>
+
+            <span id="ul-total">UL Total: 0.0 MB</span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- 1. SERVERS DRAWER -->
+
+      <div id="drawer-servers" class="glass-drawer">
+
+        <div class="flex items-center justify-between gap-2">
+
+          <span class="text-[11px] font-semibold tracking-wider uppercase text-slate-200">Servers</span>
+
+          <div class="flex items-center gap-1.5">
+
+            <button id="btn-test-ping" type="button" class="mini-action-btn primary">Test ping</button>
+
+            <button type="button" class="mini-action-btn close-drawer-btn">Done</button>
+
+          </div>
+
+        </div>
+
+        <input id="server-search" type="text" class="glass-input" placeholder="Search locations..." />
+
+        <div id="server-list" class="drawer-scroll"></div>
+
+      </div>
+
+
+
+      <!-- 2. APP RULES DRAWER -->
+
+      <div id="drawer-apps" class="glass-drawer">
+
+        <div class="flex items-center justify-between gap-2">
+
+          <span id="apps-summary" class="text-[11px] font-semibold tracking-wider uppercase text-slate-200">App rules</span>
+
+          <div class="flex items-center gap-1.5">
+
+            <button id="btn-add-app" type="button" class="mini-action-btn">Add App</button>
+
+            <button id="btn-save-apps" type="button" class="mini-action-btn primary">Save</button>
+
+            <button type="button" class="mini-action-btn close-drawer-btn">Done</button>
+
+          </div>
+
+        </div>
+
+        <div class="flex items-center gap-1.5">
+
+          <button type="button" disabled title="Add app rules manually" data-preset="gaming" class="preset-pill-btn mini-action-btn flex-1">Gaming Mode</button>
+
+          <button type="button" disabled title="Add app rules manually" data-preset="ir_direct" class="preset-pill-btn mini-action-btn flex-1">IR Direct</button>
+
+          <button type="button" data-preset="full_tunnel" class="preset-pill-btn mini-action-btn flex-1">Full Tunnel</button>
+
+        </div>
+
+        <input id="app-search" type="text" class="glass-input" placeholder="Search applications (.exe)..." />
+
+        <div id="app-rules-list" class="drawer-scroll"></div>
+
+      </div>
+
+
+
+      <!-- 3. SHIELD & ROUTING DRAWER -->
+
+      <div id="drawer-shield" class="glass-drawer">
+
+        <div class="flex items-center justify-between gap-2">
+
+          <span class="text-[11px] font-semibold tracking-wider uppercase text-slate-200">Shield & Routing</span>
+
+          <button type="button" class="mini-action-btn close-drawer-btn">Done</button>
+
+        </div>
+
+        <div class="drawer-scroll">
+
+          <div class="text-[10px] uppercase tracking-wider text-slate-400 px-1">Connection Mode</div>
+
+          <div id="mode-options-list" class="flex flex-col gap-1"></div>
+
+          <div class="text-[10px] uppercase tracking-wider text-slate-400 px-1 pt-2">Anti-Filter</div>
+
+          <div id="antifilter-list" class="flex flex-col gap-1"></div>
+
+          <div class="text-[10px] uppercase tracking-wider text-slate-400 px-1 pt-2">Direct Bypass Rules</div>
+
+          <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-[10.5px] font-mono text-slate-300 leading-relaxed">
+
+            geosite:ir<br />geoip:ir<br />geoip:private
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- 4. ACCOUNT & DIAGNOSTICS DRAWER -->
+
+      <div id="drawer-account" class="glass-drawer">
+
+        <div class="flex items-center justify-between gap-2">
+
+          <span class="text-[11px] font-semibold tracking-wider uppercase text-slate-200">Account & Diagnostics</span>
+
+          <div class="flex items-center gap-1.5">
+
+            <button id="btn-hide-email" type="button" class="mini-action-btn">Hide email</button>
+
+            <button type="button" class="mini-action-btn close-drawer-btn">Done</button>
+
+          </div>
+
+        </div>
+
+        <div class="drawer-scroll">
+
+          <button id="onyx-add-account" type="button" class="mini-action-btn">Add account</button><div id="account-list" class="flex flex-col gap-1"></div>
+
+          <div class="mt-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 flex flex-col gap-2">
+
+            <div class="flex items-center justify-between text-[10.5px]">
+
+              <span class="text-slate-400">Exit IPv4</span>
+
+              <span id="exit-ip-label" class="font-mono text-emerald-300">—</span>
+
+            </div>
+
+            <div class="flex flex-wrap gap-1.5">
+
+              <button id="btn-copy-socks" type="button" class="mini-action-btn" hidden>Proxy address</button>
+
+              <button id="btn-tg-proxy" type="button" class="mini-action-btn">Telegram Proxy</button>
+
+              <button id="btn-repair-vpn" type="button" class="mini-action-btn">Repair VPN</button>
+
+            </div>
+
+          </div>
+
+          <div class="mt-1.5">
+
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 px-1 mb-1">Diagnostic Console</div>
+
+            <div id="diag-console" class="p-2 rounded-xl bg-black/50 border border-white/10 font-mono text-[9.5px] text-slate-300/85 max-h-24 overflow-y-auto leading-snug"></div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="controls-cluster">
+
+        <div id="enter-outer-ring" class="enter-outer-ring">
+
+          <button id="btn-enter" type="button">
+
+            <div id="enter-progress-fill"></div>
+
+            <div id="enter-sheen"></div>
+
+            <span id="enter-label">E N T E R</span>
+
+          </button>
+
+        </div>
+
+
+
+        <div class="quick-pills-row">
+
+          <button id="quick-server-pill" class="quick-pill" type="button">
+
+            <span id="quick-server-label">Automatic</span>
+
+            <span style="opacity:0.5;">▾</span>
+
+          </button>
+
+          <button id="quick-mode-pill" class="quick-pill" type="button">
+
+            <span id="quick-mode-label">Whole computer</span>
+
+          </button>
+
+        </div>
+
+
+
+        <div class="drawer-tabs-bar">
+
+          <button type="button" class="drawer-tab-btn" data-drawer="drawer-servers">Servers</button>
+
+          <button type="button" class="drawer-tab-btn" data-drawer="drawer-apps">App rules</button>
+
+          <button type="button" class="drawer-tab-btn" data-drawer="drawer-shield">Shield & Routing</button>
+
+          <button type="button" class="drawer-tab-btn" data-drawer="drawer-account">Account & Logs</button>
+
+        </div>
+
+
+
+        <div id="account-footer-line" class="account-line">Account settings</div>
+
+        <div class="toast-slot"><span id="toast-msg"></span></div>
+
+
+
+        <div class="theme-swatches">
+
+          <button class="swatch-btn active" data-theme-idx="0" title="Obsidian Platinum"><span class="swatch-dot" style="background:#c2cad8;"></span></button>
+
+          <button class="swatch-btn" data-theme-idx="1" title="Warm Champagne"><span class="swatch-dot" style="background:#dec396;"></span></button>
+
+          <button class="swatch-btn" data-theme-idx="2" title="Midnight Sapphire"><span class="swatch-dot" style="background:#5c8ee6;"></span></button>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="zen-hint">WALLPAPER MODE  •  CLICK ANYWHERE TO RESTORE</div>
+
+    </div>
+
+  </div>
+
+
+
+  <script>
+
+    const THEMES = [
+
+      { id: 'platinum', name: 'OBSIDIAN PLATINUM', bgDeep: [6, 7, 10], accentPrimary: [228, 232, 240], accentSecondary: [130, 145, 175], cssAccentRgb: '228, 232, 240', cssBgDeep: '#06070a' },
+
+      { id: 'champagne', name: 'WARM CHAMPAGNE', bgDeep: [9, 8, 7], accentPrimary: [232, 206, 162], accentSecondary: [176, 142, 92], cssAccentRgb: '232, 206, 162', cssBgDeep: '#090807' },
+
+      { id: 'sapphire', name: 'MIDNIGHT SAPPHIRE', bgDeep: [6, 8, 14], accentPrimary: [148, 194, 255], accentSecondary: [76, 126, 214], cssAccentRgb: '148, 194, 255', cssBgDeep: '#06080e' }
+
+    ];
+
+
+
+    class GlassAudio {
+
+      constructor() { this.ctx = null; this.muted = false; }
+
+      unlock() {
+
+        if (this.muted) return false;
+
+        if (!this.ctx) {
+
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+
+          if (Ctx) this.ctx = new Ctx();
+
+        }
+
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+
+        return !!this.ctx;
+
+      }
+
+      playSoftClick() {
+
+        if (!this.unlock()) return;
+
+        const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), g = this.ctx.createGain();
+
+        osc.type = 'sine'; osc.frequency.setValueAtTime(680, now); osc.frequency.exponentialRampToValueAtTime(340, now + 0.055);
+
+        g.gain.setValueAtTime(0.03, now); g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+
+        osc.connect(g); g.connect(this.ctx.destination); osc.start(now); osc.stop(now + 0.065);
+
+      }
+
+      playActiveChime() {
+
+        if (!this.unlock()) return;
+
+        const now = this.ctx.currentTime;
+
+        [587.33, 880.0, 1318.51].forEach((f, i) => {
+
+          const osc = this.ctx.createOscillator(), g = this.ctx.createGain();
+
+          osc.type = 'sine'; osc.frequency.setValueAtTime(f, now + i * 0.05);
+
+          g.gain.setValueAtTime(0.0001, now + i * 0.05);
+
+          g.gain.linearRampToValueAtTime(0.035, now + i * 0.05 + 0.025);
+
+          g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.05 + 0.72);
+
+          osc.connect(g); g.connect(this.ctx.destination); osc.start(now + i * 0.05); osc.stop(now + i * 0.05 + 0.78);
+
+        });
+
+      }
+
+      playDisconnectTone() {
+
+        if (!this.unlock()) return;
+
+        const now = this.ctx.currentTime;
+
+        [659.25, 440.0].forEach((f, i) => {
+
+          const osc = this.ctx.createOscillator(), g = this.ctx.createGain();
+
+          osc.type = 'sine'; osc.frequency.setValueAtTime(f, now + i * 0.065);
+
+          g.gain.setValueAtTime(0.025, now + i * 0.065);
+
+          g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.065 + 0.28);
+
+          osc.connect(g); g.connect(this.ctx.destination); osc.start(now + i * 0.065); osc.stop(now + i * 0.065 + 0.3);
+
+        });
+
+      }
+
+    }
+
+
+
+    class LuxuryChronometerCanvas {
+
+      constructor(canvas) {
+
+        this.canvas = canvas;
+
+        this.ctx = canvas.getContext('2d');
+
+        this.width = window.innerWidth;
+
+        this.height = window.innerHeight;
+
+        this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        this.currentBg = [...THEMES[0].bgDeep];
+
+        this.currentPrimary = [...THEMES[0].accentPrimary];
+
+        this.currentSecondary = [...THEMES[0].accentSecondary];
+
+        this.targetTheme = THEMES[0];
+
+        this.mousePos = { x: -500, y: -500 };
+
+        this.smoothMouse = { x: this.width * 0.5, y: this.height * 0.5 };
+
+        this.connMode = 'ready';
+
+        this.isZen = false;
+
+        this.zenBlend = 0;
+
+        this.activeBlend = 0;
+
+        this.connectBlend = 0;
+
+        this.arcAngle = 0;
+
+        this.ripples = [];
+
+        this.particles = Array.from({ length: 26 }, () => ({
+
+          x: Math.random() * 1600, y: Math.random() * 1000,
+
+          speedY: 0.14 + Math.random() * 0.3, driftPhase: Math.random() * Math.PI * 2,
+
+          size: 1.0 + Math.random() * 1.7, alpha: 0.12 + Math.random() * 0.25
+
+        }));
+
+        this.resize();
+
+        window.addEventListener('resize', () => this.resize());
+
+      }
+
+      resize() {
+
+        this.width = Math.max(120, window.innerWidth);
+
+        this.height = Math.max(40, window.innerHeight);
+
+        this.canvas.width = Math.floor(this.width * this.dpr);
+
+        this.canvas.height = Math.floor(this.height * this.dpr);
+
+        this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+      }
+
+      spawnRipple(x, y) { this.ripples.push({ x, y, radius: 20, alpha: 0.62 }); }
+
+      lerpColor(c, t, f) { c[0] += (t[0] - c[0]) * f; c[1] += (t[1] - c[1]) * f; c[2] += (t[2] - c[2]) * f; }
+
+      rgba(a, al = 1) { return `rgba(${Math.round(a[0])},${Math.round(a[1])},${Math.round(a[2])},${al})`; }
+
+      render(time, dt) {
+
+        const ctx = this.ctx, w = this.width, h = this.height, cx = w * 0.5, cy = h * 0.52;
+
+        this.lerpColor(this.currentBg, this.targetTheme.bgDeep, 0.08);
+
+        this.lerpColor(this.currentPrimary, this.targetTheme.accentPrimary, 0.08);
+
+        this.lerpColor(this.currentSecondary, this.targetTheme.accentSecondary, 0.08);
+
+        this.zenBlend += ((this.isZen ? 1 : 0) - this.zenBlend) * 0.11;
+
+        this.activeBlend += ((this.connMode === 'active' ? 1 : 0) - this.activeBlend) * 0.08;
+
+        this.connectBlend += ((this.connMode === 'connecting' ? 1 : 0) - this.connectBlend) * 0.12;
+
+
+
+        if (this.mousePos.x > -100) {
+
+          this.smoothMouse.x += (this.mousePos.x - this.smoothMouse.x) * 0.1;
+
+          this.smoothMouse.y += (this.mousePos.y - this.smoothMouse.y) * 0.1;
+
+        } else {
+
+          this.smoothMouse.x += (cx + Math.cos(time * 0.48) * 60 - this.smoothMouse.x) * 0.04;
+
+          this.smoothMouse.y += (cy * 0.85 + Math.sin(time * 0.38) * 36 - this.smoothMouse.y) * 0.04;
+
+        }
+
+
+
+        ctx.fillStyle = this.rgba(this.currentBg, 1);
+
+        ctx.fillRect(0, 0, w, h);
+
+
+
+        for (let i = 0; i < 2; i++) {
+
+          const waveY = Math.sin(time * 0.4 + i * 1.5) * 24;
+
+          const grad = ctx.createLinearGradient(0, cy - 120 + waveY, w, cy + 140 - waveY);
+
+          grad.addColorStop(0, 'rgba(0,0,0,0)');
+
+          grad.addColorStop(0.5, this.rgba(this.currentSecondary, i === 0 ? 0.09 : 0.055));
+
+          grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+          ctx.fillStyle = grad;
+
+          ctx.beginPath();
+
+          ctx.moveTo(0, cy - 160 + waveY);
+
+          ctx.bezierCurveTo(w * 0.35, cy - 40 - waveY, w * 0.65, cy + 110 + waveY, w, cy - 20 - waveY);
+
+          ctx.lineTo(w, cy + 190);
+
+          ctx.bezierCurveTo(w * 0.6, cy + 230 - waveY, w * 0.35, cy + 90 + waveY, 0, cy + 150);
+
+          ctx.closePath();
+
+          ctx.fill();
+
+        }
+
+
+
+        const g1 = ctx.createRadialGradient(this.smoothMouse.x, this.smoothMouse.y, 0, this.smoothMouse.x, this.smoothMouse.y, Math.max(240, w * 0.52));
+
+        g1.addColorStop(0, this.rgba(this.currentSecondary, 0.13));
+
+        g1.addColorStop(1, this.rgba(this.currentSecondary, 0));
+
+        ctx.fillStyle = g1;
+
+        ctx.beginPath();
+
+        ctx.arc(this.smoothMouse.x, this.smoothMouse.y, Math.max(240, w * 0.52), 0, Math.PI * 2);
+
+        ctx.fill();
+
+
+
+        for (const p of this.particles) {
+
+          p.y -= p.speedY;
+
+          p.x += Math.sin(time * 0.75 + p.driftPhase) * 0.18;
+
+          if (p.y < -8) { p.y = h + 8; p.x = Math.random() * w; }
+
+          if (p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h) {
+
+            ctx.fillStyle = this.rgba(this.currentPrimary, p.alpha);
+
+            ctx.beginPath();
+
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+
+            ctx.fill();
+
+          }
+
+        }
+
+
+
+        const emblemY = cy - 6 + this.zenBlend * 32;
+
+        const outerRadius = 110 + this.zenBlend * 22 + Math.sin(time * (1.35 + this.connectBlend * 3.8)) * 2;
+
+        const midRadius = outerRadius - 11;
+
+        const innerRadius = outerRadius - 22;
+
+
+
+        ctx.strokeStyle = this.rgba(this.currentPrimary, 0.14);
+
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+
+        ctx.arc(cx, emblemY, outerRadius, 0, Math.PI * 2);
+
+        ctx.stroke();
+
+
+
+        ctx.save();
+
+        ctx.translate(cx, emblemY);
+
+        ctx.rotate(-this.arcAngle * 0.18);
+
+        for (let t = 0; t < 60; t++) {
+
+          const theta = (t / 60) * Math.PI * 2;
+
+          const isCard = t % 15 === 0, isMaj = t % 5 === 0;
+
+          const len = isCard ? 6 : isMaj ? 4 : 2;
+
+          ctx.strokeStyle = this.rgba(this.currentPrimary, isCard ? 0.36 : isMaj ? 0.2 : 0.1);
+
+          ctx.lineWidth = isCard ? 1.25 : 0.8;
+
+          ctx.beginPath();
+
+          ctx.moveTo(Math.cos(theta) * (outerRadius - len), Math.sin(theta) * (outerRadius - len));
+
+          ctx.lineTo(Math.cos(theta) * (outerRadius - 0.5), Math.sin(theta) * (outerRadius - 0.5));
+
+          ctx.stroke();
+
+        }
+
+        ctx.restore();
+
+
+
+        this.arcAngle = (this.arcAngle + ((18 + this.activeBlend * 48 + this.connectBlend * 150) * Math.PI / 180) * dt) % (Math.PI * 2);
+
+        const arcStart = this.arcAngle, arcEnd = this.arcAngle + (84 * Math.PI) / 180;
+
+        const headX = cx + Math.cos(arcEnd) * midRadius, headY = emblemY + Math.sin(arcEnd) * midRadius;
+
+        const cometGrad = ctx.createLinearGradient(cx + Math.cos(arcStart) * midRadius, emblemY + Math.sin(arcStart) * midRadius, headX, headY);
+
+        cometGrad.addColorStop(0, this.rgba(this.currentSecondary, 0.02));
+
+        cometGrad.addColorStop(1, this.rgba(this.currentPrimary, 0.88));
+
+
+
+        ctx.save();
+
+        ctx.strokeStyle = cometGrad;
+
+        ctx.lineWidth = 2.4;
+
+        ctx.lineCap = 'round';
+
+        ctx.beginPath();
+
+        ctx.arc(cx, emblemY, midRadius, arcStart, arcEnd);
+
+        ctx.stroke();
+
+        ctx.fillStyle = this.rgba(this.currentPrimary, 0.95);
+
+        ctx.beginPath();
+
+        ctx.arc(headX, headY, 2.2, 0, Math.PI * 2);
+
+        ctx.fill();
+
+        ctx.restore();
+
+
+
+        ctx.strokeStyle = this.rgba(this.activeBlend > 0.5 ? [110, 231, 183] : this.currentSecondary, 0.1 + this.activeBlend * 0.16);
+
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+
+        ctx.arc(cx, emblemY, innerRadius, 0, Math.PI * 2);
+
+        ctx.stroke();
+
+
+
+        const fontSize = Math.round(128 + this.zenBlend * 26);
+
+        const wmAlpha = 0.18 + this.zenBlend * 0.16 + this.activeBlend * 0.06;
+
+        ctx.save();
+
+        ctx.font = `600 ${fontSize}px "Cormorant Garamond", Georgia, serif`;
+
+        ctx.textAlign = 'center';
+
+        ctx.textBaseline = 'middle';
+
+        ctx.fillStyle = this.rgba(this.currentPrimary, wmAlpha);
+
+        if (window.__onyxEmblem && window.__onyxEmblem.complete && window.__onyxEmblem.naturalWidth > 0) {
+          const sz = 88 + this.zenBlend * 18;
+          ctx.save();
+          ctx.globalAlpha = Math.min(1.0, wmAlpha * 1.3);
+          ctx.drawImage(window.__onyxEmblem, cx - sz / 2, emblemY + 6 - sz / 2, sz, sz);
+          ctx.restore();
+        } else {
+          ctx.fillText('ONYX', cx, emblemY + 6);
+        }
+
+        ctx.restore();
+
+
+
+        for (let i = this.ripples.length - 1; i >= 0; i--) {
+
+          const r = this.ripples[i];
+
+          r.radius += 6.2; r.alpha *= 0.945;
+
+          ctx.strokeStyle = this.rgba(this.currentPrimary, r.alpha * 0.7);
+
+          ctx.lineWidth = 1.5;
+
+          ctx.beginPath();
+
+          ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+
+          ctx.stroke();
+
+          if (r.alpha < 0.012) this.ripples.splice(i, 1);
+
+        }
+
+      }
+
+    }
+
+
+
+    window.addEventListener('DOMContentLoaded', () => {
+
+      const audio = new GlassAudio();
+
+      const canvasEl = document.getElementById('app-canvas');
+
+      const wallpaper = new LuxuryChronometerCanvas(canvasEl);
+
+
+
+      const btnEnter = document.getElementById('btn-enter');
+
+      const enterOuterRing = document.getElementById('enter-outer-ring');
+
+      const enterLabel = document.getElementById('enter-label');
+
+      const enterProgressFill = document.getElementById('enter-progress-fill');
+
+      const enterSheen = document.getElementById('enter-sheen');
+
+      const quickServerLabel = document.getElementById('quick-server-label');
+
+      const quickModeLabel = document.getElementById('quick-mode-label');
+
+      const stateHeadline = document.getElementById('state-headline');
+
+      const statusText = document.getElementById('status-text');
+
+      const telemetryCard = document.getElementById('telemetry-card');
+
+      const linkHealthReadout = document.getElementById('link-health-readout');
+
+      const dlReadout = document.getElementById('dl-readout');
+
+      const ulReadout = document.getElementById('ul-readout');
+
+      const dlTotalEl = document.getElementById('dl-total');
+
+      const ulTotalEl = document.getElementById('ul-total');
+
+      const sparkCtx = document.getElementById('sparkline-canvas').getContext('2d');
+
+      const toastMsg = document.getElementById('toast-msg');
+
+
+
+      const sendHost = (payload) => {
+        if (payload.action === 'APPLY_PRESET') payload.action = 'SAVE_APP_RULES';
+        if (payload.action === 'TOGGLE_ANTIFILTER') { showToast('This option is unavailable'); return; }
+        if (payload.action === 'CLEAN_DNS') { showToast('DNS cleanup is unavailable'); return; }
+        window.chrome?.webview?.postMessage?.(payload);
+      };
+
+
+
+      let toastTimer = null;
+
+      const showToast = (msg) => {
+
+        clearTimeout(toastTimer);
+
+        toastMsg.textContent = msg;
+
+        toastMsg.classList.add('visible');
+
+        toastTimer = setTimeout(() => toastMsg.classList.remove('visible'), 2000);
+
+      };
+
+
+
+      const servers = [];
+
+      let selectedServer = 'Automatic';
+
+
+
+      const appRules = [];
+
+
+
+      const modes = [
+
+        { id: 'whole', label: 'Whole computer', desc: 'Routes TCP traffic for this computer. App rules apply.' },
+
+        { id: 'proxy', label: 'System proxy', desc: 'Applies proxy settings to Windows system apps.' },
+
+        { id: 'local', label: 'Local proxy', desc: 'Routes clients using your configured local proxy.' }
+
+      ];
+
+      let modeIdx = 0;
+
+
+
+      const antiFilter = [
+  { id: 'tls_frag', label: 'TLS Fragmentation', desc: 'Unavailable in this interface', enabled: false },
+  { id: 'google_relay', label: 'Google Relay', desc: 'Unavailable in this interface', enabled: false },
+  { id: 'secure_dns', label: 'Secure DNS', desc: 'Unavailable in this interface', enabled: false },
+  { id: 'anycast_fallback', label: 'Anycast Fallback', desc: 'Unavailable in this interface', enabled: false }
+];
+
+
+
+      const accounts = [];
+
+      let accIdx = 0, hideEmails = false;
+
+      let connState = 'ready', progress = 0, isZen = false, isMini = false, activeDrawer = null;
+
+
+
+      const logs = ['[INFO] ONYX // VPN UI initialized'];
+
+      const addLog = (line) => {
+
+        logs.unshift(`[${new Date().toTimeString().slice(0, 8)}] ${line}`);
+
+        if (logs.length > 25) logs.pop();
+
+        document.getElementById('diag-console').innerHTML = logs.map((l) => `<div>${l}</div>`).join('');
+
+      };
+
+      addLog('ONYX is ready');
+
+
+
+      const fmtEmail = (e) => hideEmails ? `••••••@${e.split('@')[1] || 'hidden'}` : e;
+
+      const syncAccFooter = () => {
+
+        const a = accounts[accIdx];
+
+        if (a) document.getElementById('account-footer-line').textContent = `${escapeText(fmtEmail(a.email))} • ${escapeText(a.plan)}`;
+
+      };
+
+      syncAccFooter();
+
+
+
+      const dlHist = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+      const ulHist = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+      const drawSpark = () => {
+
+        const w = 116, h = 30;
+
+        sparkCtx.clearRect(0, 0, w, h);
+
+        const line = (arr, max, col) => {
+
+          sparkCtx.beginPath();
+
+          arr.forEach((v, i) => {
+
+            const x = (i / (arr.length - 1)) * w, y = h - 3 - (Math.min(v, max) / max) * (h - 6);
+
+            i === 0 ? sparkCtx.moveTo(x, y) : sparkCtx.lineTo(x, y);
+
+          });
+
+          sparkCtx.strokeStyle = col; sparkCtx.lineWidth = 1.6; sparkCtx.stroke();
+
+        };
+
+        line(dlHist, 5, 'rgba(186,230,253,0.95)');
+
+        line(ulHist, 5, 'rgba(52,211,153,0.9)');
+
+      };
+
+
+
+      const openDrawer = (id) => {
+
+        activeDrawer = activeDrawer === id ? null : id;
+
+        document.querySelectorAll('.glass-drawer').forEach((d) => d.classList.toggle('open', d.id === activeDrawer));
+
+        document.querySelectorAll('.drawer-tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.drawer === activeDrawer));
+
+        audio.playSoftClick();
+
+      };
+
+      document.querySelectorAll('.drawer-tab-btn').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); openDrawer(b.dataset.drawer); }));
+
+      document.querySelectorAll('.close-drawer-btn').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); openDrawer(null); }));
+
+
+
+      const selectServer = (name) => {
+
+        selectedServer = name;
+
+        quickServerLabel.textContent = name;
+
+        statusText.textContent = name.toUpperCase();
+
+        const s = servers.find((x) => x.name === name);
+
+        if (s) document.getElementById('mini-server-ping').textContent = `${s.code} • ${s.ping}ms`;
+
+        renderServers();
+
+        showToast(`SERVER • ${name.toUpperCase()}`);
+
+        sendHost({ action: 'SELECT_SERVER', server: name });
+
+      };
+
+
+
+      const escapeText = (value) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+      const renderServers = () => {
+
+        const q = (document.getElementById('server-search').value || '').toLowerCase();
+
+        const el = document.getElementById('server-list');
+
+        el.innerHTML = servers.filter((s) => s.name.toLowerCase().includes(q)).map((s) => `
+
+          <button type="button" data-srv="${escapeText(s.name)}" class="w-full px-3 py-2 rounded-xl flex items-center justify-between text-[11px] ${s.name === selectedServer ? 'bg-white/15 border border-white/25 text-white font-medium' : 'bg-white/[0.025] text-slate-300 hover:bg-white/[0.07]'}">
+
+            <span>${escapeText(s.name)}</span>
+
+            <span class="font-mono text-[10px] text-emerald-300">${s.testing ? '...' : s.ping > 0 ? `${s.ping} ms` : '—'}</span>
+
+          </button>
+
+        `).join('');
+
+        el.querySelectorAll('button').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); selectServer(b.dataset.srv); openDrawer(null); }));
+
+      };
+
+      renderServers();
+
+      document.getElementById('server-search').addEventListener('input', renderServers);
+
+      document.getElementById('quick-server-pill').addEventListener('click', (e) => { e.stopPropagation(); openDrawer('drawer-servers'); });
+
+      document.getElementById('btn-test-ping').addEventListener('click', (e) => {
+
+        e.stopPropagation();
+
+        showToast('TESTING PING...');
+
+        sendHost({ action: 'TEST_PING' });
+
+      });
+
+
+
+      const renderApps = () => {
+
+        const q = (document.getElementById('app-search').value || '').toLowerCase();
+
+        const el = document.getElementById('app-rules-list');
+
+        document.getElementById('apps-summary').textContent = `App rules (${appRules.filter((a) => a.bypass).length} bypass)`;
+
+        el.innerHTML = [...appRules].filter((a) => a.name.toLowerCase().includes(q)).sort((a, b) => Number(b.running) - Number(a.running)).map((a) => `
+
+          <div class="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between gap-2 text-[11px]">
+
+            <div class="min-w-0 flex-1">
+
+              <div class="flex items-center gap-1.5">
+
+                <span class="text-slate-100 font-medium truncate">${escapeText(a.name)}</span>
+
+                ${a.running ? '<span class="px-1.5 rounded-full bg-emerald-400/15 border border-emerald-400/35 text-[8px] font-semibold text-emerald-300">RUNNING NOW</span>' : ''}
+
+              </div>
+
+              <div class="text-[9.5px] ${a.bypass ? 'text-amber-300/85' : 'text-emerald-300/85'}">${a.bypass ? 'Bypassing VPN' : 'Using VPN'}</div>
+
+            </div>
+
+            <button type="button" data-app="${escapeText(a.name)}" class="toggle-switch ${a.bypass ? 'on' : ''}"></button>
+
+          </div>
+
+        `).join('');
+
+        el.querySelectorAll('.toggle-switch').forEach((sw) => sw.addEventListener('click', (e) => {
+
+          e.stopPropagation();
+
+          const item = appRules.find((x) => x.name === sw.dataset.app);
+
+          if (item) { item.bypass = !item.bypass; audio.playSoftClick(); renderApps(); }
+
+        }));
+
+      };
+
+      renderApps();
+
+      document.getElementById('app-search').addEventListener('input', renderApps);
+
+      document.querySelectorAll('.preset-pill-btn').forEach((b) => b.addEventListener('click', (e) => {
+
+        e.stopPropagation();
+
+        const p = b.dataset.preset;
+
+        appRules.forEach((a) => { a.bypass = p === 'gaming' ? a.category === 'game' : p === 'ir_direct' ? a.category === 'tool' : false; });
+
+        renderApps();
+
+        
+
+        sendHost({ action: 'APPLY_PRESET', preset: p, rules: appRules });
+
+      }));
+
+      document.getElementById('btn-add-app').addEventListener('click', (e) => { e.stopPropagation(); sendHost({ action: 'ADD_APP_DIALOG' }); });
+
+      document.getElementById('btn-save-apps').addEventListener('click', (e) => {
+
+        e.stopPropagation();
+
+        
+
+        sendHost({ action: 'SAVE_APP_RULES', rules: appRules });
+
+      });
+
+
+
+      const renderShield = () => {
+
+        const mEl = document.getElementById('mode-options-list');
+
+        mEl.innerHTML = modes.map((m, i) => `
+
+          <button type="button" data-m="${i}" class="w-full p-2.5 rounded-xl text-left ${i === modeIdx ? 'bg-white/15 border border-white/25' : 'bg-white/[0.025]'}">
+
+            <div class="text-[11px] font-medium text-slate-100">${m.label}</div>
+
+            <div class="text-[9.5px] text-slate-400">${m.desc}</div>
+
+          </button>
+
+        `).join('');
+
+        mEl.querySelectorAll('button').forEach((b) => b.addEventListener('click', (e) => {
+
+          e.stopPropagation();
+
+          modeIdx = Number(b.dataset.m);
+
+          quickModeLabel.textContent = modes[modeIdx].id === 'local' ? 'Local proxy' : modes[modeIdx].label;
+
+          renderShield();
+
+          showToast(`MODE • ${modes[modeIdx].label.toUpperCase()}`);
+
+          sendHost({ action: 'SET_CONNECTION_MODE', mode: modes[modeIdx].id });
+
+        }));
+
+
+
+        const aEl = document.getElementById('antifilter-list');
+
+        aEl.innerHTML = antiFilter.map((f) => `
+
+          <div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between gap-2">
+
+            <div><div class="text-[11px] font-medium text-slate-100">${f.label}</div><div class="text-[9.5px] text-slate-400">${f.desc}</div></div>
+
+            <button type="button" disabled title="Unavailable in this interface" data-af="${f.id}" class="toggle-switch ${f.enabled ? 'on' : ''}"></button>
+
+          </div>
+
+        `).join('');
+
+        aEl.querySelectorAll('.toggle-switch').forEach((sw) => sw.addEventListener('click', (e) => {
+
+          e.stopPropagation();
+
+          const f = antiFilter.find((x) => x.id === sw.dataset.af);
+
+          if (f) { f.enabled = !f.enabled; renderShield(); sendHost({ action: 'TOGGLE_ANTIFILTER', id: f.id, enabled: f.enabled }); }
+
+        }));
+
+      };
+
+      renderShield();
+
+      document.getElementById('quick-mode-pill').addEventListener('click', (e) => {
+
+        e.stopPropagation();
+
+        modeIdx = (modeIdx + 1) % modes.length;
+
+        quickModeLabel.textContent = modes[modeIdx].id === 'local' ? 'Local proxy' : modes[modeIdx].label;
+
+        renderShield();
+
+        sendHost({ action: 'SET_CONNECTION_MODE', mode: modes[modeIdx].id });
+
+      });
+
+
+
+      const renderAccounts = () => {
+
+        const el = document.getElementById('account-list');
+
+        el.innerHTML = accounts.map((a, i) => `
+
+          <button type="button" data-acc="${i}" class="w-full px-3 py-2 rounded-xl flex items-center justify-between text-[11px] ${i === accIdx ? 'bg-white/15 border border-white/25 text-white font-medium' : 'bg-white/[0.025] text-slate-300'}">
+
+            <span class="truncate">${escapeText(fmtEmail(a.email))}</span><span class="text-[9.5px] text-emerald-300">${escapeText(a.plan)}</span>
+
+          </button>
+
+        `).join('');
+
+        el.querySelectorAll('button').forEach((b) => b.addEventListener('click', (e) => {
+
+          e.stopPropagation();
+
+          accIdx = Number(b.dataset.acc);
+
+          syncAccFooter(); renderAccounts();
+
+          sendHost({ action: 'SWITCH_ACCOUNT', email: accounts[accIdx].email });
+
+        }));
+
+      };
+
+      renderAccounts();
+
+
+
+      document.getElementById('btn-hide-email').addEventListener('click', (e) => { e.stopPropagation(); hideEmails = !hideEmails; e.currentTarget.textContent = hideEmails ? 'Show email' : 'Hide email'; syncAccFooter(); renderAccounts(); });
+
+      document.getElementById('btn-copy-socks').addEventListener('click', (e) => {
+
+        e.stopPropagation();
+
+        const ta = document.createElement('textarea'); ta.value = '127.0.0.1:15602'; document.body.appendChild(ta); ta.select();
+
+        try { document.execCommand('copy'); } catch (_) {} document.body.removeChild(ta);
+
+        showToast('COPIED 127.0.0.1:15602');
+
+      });
+
+      document.getElementById('btn-tg-proxy').addEventListener('click', (e) => { e.stopPropagation(); showToast('TELEGRAM PROXY'); sendHost({ action: 'TELEGRAM_PROXY' }); });
+
+      document.getElementById('btn-repair-vpn').addEventListener('click', (e) => { e.stopPropagation();  sendHost({ action: 'REPAIR_VPN' }); });
+
+
+
+      const setConnectedUI = () => {
+
+        connState = 'active'; wallpaper.connMode = 'active';
+
+        btnEnter.classList.remove('is-connecting'); btnEnter.classList.add('is-active');
+
+        enterOuterRing.classList.add('is-active'); enterProgressFill.style.width = '0%';
+
+        enterLabel.textContent = 'C O N N E C T E D';
+
+        stateHeadline.classList.add('is-connected');
+
+        if (!isZen) stateHeadline.textContent = 'Connected';
+
+        telemetryCard.classList.add('visible');
+
+        document.getElementById('mini-toggle-conn').textContent = 'ON';
+
+        document.getElementById('mini-toggle-conn').classList.add('is-on');
+
+      };
+
+
+
+      const setDisconnectedUI = () => {
+
+        connState = 'ready'; wallpaper.connMode = 'ready'; progress = 0;
+
+        btnEnter.classList.remove('is-active', 'is-connecting'); enterOuterRing.classList.remove('is-active');
+
+        enterProgressFill.style.width = '0%'; enterLabel.textContent = 'E N T E R';
+
+        stateHeadline.classList.remove('is-connected');
+
+        if (!isZen) stateHeadline.textContent = 'Ready';
+
+        telemetryCard.classList.remove('visible');
+
+        document.getElementById('mini-toggle-conn').textContent = 'OFF';
+
+        document.getElementById('mini-toggle-conn').classList.remove('is-on');
+
+      };
+
+
+
+      const triggerConnect = () => {
+        if (!hostReady) return;
+        openDrawer(null);
+        sendHost({ action: connState === 'ready' ? 'CONNECT' : 'DISCONNECT' });
+      };
+
+
+
+      btnEnter.addEventListener('click', (e) => { e.stopPropagation(); triggerConnect(); });
+
+      document.getElementById('mini-toggle-conn').addEventListener('click', (e) => { e.stopPropagation(); triggerConnect(); });
+
+      btnEnter.addEventListener('mousemove', (e) => {
+
+        const r = btnEnter.getBoundingClientRect();
+
+        enterSheen.style.setProperty('--sheen-x', `${e.clientX - r.left}px`);
+
+        enterSheen.style.setProperty('--sheen-y', `${e.clientY - r.top}px`);
+
+      });
+
+
+
+      document.querySelectorAll('.swatch-btn').forEach((b) => b.addEventListener('click', (e) => {
+
+        e.stopPropagation();
+
+        const t = THEMES[Number(b.dataset.themeIdx)];
+
+        if (!t) return;
+
+        document.body.dataset.theme = t.id;
+
+        document.documentElement.style.setProperty('--accent-rgb', t.cssAccentRgb);
+
+        document.documentElement.style.setProperty('--bg-deep', t.cssBgDeep);
+
+        wallpaper.targetTheme = t;
+
+        document.querySelectorAll('.swatch-btn').forEach((x, idx) => x.classList.toggle('active', idx === Number(b.dataset.themeIdx)));
+
+        audio.playSoftClick();
+
+      }));
+
+
+
+      const setZen = (v) => {
+
+        isZen = v; wallpaper.isZen = v; openDrawer(null);
+
+        document.body.classList.toggle('zen-mode', v);
+
+        if (v) {
+
+          const d = new Date();
+
+          stateHeadline.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+        } else {
+
+          stateHeadline.textContent = connState === 'active' ? 'Connected' : connState === 'connecting' ? 'Connecting' : 'Ready';
+
+        }
+
+      };
+
+
+
+      const setMini = (v) => {
+
+        isMini = v; openDrawer(null);
+
+        document.body.classList.toggle('is-mini', v);
+
+        sendHost({ action: 'SET_MINI_WIDGET', enabled: v });
+
+      };
+
+
+
+      document.getElementById('btn-zen').addEventListener('click', (e) => { e.stopPropagation(); setZen(!isZen); });
+
+      document.getElementById('btn-mini').addEventListener('click', (e) => { e.stopPropagation(); setMini(!isMini); });
+
+      document.getElementById('mini-expand-btn').addEventListener('click', (e) => { e.stopPropagation(); setMini(false); });
+
+      document.getElementById('btn-sound').addEventListener('click', (e) => { e.stopPropagation(); audio.muted = !audio.muted; e.currentTarget.classList.toggle('is-muted', audio.muted); });
+
+      document.getElementById('btn-minimize').addEventListener('click', (e) => { e.stopPropagation(); sendHost({ action: 'MINIMIZE' }); });
+
+      document.getElementById('btn-close').addEventListener('click', (e) => { e.stopPropagation(); sendHost({ action: 'CLOSE' }); });
+
+
+
+      canvasEl.addEventListener('click', (e) => {
+
+        if (activeDrawer) { openDrawer(null); return; }
+
+        if (isZen) { setZen(false); return; }
+
+        wallpaper.spawnRipple(e.clientX, e.clientY);
+
+      });
+
+      window.addEventListener('mousemove', (e) => { wallpaper.mousePos.x = e.clientX; wallpaper.mousePos.y = e.clientY; });
+
+
+
+      // Command Palette (Ctrl+K)
+
+      const cmdBack = document.getElementById('cmd-palette-backdrop'), cmdIn = document.getElementById('cmd-input'), cmdRes = document.getElementById('cmd-results');
+
+      let cmdIdx = 0, cmdItems = [];
+
+      const renderCmd = () => {
+
+        const q = (cmdIn.value || '').toLowerCase();
+
+        const all = [
+
+          { g: 'Action', l: connState === 'active' ? 'Disconnect VPN' : 'Connect VPN', run: triggerConnect },
+
+          { g: 'Action', l: 'Test All Server Pings', run: () => sendHost({ action: 'TEST_PING' }) },
+
+          { g: 'Action', l: 'Clean DNS Cache', run: () => { showToast('DNS CLEANED'); sendHost({ action: 'CLEAN_DNS' }); } },
+
+          { g: 'Preset', l: 'Gaming Mode (Bypass Games)', run: () => document.querySelector('[disabled title="Add app rules manually" data-preset="gaming"]').click() },
+
+          { g: 'Preset', l: 'IR Direct (geosite:ir Bypass)', run: () => document.querySelector('[disabled title="Add app rules manually" data-preset="ir_direct"]').click() },
+
+          ...servers.map((s) => ({ g: 'Server', l: `Select ${s.name} (${s.ping} ms)`, run: () => selectServer(s.name) }))
+
+        ];
+
+        cmdItems = q ? all.filter((x) => x.l.toLowerCase().includes(q) || x.g.toLowerCase().includes(q)) : all.slice(0, 10);
+
+        if (cmdIdx >= cmdItems.length) cmdIdx = 0;
+
+        cmdRes.innerHTML = cmdItems.map((x, i) => `<button type="button" data-i="${i}" class="cmd-item ${i === cmdIdx ? 'selected' : ''}"><span><b class="text-[9px] uppercase text-slate-400 mr-2">${x.g}</b>${x.l}</span></button>`).join('');
+
+        cmdRes.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { cmdBack.classList.remove('open'); cmdItems[Number(b.dataset.i)]?.run(); }));
+
+      };
+
+      document.getElementById('btn-cmd').addEventListener('click', (e) => { e.stopPropagation(); cmdBack.classList.add('open'); cmdIn.value = ''; renderCmd(); setTimeout(() => cmdIn.focus(), 20); });
+
+      cmdBack.addEventListener('click', (e) => { if (e.target === cmdBack) cmdBack.classList.remove('open'); });
+
+      cmdIn.addEventListener('input', () => { cmdIdx = 0; renderCmd(); });
+
+      cmdIn.addEventListener('keydown', (e) => {
+
+        if (e.key === 'ArrowDown') { e.preventDefault(); cmdIdx = (cmdIdx + 1) % Math.max(1, cmdItems.length); renderCmd(); }
+
+        else if (e.key === 'ArrowUp') { e.preventDefault(); cmdIdx = (cmdIdx - 1 + Math.max(1, cmdItems.length)) % Math.max(1, cmdItems.length); renderCmd(); }
+
+        else if (e.key === 'Enter') { e.preventDefault(); cmdBack.classList.remove('open'); cmdItems[cmdIdx]?.run(); }
+
+        else if (e.key === 'Escape') cmdBack.classList.remove('open');
+
+      });
+
+      window.addEventListener('keydown', (e) => {
+
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); cmdBack.classList.toggle('open'); if (cmdBack.classList.contains('open')) { cmdIn.value = ''; renderCmd(); setTimeout(() => cmdIn.focus(), 20); } }
+
+        else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm') { e.preventDefault(); setMini(!isMini); }
+
+        else if (e.key === 'Escape' && isZen) setZen(false);
+
+      });
+
+
+
+            let serverSnapshot = '';
+      let appsSnapshot = '';
+      let accountsSnapshot = '';
+      let catalogsLoaded = false;
+      let hostReady = false;
+      const applyHostUpdate = (d) => {
+        if (!d || typeof d !== 'object') return;
+        if (d.notice) { showToast(d.notice); return; }
+        hostReady = !!d.ready && !d.preview;
+        if (hostReady && !catalogsLoaded) { catalogsLoaded = true; sendHost({ action: 'REFRESH_CATALOGS' }); }
+        if (d.state === 'connected' && connState !== 'active') setConnectedUI();
+        if (d.state === 'disconnected' && connState !== 'ready') setDisconnectedUI();
+        if (d.state === 'connecting') {
+          connState = 'connecting'; wallpaper.connMode = 'connecting';
+          btnEnter.classList.add('is-connecting'); stateHeadline.textContent = 'Connecting';
+          enterLabel.textContent = 'CANCEL';
+        }
+        if (d.state === 'error') {
+          if (connState !== 'ready') setDisconnectedUI();
+          stateHeadline.textContent = 'Connection needs attention';
+        }
+        linkHealthReadout.textContent = d.ping && d.ping !== '-- ms' ? `Ping ${d.ping}` : 'Ping unavailable';
+        dlReadout.textContent = `↓ ${d.download}`; ulReadout.textContent = `↑ ${d.upload}`;
+        document.getElementById('mini-speed-text').textContent = `↓ ${d.download}`;
+        dlTotalEl.textContent = `DL Total: ${d.totalDl}`; ulTotalEl.textContent = `UL Total: ${d.totalUl}`;
+        document.getElementById('exit-ip-label').textContent = d.exitIp || '—';
+        document.getElementById('account-footer-line').textContent = d.account || 'Account settings';
+        selectedServer = d.server || 'Automatic';
+        quickServerLabel.textContent = selectedServer;
+        document.getElementById('mini-server-ping').textContent = selectedServer + (d.ping && d.ping !== '-- ms' ? ' • ' + d.ping : '');
+        statusText.textContent = d.preview ? 'DESIGN PREVIEW' : selectedServer;
+        const mode = modes.findIndex((item) => item.id === d.mode);
+        if (mode !== -1 && mode !== modeIdx) { modeIdx = mode; renderShield(); }
+        quickModeLabel.textContent = mode === -1 ? 'Connection mode' : modes[mode].label;
+        if (Array.isArray(d.servers)) {
+          const next = JSON.stringify(d.servers);
+          if (next !== serverSnapshot) {
+            serverSnapshot = next;
+            servers.splice(0, servers.length, ...d.servers);
+            renderServers();
+          }
+        }
+        if (Array.isArray(d.apps) && JSON.stringify(d.apps) !== appsSnapshot) {
+          appsSnapshot = JSON.stringify(d.apps);
+          appRules.splice(0, appRules.length, ...d.apps);
+          renderApps();
+        }
+        if (Array.isArray(d.accounts) && JSON.stringify(d.accounts) !== accountsSnapshot) {
+          accountsSnapshot = JSON.stringify(d.accounts);
+          accounts.splice(0, accounts.length, ...d.accounts);
+          renderAccounts();
+        }
+      };
+      window.OnyxVPN = { updateState: applyHostUpdate };
+      window.chrome?.webview?.addEventListener('message', (e) => applyHostUpdate(e.data));
+      document.getElementById('onyx-add-account').addEventListener('click', () => sendHost({ action: 'ADD_ACCOUNT' }));
+      document.getElementById('account-footer-line').addEventListener('click', () => openDrawer('drawer-account'));
+      document.getElementById('account-footer-line').style.cursor = 'pointer';
+      document.querySelector('.app-header')?.addEventListener('mousedown', (e) => {
+        if (e.button === 0 && !e.target.closest('button')) sendHost({ action: 'DRAG_WINDOW' });
+      });
+let last = performance.now(), lastDraw = 0;
+
+      const loop = (now) => {
+
+        requestAnimationFrame(loop);
+
+        if (document.hidden && now - lastDraw < 90) return;
+
+        lastDraw = now;
+
+        const dt = Math.min(0.08, (now - last) / 1000); last = now;
+
+        
+
+        wallpaper.render(now * 0.001, dt);
+
+      };
+
+      requestAnimationFrame(loop);
+
+    });
+
+  </script>
+
+</body>
+
+</html>
