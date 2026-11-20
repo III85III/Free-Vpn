@@ -1,4 +1,4 @@
-﻿# ONYX // VPN
+# ONYX // VPN
 
 VPN client for Windows and Android with Mozilla account sign-in, server selection, connection modes and application routing.
 
