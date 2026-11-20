@@ -1,4 +1,4 @@
-<!-- language-selector:start -->
+﻿<!-- language-selector:start -->
 🇬🇧 [English](README.md) · 🇮🇷 [فارسی](README.fa.md)
 <!-- language-selector:end -->
 
