@@ -1,4 +1,4 @@
-package desktop
+﻿package desktop
 
 import (
 	"bufio"
@@ -611,7 +611,7 @@ func (ui *consoleUI) exitCompletely(own bool, status *service.StatusView) {
 		return
 	}
 	// Exiting never waits for another task (such as a latency measurement).
-	ui.setMessage("Exiting III85III VPN…", ansiYellow)
+	ui.setMessage("Exiting ONYX VPN…", ansiYellow)
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
@@ -733,7 +733,7 @@ func (ui *consoleUI) render() {
 }
 
 func (ui *consoleUI) header(width int) []string {
-	title := ansiBold + ansiOrange + "  ◆ III85III VPN" + ansiReset + ansiGrey + "  version " + version.Current + ansiReset
+	title := ansiBold + ansiOrange + "  ◆ ONYX VPN" + ansiReset + ansiGrey + "  version " + version.Current + ansiReset
 	return []string{"", title, ansiGrey + "  " + strings.Repeat("─", max(10, min(width-4, 64))) + ansiReset}
 }
 
@@ -748,9 +748,9 @@ func (ui *consoleUI) homeScreen(width, height int) []string {
 	label, text, color := "connecting", "Connecting…", ansiGrey
 	switch {
 	case st == nil && ui.lastErr != "":
-		label, text, color = "stopped", "III85III VPN is not running", ansiRed
+		label, text, color = "stopped", "ONYX VPN is not running", ansiRed
 	case st != nil && ui.lastErr != "":
-		label, text = "unreachable", "III85III VPN does not answer"
+		label, text = "unreachable", "ONYX VPN does not answer"
 	case st != nil:
 		label, text = phaseLabel(st.State.Phase), st.State.Message
 		switch st.State.Phase {
@@ -794,7 +794,7 @@ func (ui *consoleUI) homeScreen(width, height int) []string {
 	for i, item := range ui.menuItems() {
 		lines = append(lines, menuLine(i+1, item.label))
 	}
-	closeLabel := "Close this window (III85III VPN keeps running)"
+	closeLabel := "Close this window (ONYX VPN keeps running)"
 	if ui.own != nil {
 		closeLabel = "Quit (stops the proxy)"
 	}
@@ -837,7 +837,7 @@ func (ui *consoleUI) menuItems() []menuItem {
 			items = append(items, menuItem{action: actSysProxy, label: label})
 		}
 	} else if !own {
-		items = append(items, menuItem{action: actStart, label: "Start III85III VPN"})
+		items = append(items, menuItem{action: actStart, label: "Start ONYX VPN"})
 	}
 	if online {
 		label := "Reset the dashboard login (forgotten password: new random username and password)"
@@ -848,7 +848,7 @@ func (ui *consoleUI) menuItems() []menuItem {
 	}
 	items = append(items, menuItem{action: actLog, label: "Show the log"})
 	if !own && st != nil && st.CanExit {
-		items = append(items, menuItem{action: actExit, label: "Exit III85III VPN completely"})
+		items = append(items, menuItem{action: actExit, label: "Exit ONYX VPN completely"})
 	}
 	return items
 }

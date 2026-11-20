@@ -1,4 +1,4 @@
-package fxa
+﻿package fxa
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 // DeviceName is how this program appears in the account's connected
 // services list.
-const DeviceName = "III85III VPN"
+const DeviceName = "ONYX VPN"
 
 // deviceType matches Firefox for desktop.
 const deviceType = "desktop"

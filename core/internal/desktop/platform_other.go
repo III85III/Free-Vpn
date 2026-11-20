@@ -1,4 +1,4 @@
-//go:build !windows
+﻿//go:build !windows
 
 package desktop
 
@@ -41,7 +41,7 @@ func notify(title, body string) {
 	if err != nil {
 		return
 	}
-	cmd := exec.Command(path, "--app-name=III85III VPN", "--", title, body)
+	cmd := exec.Command(path, "--app-name=ONYX VPN", "--", title, body)
 	if err := cmd.Start(); err != nil {
 		return
 	}

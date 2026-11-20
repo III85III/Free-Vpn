@@ -1,4 +1,4 @@
-package proxy
+﻿package proxy
 
 import (
 	"context"
@@ -30,11 +30,11 @@ func TestDeviceBrandRenameKeepsRegistrationAndCredentials(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Fatal(err)
 		}
-		if body["id"] != "existing-device" || body["name"] != "III85III VPN" {
+		if body["id"] != "existing-device" || body["name"] != "ONYX VPN" {
 			t.Fatalf("rename must update the existing device with the product name")
 		}
 		requests++
-		return coreResponse(r, http.StatusOK, `{"id":"existing-device","name":"III85III VPN"}`, nil), nil
+		return coreResponse(r, http.StatusOK, `{"id":"existing-device","name":"ONYX VPN"}`, nil), nil
 	})
 	DeviceRegistration.Store(true)
 	t.Cleanup(func() { DeviceRegistration.Store(false) })

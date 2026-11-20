@@ -1,6 +1,6 @@
-"use strict";
+﻿"use strict";
 
-// III85III VPN dashboard. All server data is rendered with textContent; no
+// ONYX VPN dashboard. All server data is rendered with textContent; no
 // response value is ever interpreted as HTML.
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -370,7 +370,7 @@ function showView(name) {
   $("#page-title").textContent = title;
   $("#page-sub").textContent = sub;
   $("#page-sub").hidden = !sub;
-  document.title = `${title} · III85III VPN`;
+  document.title = `${title} · ONYX VPN`;
   if (name === "settings") loadSettings().catch(reportError);
   if (name === "accounts") loadAccounts().catch(reportError);
   if (name === "locations") loadLocations().catch(reportError);
@@ -472,7 +472,7 @@ function renderStatus() {
   const phase = s.state.phase;
   const label = PHASE_LABELS[phase] || phase;
 
-  $("#version-tag").textContent = s.version ? `III85III VPN ${s.version}` : "";
+  $("#version-tag").textContent = s.version ? `ONYX VPN ${s.version}` : "";
   const pill = $("#state-pill");
   const asleep = phase === "running" && s.proxy && s.proxy.sleeping_since;
   // A sleeping proxy has its own look everywhere: it is not connected.

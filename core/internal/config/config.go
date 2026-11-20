@@ -1,4 +1,4 @@
-// Package config holds the persistent settings of the multi-account daemon:
+﻿// Package config holds the persistent settings of the multi-account daemon:
 // a single JSON file in the data directory that the CLI creates with
 // defaults, the user may edit by hand, and the dashboard updates.
 package config
@@ -598,14 +598,14 @@ const DataDirName = "user-data"
 // (inside the macOS bundle). A core started from either place uses the
 // app's data folder, so it sees the app's accounts and settings.
 const (
-	AppFolder      = "III85III VPN"
+	AppFolder      = "ONYX VPN"
 	PortableMarker = "portable"
 	CoreFolder     = "core"
 )
 
 // appExecutables are the desktop app's executables: Windows, Linux, and
 // macOS (inside Firefox VPN.app/Contents/MacOS).
-var appExecutables = []string{"III85III VPN.exe", "III85III VPN", "iii85iii-vpn", "firefox-vpn.exe", "firefox-vpn", "Firefox VPN"}
+var appExecutables = []string{"ONYX VPN.exe", "ONYX VPN", "iii85iii-vpn", "firefox-vpn.exe", "firefox-vpn", "Firefox VPN"}
 
 // DefaultDataDir returns the data folder: DataDirName next to the running
 // executable (symlinks resolved, so a linked binary still uses its real

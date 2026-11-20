@@ -1,4 +1,4 @@
-# ONYX // VPN
+﻿# ONYX // VPN
 
 VPN client for Windows and Android with Mozilla account sign-in, server selection, connection modes and application routing.
 
@@ -6,15 +6,15 @@ The Windows interface uses a local glass-style dashboard with animated connectio
 
 ## Downloads
 
-[Windows installer](https://github.com/III85III/Free-Vpn/releases/download/v1.1.20/III85III-VPN-Setup.exe) · [Android APK](https://github.com/III85III/Free-Vpn/releases/download/v1.1.23/III85III-VPN.apk) · [Telegram](https://t.me/cabicy)
+[Windows installer](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN-Setup.exe) · [Android APK](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN.apk) · [Telegram](https://t.me/cabicy)
 
-These installers precede the ONYX interface update. The ONYX Windows interface is available as source below. Some Shield controls are disabled while their engine integration is pending.
+The ONYX Windows interface is available as source below. Some Shield controls are disabled while their engine integration is pending.
 
 ## Source
 
-`desktop/Onyx.Vpn.cs` contains the existing Windows client and its connection controls. `desktop/OnyxWindow.cs` connects the ONYX interface to those controls. Edit `desktop/interface/index.html` to change its appearance.
+`desktop/Onyx.Vpn.cs` contains the Windows client and its connection controls. `desktop/OnyxWindow.cs` connects the ONYX interface to those controls. Edit `desktop/interface/index.html` to change its appearance.
 
-Run `desktop/Build.ps1` on Windows with .NET Framework 4.8. The interface uses an existing 85 VPN installation and its profile. WebView2 Runtime must be installed. Build outputs go to `desktop/output`.
+Run `desktop/Build.ps1` on Windows with .NET Framework 4.8. WebView2 Runtime must be installed. Build outputs go to `desktop/output`.
 
 `core` contains the shared Go engine. `mobile/android` contains the Android client and its build instructions.
 

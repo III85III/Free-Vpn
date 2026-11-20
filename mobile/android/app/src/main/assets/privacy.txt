@@ -1,4 +1,4 @@
-III85III VPN — Privacy and connection information
+﻿ONYX // VPN — Privacy and connection information
 
 What the VPN does
 When you connect, supported device traffic passes through the application's local VPN interface and the Mozilla network service. Selected excluded applications and the VPN application's own connections remain outside that interface. Disconnecting removes the VPN; this application does not provide a verified kill switch.
@@ -16,10 +16,10 @@ Control and removal
 Disconnect from the app, its notification or Android VPN settings. Remove an account from Accounts to remove its saved session from the device. Clearing app storage or uninstalling removes this app's local data. Those actions do not delete your Mozilla account.
 
 Updates
-When you choose Check for updates in Settings, the app requests public version information from the III85III/Free-Vpn GitHub repository. GitHub receives ordinary network request information, including your IP address and app version. Your Mozilla password, session and local API token are not sent with these update requests. APK size, checksum, package name, version code and signing identity are checked before installation. Android requires installation permission and confirmation. The VPN disconnects while installing; a same-package upgrade retains local account data. The app does not silently install a replacement.
+When you choose Check for updates in Settings, the app requests public version information from the III85III/ONYX GitHub repository. GitHub receives ordinary network request information, including your IP address and app version. Your Mozilla password, session and local API token are not sent with these update requests. APK size, checksum, package name, version code and signing identity are checked before installation. Android requires installation permission and confirmation. The VPN disconnects while installing; a same-package upgrade retains local account data. The app does not silently install a replacement.
 
 Limitations
 App rules are direct-app exclusions. Enforced selected-app-only or Telegram-bot-only routing is not provided. Arbitrary UDP and a verified kill switch are not promised. Real-device login, egress, background operation and network handover require independent testing.
 
-Project and support: https://github.com/III85III/Free-Vpn
+Project and support: https://github.com/III85III/ONYX
 Service privacy: https://www.mozilla.org/privacy/

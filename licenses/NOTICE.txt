@@ -1,8 +1,8 @@
-﻿III85III VPN — Windows desktop client
+﻿ONYX // VPN — Windows desktop client
 
 APPLICATION & ENGINE
-III85III VPN interface, installer, and native engine: III85III.
-Source: https://github.com/III85III/Free-Vpn
+ONYX // VPN interface, installer, and native engine: III85III.
+Source: https://github.com/III85III/ONYX
 Distributed under GPL-3.0-only; see licenses/GPL-3.0.txt.
 
 Corresponding application and engine source is included under source/.

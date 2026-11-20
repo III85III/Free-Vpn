@@ -1,4 +1,4 @@
-package io.github.iii85iii.vpn;
+﻿package io.github.iii85iii.vpn;
 
 import android.app.*;
 import android.content.*;
@@ -38,7 +38,7 @@ public final class UpdateActivity extends Activity {
             if(available!=null&&available.url!=null){
                 try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(available.url)));}catch(Exception ignored){}
             }else{
-                try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/III85III/Free-Vpn/releases/latest")));}catch(Exception ignored){}
+                try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/III85III/ONYX/releases/latest")));}catch(Exception ignored){}
             }
         });
         root.addView(directWebBtn);

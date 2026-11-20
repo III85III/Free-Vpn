@@ -1,4 +1,4 @@
-package tunservice
+﻿package tunservice
 
 import (
 	"errors"
@@ -18,7 +18,7 @@ const unitName = tunapi.ServiceName + ".service"
 // a crash and after an update (which ends it); an uninstall stops it for
 // good (stopForGood).
 const unit = `[Unit]
-Description=III85III VPN TUN
+Description=ONYX VPN TUN
 Documentation=https://github.com/III85III/III85III-VPN
 After=network.target
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
@@ -497,7 +497,7 @@ namespace Onyx.Vpn {
                     string activeData=Json.Str(existingStatus,"data_dir");
                     if(!SamePath(activeData,DataDir))throw new IOException("The local engine belongs to another profile. Close its app before restarting.");
                     using(var owned=FindOwnedCore()){
-                        if(owned==null)throw new IOException("A background proxy without Whole computer support is running. Close that proxy and reopen III85III VPN.");
+                        if(owned==null)throw new IOException("A background proxy without Whole computer support is running. Close that proxy and reopen ONYX VPN.");
                         await Api("POST","/api/power",new{on=false},5000);
                         owned.Kill();
                         if(!owned.WaitForExit(5000))throw new IOException("The background proxy is still stopping. Reopen the app in a moment.");
@@ -4271,7 +4271,7 @@ namespace Onyx.Vpn {
             bool created;
             using (var mutex = new Mutex(true, mutexName, out created)) {
                 if (!created) {
-                    if (!smoke) MessageBox.Show("III85III VPN is already running. Access it from the notification tray.", "III85III VPN");
+                    if (!smoke) MessageBox.Show("ONYX VPN is already running. Access it from the notification tray.", "ONYX VPN");
                     return 2;
                 }
                 try {
@@ -4284,7 +4284,7 @@ namespace Onyx.Vpn {
                     }
                 } catch (Exception e) {
                     if (smoke) Console.Error.WriteLine(e.ToString());
-                    else MessageBox.Show(e.Message, "III85III VPN", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    else MessageBox.Show(e.Message, "ONYX VPN", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return 1;
                 }
             }

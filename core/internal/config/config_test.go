@@ -1,4 +1,4 @@
-package config
+﻿package config
 
 import (
 	"fmt"
@@ -323,7 +323,7 @@ func TestDefaultDataDirFollowsTheApp(t *testing.T) {
 	}
 	// On macOS: the app's folder in the user's data location.
 	files["Firefox VPN"] = true
-	if got := defaultDataDirFor(dir, "darwin", getenv, exists); got != filepath.Join("/home/u", "Library", "Application Support", "III85III VPN", "user-data") {
+	if got := defaultDataDirFor(dir, "darwin", getenv, exists); got != filepath.Join("/home/u", "Library", "Application Support", "ONYX VPN", "user-data") {
 		t.Fatalf("beside the app on macOS: %s", got)
 	}
 	// A portable app keeps user-data beside it.
@@ -342,7 +342,7 @@ func TestAppDir(t *testing.T) {
 	if got := appDir(app, exists); got != "" {
 		t.Fatalf("a core on its own belongs to %q", got)
 	}
-	for _, name := range []string{"III85III VPN.exe", "III85III VPN", "iii85iii-vpn", "firefox-vpn.exe", "firefox-vpn", "Firefox VPN"} {
+	for _, name := range []string{"ONYX VPN.exe", "ONYX VPN", "iii85iii-vpn", "firefox-vpn.exe", "firefox-vpn", "Firefox VPN"} {
 		files = map[string]bool{filepath.Join(app, name): true}
 		if got := appDir(app, exists); got != app {
 			t.Fatalf("beside %s: %q", name, got)

@@ -1,4 +1,4 @@
-package wfp
+﻿package wfp
 
 import (
 	"fmt"
@@ -91,7 +91,7 @@ func addFilters(engine windows.Handle, r Rules, resources *filterResources) erro
 	if err != nil {
 		return err
 	}
-	name, _ := windows.UTF16PtrFromString("III85III VPN TUN")
+	name, _ := windows.UTF16PtrFromString("ONYX VPN TUN")
 	description, _ := windows.UTF16PtrFromString("DNS only through the TUN adapter")
 	sublayer := fwpmSublayer0{
 		subLayerKey: key,
@@ -142,7 +142,7 @@ func addFilters(engine windows.Handle, r Rules, resources *filterResources) erro
 			if err != nil {
 				return err
 			}
-			filterName, _ := windows.UTF16PtrFromString("III85III VPN TUN: " + item.name)
+			filterName, _ := windows.UTF16PtrFromString("ONYX VPN TUN: " + item.name)
 			filter := &fwpmFilter0{filterKey: filterKey, displayData: fwpmDisplayData0{name: filterName}, flags: item.flags,
 				layerKey: layer, subLayerKey: key, weight: fwpValue0{typ: fwpUint8, value: uintptr(item.weight)}, action: fwpmAction0{typ: item.action}}
 			if len(item.conditions) > 0 {

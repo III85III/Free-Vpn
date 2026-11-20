@@ -1,4 +1,4 @@
-package io.github.iii85iii.vpn;
+﻿package io.github.iii85iii.vpn;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import java.net.URI;
@@ -6,9 +6,9 @@ import java.net.URI;
 public final class UpdatePolicyTest {
     @Test public void newerVersionIsMandatory(){assertTrue(UpdatePolicy.required(23003,23004));}
     @Test public void installingRequiredVersionClearsGate(){assertFalse(UpdatePolicy.required(23004,23004));assertFalse(UpdatePolicy.required(23005,23004));}
-    private static final String URL="https://github.com/III85III/Free-Vpn/releases/download/v2.3.1/III85III-VPN.apk",HASH="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private static final String URL="https://github.com/III85III/ONYX/releases/download/v2.3.1/ONYX-VPN.apk",HASH="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     @Test public void acceptsOfficialApk()throws Exception{UpdatePolicy.validate(URL,HASH,12000000,23002);}
-    @Test public void rejectsOtherRepositories()throws Exception{reject(URL.replace("III85III/Free-Vpn","other/project"),HASH,12000000,23002);}
+    @Test public void rejectsOtherRepositories()throws Exception{reject(URL.replace("III85III/ONYX","other/project"),HASH,12000000,23002);}
     @Test public void rejectsInsecureDownload()throws Exception{reject(URL.replace("https:","http:"),HASH,12000000,23002);}
     @Test public void rejectsMissingChecksum()throws Exception{reject(URL,"",12000000,23002);}
     @Test public void rejectsUnboundedSize()throws Exception{reject(URL,HASH,300L*1024*1024,23002);}

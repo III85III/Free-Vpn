@@ -1,4 +1,4 @@
-package config
+﻿package config
 
 import (
 	"path/filepath"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewProfileDoesNotHideExistingAccounts(t *testing.T) {
-	current, legacy := filepath.Join("profiles", "III85III VPN"), filepath.Join("profiles", "legacy")
+	current, legacy := filepath.Join("profiles", "ONYX VPN"), filepath.Join("profiles", "legacy")
 	files := map[string]bool{}
 	exists := func(path string) bool { return files[path] }
 	if got := existingProfileDir(current, legacy, exists); got != current {

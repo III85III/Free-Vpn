@@ -1,4 +1,4 @@
-package accounts
+﻿package accounts
 
 import (
 	"path/filepath"
@@ -27,7 +27,7 @@ func TestManagerKeepsDeviceRecord(t *testing.T) {
 	}
 
 	stored, _ := store.Get(acc.ID)
-	stored.DeviceID, stored.DeviceToken, stored.DeviceName = "dev-1", "fingerprint", "III85III VPN"
+	stored.DeviceID, stored.DeviceToken, stored.DeviceName = "dev-1", "fingerprint", "ONYX VPN"
 	if err := store.Save(stored); err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestManagerKeepsDeviceRecord(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.DeviceID != "dev-1" || got.DeviceToken != "fingerprint" || got.DeviceName != "III85III VPN" {
+	if got.DeviceID != "dev-1" || got.DeviceToken != "fingerprint" || got.DeviceName != "ONYX VPN" {
 		t.Fatalf("device record lost: %+v", got)
 	}
 	if got.Reason != "" || got.ReasonCode != "" || got.ReasonDetail != "" {

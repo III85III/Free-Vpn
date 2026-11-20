@@ -1,4 +1,4 @@
-package tunservice
+﻿package tunservice
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 )
 
 // InstallDir is the installed service's folder.
-const InstallDir = "/Library/Application Support/III85III VPN TUN"
+const InstallDir = "/Library/Application Support/ONYX VPN TUN"
 
 // jobTarget is the service in launchctl's commands.
 const jobTarget = "system/" + tunapi.LaunchdLabel

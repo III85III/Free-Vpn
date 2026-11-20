@@ -1,12 +1,12 @@
 <!-- language-selector:start -->
-🇬🇧 [English](https://github.com/III85III/Free-Vpn/blob/main/README.md) · 🇮🇷 [فارسی](https://github.com/III85III/Free-Vpn/blob/main/README.fa.md)
+🇬🇧 [English](README.md) · 🇮🇷 [فارسی](README.fa.md)
 <!-- language-selector:end -->
 
-# III85III VPN
+# ONYX // VPN
 
 High-speed, ad-free anti-censorship VPN client for Windows, Android, and macOS powered by Mozilla's edge network and Fastly's global infrastructure over HTTP/2 and HTTP/3 tunnels.
 
-[Windows Setup (.exe)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) · [Android APK (.apk)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk) · [macOS Package (.dmg)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-macOS.dmg)
+[Windows Setup (.exe)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN-Setup.exe) · [Android APK (.apk)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN.apk) · [macOS Package (.dmg)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN-macOS.dmg)
 
 ## Core Capabilities
 - **Firefox uTLS Camouflage:** Matches authentic browser TLS fingerprints to bypass Deep Packet Inspection (DPI).

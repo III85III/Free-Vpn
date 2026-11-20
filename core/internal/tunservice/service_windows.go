@@ -1,4 +1,4 @@
-package tunservice
+﻿package tunservice
 
 import (
 	"bytes"
@@ -28,9 +28,9 @@ import (
 // its file or put a library beside it. The app carries the same
 // executable in its core folder, and installs it from there.
 const (
-	installFolder = "III85III VPN"
-	displayName   = "III85III VPN TUN"
-	description   = "Runs the whole-computer tunnel for III85III VPN."
+	installFolder = "ONYX VPN"
+	displayName   = "ONYX VPN TUN"
+	description   = "Runs the whole-computer tunnel for ONYX VPN."
 	newExeName    = "firefox-vpn-tun.new.exe"
 	oldExeName    = "firefox-vpn-tun.old.exe"
 )

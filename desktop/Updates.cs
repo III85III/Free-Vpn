@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -18,7 +18,7 @@ namespace Onyx.Vpn {
             if(Json.Num(document,"schema")!=1)throw new IOException("Unsupported update information.");
             var item=Json.Child(document,platform);System.Version parsed;Uri url;
             string version=Json.Str(item,"version"),address=Json.Str(item,"url"),hash=Json.Str(item,"sha256");
-            if(!System.Version.TryParse(version,out parsed)||parsed.Revision>=0||!Uri.TryCreate(address,UriKind.Absolute,out url)||url.Scheme!="https"||url.Host!="github.com"||!url.AbsolutePath.StartsWith("/III85III/Free-Vpn/releases/download/",StringComparison.Ordinal)||!url.AbsolutePath.EndsWith("/III85III-VPN-Setup.exe",StringComparison.Ordinal)||url.Query!=""||url.UserInfo!="")throw new IOException("Invalid update download.");
+            if(!System.Version.TryParse(version,out parsed)||parsed.Revision>=0||!Uri.TryCreate(address,UriKind.Absolute,out url)||url.Scheme!="https"||url.Host!="github.com"||(!url.AbsolutePath.StartsWith("/III85III/ONYX/releases/download/",StringComparison.Ordinal)&&!url.AbsolutePath.StartsWith("/III85III/Free-Vpn/releases/download/",StringComparison.Ordinal))||(!url.AbsolutePath.EndsWith("/ONYX-VPN-Setup.exe",StringComparison.Ordinal)&&!url.AbsolutePath.EndsWith("/III85III-VPN-Setup.exe",StringComparison.Ordinal))||url.Query!=""||url.UserInfo!="")throw new IOException("Invalid update download.");
             if(!url.IsDefaultPort||url.Fragment!=""||url.AbsolutePath.Contains("%")||url.AbsolutePath.Contains(".."))throw new IOException("Invalid update location.");
             if(hash.Length!=64||!System.Text.RegularExpressions.Regex.IsMatch(hash,"\\A[0-9a-fA-F]{64}\\z"))throw new IOException("Invalid update checksum.");
             long size=(long)Json.Num(item,"size");if(size<1024||size>250L*1024*1024)throw new IOException("Invalid update size.");
@@ -27,8 +27,8 @@ namespace Onyx.Vpn {
     }
     internal static class AppUpdates {
         static void Notice(Form owner,string title,string message){var window=owner as MainForm;if(window!=null)window.ShowNotice(title,message,"",false);}
-        const string Feed="https://raw.githubusercontent.com/III85III/Free-Vpn/main/docs/updates.json";
-        static HttpClient Client(bool useProxy){var c=new HttpClient(new HttpClientHandler{UseProxy=useProxy});c.Timeout=TimeSpan.FromMinutes(5);c.DefaultRequestHeaders.UserAgent.ParseAdd("III85III-VPN/"+Assembly.GetExecutingAssembly().GetName().Version);return c;}
+        const string Feed="https://raw.githubusercontent.com/III85III/ONYX/main/docs/updates.json";
+        static HttpClient Client(bool useProxy){var c=new HttpClient(new HttpClientHandler{UseProxy=useProxy});c.Timeout=TimeSpan.FromMinutes(5);c.DefaultRequestHeaders.UserAgent.ParseAdd("ONYX-VPN/"+Assembly.GetExecutingAssembly().GetName().Version);return c;}
         static async Task<HttpResponseMessage> GetResponse(string url){
             HttpResponseMessage r=null;Exception err=null;
             try{var c=Client(true);r=await c.GetAsync(url,HttpCompletionOption.ResponseHeadersRead);r.EnsureSuccessStatusCode();}catch(Exception e){err=e;}

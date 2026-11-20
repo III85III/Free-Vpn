@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"bytes"
@@ -141,7 +141,7 @@ func TestDashboardLoginProtectsAPI(t *testing.T) {
 	if rec := c.do(http.MethodGet, "/api/status", nil); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("expected a login to be required, got %d", rec.Code)
 	}
-	if rec := c.do(http.MethodGet, "/app/", nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "III85III VPN") {
+	if rec := c.do(http.MethodGet, "/app/", nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "ONYX VPN") {
 		t.Fatalf("expected the page itself to load without a login, got %d", rec.Code)
 	}
 	if rec := c.do(http.MethodGet, "/app", nil); rec.Code/100 != 3 || rec.Header().Get("Location") != "/app/" {

@@ -1,4 +1,4 @@
-package wfp
+﻿package wfp
 
 import (
 	"os"
@@ -47,7 +47,7 @@ func TestFilterTransactionStages(t *testing.T) {
 	}
 	for _, stage := range []string{"empty", "sublayer", "loopback", "two-filters", "unique-filters", "both-layers", "interface", "dns-block", "interface-v6", "dns-v6", "mixed-v4", "mixed-v6"} {
 		t.Run(stage, func(t *testing.T) {
-			name, _ := windows.UTF16PtrFromString("III85III VPN filter check")
+			name, _ := windows.UTF16PtrFromString("ONYX VPN filter check")
 			settings := fwpmSession0{flags: fwpmSessionFlagDynamic}
 			var engine windows.Handle
 			if err := call(procFwpmEngineOpen0, 0, rpcCAuthnWinNT, 0, uintptr(unsafe.Pointer(&settings)), uintptr(unsafe.Pointer(&engine))); err != nil {

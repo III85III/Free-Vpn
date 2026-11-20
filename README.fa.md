@@ -1,4 +1,4 @@
-<div align="center" dir="ltr">
+﻿<div align="center" dir="ltr">
 
 [🇺🇸 English](README.md) &nbsp;/&nbsp; **🇮🇷 فارسی**
 
@@ -11,9 +11,9 @@
 
 <div align="center">
 
-[![آخرین نسخه](https://img.shields.io/github/v/release/III85III/Free-Vpn?style=flat-square&color=D9BD83&label=نسخه)](https://github.com/III85III/Free-Vpn/releases/latest)
-[![تعداد دانلود](https://img.shields.io/github/downloads/III85III/Free-Vpn/total?style=flat-square&color=D9BD83&logo=github&label=دانلودها)](https://github.com/III85III/Free-Vpn/releases)
-[![پلتفرم‌ها](https://img.shields.io/badge/پلتفرم-ویندوز%20%7C%20اندروید%20%7C%20مک-101319?style=flat-square&logo=windows&logoColor=D9BD83)](https://github.com/III85III/Free-Vpn/releases/latest)
+[![آخرین نسخه](https://img.shields.io/github/v/release/III85III/ONYX?style=flat-square&color=D9BD83&label=نسخه)](https://github.com/III85III/ONYX/releases/latest)
+[![تعداد دانلود](https://img.shields.io/github/downloads/III85III/ONYX/total?style=flat-square&color=D9BD83&logo=github&label=دانلودها)](https://github.com/III85III/ONYX/releases)
+[![پلتفرم‌ها](https://img.shields.io/badge/پلتفرم-ویندوز%20%7C%20اندروید%20%7C%20مک-101319?style=flat-square&logo=windows&logoColor=D9BD83)](https://github.com/III85III/ONYX/releases/latest)
 [![لایسنس](https://img.shields.io/badge/لایسنس-GPL--3.0-101319?style=flat-square&color=D9BD83)](LICENSE)
 [![کانال تلگرام](https://img.shields.io/badge/تلگرام-@cabicy-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/cabicy)
 
@@ -59,10 +59,10 @@
 
 | سیستم‌عامل | فایل پیشنهادی | مشخصات / معماری | لینک دانلود مستقیم |
 | :--- | :--- | :--- | :--- |
-| **ویندوز** | `III85III-VPN-Setup.exe` | ویندوز 10 و 11 (64 بیتی) • نصاب خودکار با شورتکات دسکتاپ | [دانلود نسخه نصبی ویندوز (.exe)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-Setup.exe) |
-| **ویندوز پرتابل** | `III85III-VPN-v1.0.0-windows-x64.zip` | بدون نیاز به نصب، اجرا مستقیم از هر پوشه یا فلش‌مموری | [دانلود نسخه پرتابل (.zip)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-v1.0.0-windows-x64.zip) |
-| **اندروید** | `III85III-VPN.apk` | اندروید 8 به بالا • نسخه فراگیر (ARM64 و x86_64) | [دانلود نسخه اندروید (.apk)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN.apk) |
-| **مک (macOS)** | `III85III-VPN-macOS.dmg` | مک‌او‌اس 12 به بالا (اپل سیلیکون M1/M2/M3 و پردازنده‌های اینتل) | [دانلود نسخه مک (.dmg)](https://github.com/III85III/Free-Vpn/releases/latest/download/III85III-VPN-macOS.dmg) |
+| **ویندوز** | `ONYX-VPN-Setup.exe` | ویندوز 10 و 11 (64 بیتی) • نصاب خودکار با شورتکات دسکتاپ | [دانلود نسخه نصبی ویندوز (.exe)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN-Setup.exe) |
+| **ویندوز پرتابل** | `ONYX-VPN-v1.0.0-windows-x64.zip` | بدون نیاز به نصب، اجرا مستقیم از هر پوشه یا فلش‌مموری | [دانلود نسخه پرتابل (.zip)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN-v1.0.0-windows-x64.zip) |
+| **اندروید** | `ONYX-VPN.apk` | اندروید 8 به بالا • نسخه فراگیر (ARM64 و x86_64) | [دانلود نسخه اندروید (.apk)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN.apk) |
+| **مک (macOS)** | `ONYX-VPN-macOS.dmg` | مک‌او‌اس 12 به بالا (اپل سیلیکون M1/M2/M3 و پردازنده‌های اینتل) | [دانلود نسخه مک (.dmg)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN-macOS.dmg) |
 
 ### کدام فایل را باید دانلود کنم؟
 
@@ -118,7 +118,7 @@
 
 جهت دریافت آخرین اخبار، استعلام وضعیت سرورها یا مطرح کردن سوالات و مشکلات:
 * **کانال رسمی تلگرام:** [@cabicy](https://t.me/cabicy)
-* **بخش گزارش مشکلات در گیت‌هاب:** [ثبت ایشو و گزارش خطا](https://github.com/III85III/Free-Vpn/issues)
+* **بخش گزارش مشکلات در گیت‌هاب:** [ثبت ایشو و گزارش خطا](https://github.com/III85III/ONYX/issues)
 
 ---
 
