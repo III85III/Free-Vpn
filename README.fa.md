@@ -59,9 +59,9 @@
 
 | سیستم‌عامل | فایل پیشنهادی | مشخصات / معماری | لینک دانلود مستقیم |
 | :--- | :--- | :--- | :--- |
-| **ویندوز** | `ONYX-VPN-Setup.exe` | ویندوز 10 و 11 (64 بیتی) • نصاب خودکار با شورتکات دسکتاپ | [دانلود نسخه نصبی ویندوز (.exe)](https://github.com/III85III/ONYX/releases/latest) |
+| **ویندوز** | `ONYX-VPN-Setup.exe` | ویندوز 10 و 11 (64 بیتی) • نصاب خودکار با شورتکات دسکتاپ | [دانلود مستقیم ویندوز (.exe)](https://github.com/III85III/ONYX/releases/download/v1.1.20/ONYX-VPN-Setup.exe) |
 | **ویندوز پرتابل** | `ONYX-VPN-v1.0.0-windows-x64.zip` | بدون نیاز به نصب، اجرا مستقیم از هر پوشه یا فلش‌مموری | [دانلود نسخه پرتابل (.zip)](https://github.com/III85III/ONYX/releases/latest) |
-| **اندروید** | `ONYX-VPN.apk` | اندروید 8 به بالا • نسخه فراگیر (ARM64 و x86_64) | [دانلود نسخه اندروید (.apk)](https://github.com/III85III/ONYX/releases/latest) |
+| **اندروید** | `ONYX-VPN.apk` | اندروید 8 به بالا • نسخه فراگیر (ARM64 و x86_64) | [دانلود مستقیم اندروید (.apk)](https://github.com/III85III/ONYX/releases/download/v1.1.23/ONYX-VPN.apk) |
 | **مک (macOS)** | `ONYX-VPN-macOS.dmg` | مک‌او‌اس 12 به بالا (اپل سیلیکون M1/M2/M3 و پردازنده‌های اینتل) | [دانلود نسخه مک (.dmg)](https://github.com/III85III/ONYX/releases/latest) |
 
 ### کدام فایل را باید دانلود کنم؟

@@ -1,4 +1,4 @@
-﻿<!-- language-selector:start -->
+<!-- language-selector:start -->
 🇬🇧 [English](README.md) · 🇮🇷 [فارسی](README.fa.md)
 <!-- language-selector:end -->
 
@@ -6,7 +6,10 @@
 
 High-speed, ad-free anti-censorship VPN client for Windows, Android, and macOS powered by Mozilla's edge network and Fastly's global infrastructure over HTTP/2 and HTTP/3 tunnels.
 
-[Windows Setup (.exe)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN-Setup.exe) · [Android APK (.apk)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN.apk) · [macOS Package (.dmg)](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN-macOS.dmg)
+### 📥 Direct Downloads
+* 🪟 **[Download ONYX VPN for Windows (.exe)](https://github.com/III85III/ONYX/releases/download/v1.1.20/ONYX-VPN-Setup.exe)**
+* 📱 **[Download ONYX VPN for Android (.apk)](https://github.com/III85III/ONYX/releases/download/v1.1.23/ONYX-VPN.apk)**
+* 📦 **[View All Releases](https://github.com/III85III/ONYX/releases/latest)**
 
 ## Core Capabilities
 - **Firefox uTLS Camouflage:** Matches authentic browser TLS fingerprints to bypass Deep Packet Inspection (DPI).
