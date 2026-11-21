@@ -4,14 +4,14 @@
   "changelog": "Built-in YouTube ad shield, network-level adblock, and anti-abuse account renewal.",
   "windows": {
     "version": "1.1.20",
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.20/III85III-VPN-Setup.exe",
+    "url": "https://github.com/III85III/ONYX/releases/download/v1.1.20/ONYX-VPN-Setup.exe",
     "size": 28245504,
     "sha256": "a0ee6250dae042393580149ae5a68754e7715950601a76bf76509e3135ed995b"
   },
   "android": {
     "version": "1.1.24",
     "version_code": 23051,
-    "url": "https://github.com/III85III/Free-Vpn/releases/download/v1.1.24/III85III-VPN.apk",
+    "url": "https://github.com/III85III/ONYX/releases/download/v1.1.24/ONYX-VPN.apk",
     "size": 53969217,
     "sha256": "22c8d5dc9c1ec7b83f5ccbe9d67815bd919b9cdd3e590b68c0400ff1cd6ff411",
     "changelog": "ONYX app name, logo and dark mobile theme."
