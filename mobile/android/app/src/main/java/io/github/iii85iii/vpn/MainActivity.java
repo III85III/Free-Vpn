@@ -288,7 +288,7 @@ public final class MainActivity extends Activity {
     }
     private JSONObject object(String key,Object value){JSONObject obj=new JSONObject();try{obj.put(key,value);}catch(JSONException impossible){throw new IllegalStateException(impossible);}return obj;}
     private void showPage(int target){
-        page=target;nav.removeAllViews();String[] names={"\u26a1 VPN","\ud83c\udf10 Servers","\ud83d\udee1 Anti-Filter","\u2699 Settings"};int[] tabs={0,1,5,4};
+        page=target;nav.removeAllViews();String[] names={"Home","Servers","Shield","Settings"};int[] tabs={0,1,5,4};
         for(int i=0;i<names.length;i++){
             final int tab=tabs[i];boolean selected=(tab==page)||(tab==4&&(page==2||page==3||page==6));
             Button item=new Button(this);
@@ -312,162 +312,74 @@ public final class MainActivity extends Activity {
  content.animate().alpha(1f).translationY(0f).setDuration(220).setInterpolator(new DecelerateInterpolator()).start();
     }
     private void home(){
-        updateBanner=new LinearLayout(this);
-        updateBanner.setOrientation(LinearLayout.HORIZONTAL);
-        updateBanner.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams ubParams=new LinearLayout.LayoutParams(-1,-2);
-        ubParams.setMargins(0,0,0,dp(14));
-        updateBanner.setLayoutParams(ubParams);
+        updateBanner = new LinearLayout(this);
+        updateBanner.setGravity(Gravity.CENTER);
         content.addView(updateBanner);
         updateUpdateBanner();
-        heroInfinity=new OnyxConnectionView(this);
-        LinearLayout.LayoutParams imgParams=new LinearLayout.LayoutParams(dp(260),dp(140));
-        imgParams.gravity=Gravity.CENTER_HORIZONTAL;
-        imgParams.setMargins(0,dp(6),0,dp(16));
-        heroInfinity.setLayoutParams(imgParams);
-        content.addView(heroInfinity);
-        LinearLayout statusCapsule=new LinearLayout(this);
-        statusCapsule.setOrientation(LinearLayout.HORIZONTAL);
-        statusCapsule.setGravity(Gravity.CENTER);
-        statusCapsule.setPadding(dp(18),dp(7),dp(18),dp(7));
-        statusCapsule.setBackground(pillBackground(0x339FA7B4,0x1A1B2028,20,1));
-        LinearLayout.LayoutParams capParams=new LinearLayout.LayoutParams(-2,-2);
-        capParams.gravity=Gravity.CENTER_HORIZONTAL;
-        capParams.setMargins(0,0,0,dp(14));
-        statusCapsule.setLayoutParams(capParams);
-        statusDot=new View(this);
-        GradientDrawable dotBg=new GradientDrawable();
-        dotBg.setShape(GradientDrawable.OVAL);
-        dotBg.setColor(MUTED);
-        statusDot.setBackground(dotBg);
-        LinearLayout.LayoutParams dotParams=new LinearLayout.LayoutParams(dp(8),dp(8));
-        dotParams.setMargins(0,0,dp(8),0);
-        statusDot.setLayoutParams(dotParams);
-        statusCapsule.addView(statusDot);
-        statusText=label("DISCONNECTED",13,MUTED);
-        statusText.setTypeface(body,Typeface.BOLD);
-        statusText.setLetterSpacing(0.06f);
-        statusCapsule.addView(statusText);
-        content.addView(statusCapsule);
-        detailText=label("",12,MUTED);
+
+        statusText = label("Ready", 30, TEXT);
+        statusText.setGravity(Gravity.CENTER);
+        content.addView(statusText, new LinearLayout.LayoutParams(-1, -2));
+        server = label("Automatic", 12, TEXT);
+        server.setGravity(Gravity.CENTER);
+        server.setPadding(dp(14), 0, dp(14), 0);
+        server.setBackground(pillBackground(0x339FA7B4, SURFACE, 22, 1));
+        server.setOnClickListener(v -> showPage(1));
+        LinearLayout.LayoutParams serverParams = new LinearLayout.LayoutParams(-2, dp(44));
+        serverParams.gravity = Gravity.CENTER_HORIZONTAL;
+        serverParams.topMargin = dp(3);
+        content.addView(server, serverParams);
+
+        detailText = label("", 12, MUTED);
         detailText.setGravity(Gravity.CENTER);
-        detailText.setPadding(0,0,0,dp(12));
         detailText.setVisibility(View.GONE);
         content.addView(detailText);
-        power=new Button(this);
+
+        heroInfinity = new OnyxConnectionView(this);
+        heroInfinity.setMinimumHeight(dp(170));
+        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, -2, 1);
+        heroParams.topMargin = dp(6);
+        content.addView(heroInfinity, heroParams);
+
+        power = new Button(this);
         power.setText("CONNECT");
         power.setAllCaps(false);
-        power.setTextSize(16);
-        power.setTypeface(body,Typeface.BOLD);
-        power.setLetterSpacing(0.08f);
+        power.setTextSize(15);
+        power.setTypeface(body, Typeface.BOLD);
+        power.setLetterSpacing(0.13f);
         power.setTextColor(BG);
-        power.setBackground(pillBackground(0,GOLD,28,0));
-        LinearLayout.LayoutParams pwrParams=new LinearLayout.LayoutParams(-1,dp(56));
-        pwrParams.setMargins(0,dp(2),0,dp(14));
-        power.setLayoutParams(pwrParams);
-        power.setOnTouchListener((v,e)->{
- if(e.getAction()==MotionEvent.ACTION_DOWN){
- v.animate().scaleX(0.96f).scaleY(0.96f).setDuration(100).setInterpolator(new DecelerateInterpolator()).start();
- }else if(e.getAction()==MotionEvent.ACTION_UP||e.getAction()==MotionEvent.ACTION_CANCEL){
- v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(160).setInterpolator(new OvershootInterpolator(1.8f)).start();
- }
- return false;
- });
- power.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); toggleConnection(); });
-        content.addView(power);
-        speedCard=new LinearLayout(this);
-        speedCard.setOrientation(LinearLayout.HORIZONTAL);
+        power.setBackground(connectionButtonBackground());
+        power.setOnClickListener(v -> {
+            v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+            toggleConnection();
+        });
+        LinearLayout.LayoutParams powerParams = new LinearLayout.LayoutParams(dp(250), dp(54));
+        powerParams.gravity = Gravity.CENTER_HORIZONTAL;
+        powerParams.topMargin = dp(4);
+        content.addView(power, powerParams);
+
+        speedCard = new LinearLayout(this);
         speedCard.setGravity(Gravity.CENTER);
-        speedCard.setPadding(dp(18),dp(10),dp(18),dp(10));
-        speedCard.setBackground(pillBackground(0x229FA7B4,0x1A1B2028,14,1));
-        LinearLayout.LayoutParams speedCardParams=new LinearLayout.LayoutParams(-1,-2);
-        speedCardParams.setMargins(0,0,0,dp(12));
-        speedCard.setLayoutParams(speedCardParams);
-        speedText=label("\u2193 0 B/s      \u2191 0 B/s",13,TEXT);
-        speedText.setTypeface(body);
+        speedText = label("", 12, MUTED);
         speedCard.addView(speedText);
         speedCard.setVisibility(View.GONE);
         content.addView(speedCard);
-        LinearLayout locationCard=new LinearLayout(this);
-        locationCard.setOrientation(LinearLayout.HORIZONTAL);
-        locationCard.setGravity(Gravity.CENTER_VERTICAL);
-        locationCard.setPadding(dp(18),dp(14),dp(18),dp(14));
-        locationCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),pillBackground(0x1F9FA7B4,SURFACE,16,1),background(Color.WHITE)));
-        LinearLayout.LayoutParams locCardParams=new LinearLayout.LayoutParams(-1,-2);
-        locCardParams.setMargins(0,0,0,dp(12));
-        locationCard.setLayoutParams(locCardParams);
-        LinearLayout locCol=new LinearLayout(this);
-        locCol.setOrientation(LinearLayout.VERTICAL);
-        TextView locTitle=label("LOCATION",11,GOLD);
-        locTitle.setTypeface(body,Typeface.BOLD);
-        locTitle.setLetterSpacing(0.06f);
-        server=label("Automatic",15,TEXT);
-        server.setTypeface(body,Typeface.BOLD);
-        locCol.addView(locTitle);
-        locCol.addView(server);
-        locationCard.addView(locCol,new LinearLayout.LayoutParams(0,-2,1));
-        TextView changeAction=label("Change \u203A",13,GOLD);
-        locationCard.addView(changeAction);
-        locationCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showPage(1); });
-        content.addView(locationCard);
-        LinearLayout tgCard=new LinearLayout(this);
-        tgCard.setOrientation(LinearLayout.HORIZONTAL);
-        tgCard.setGravity(Gravity.CENTER_VERTICAL);
-        tgCard.setPadding(dp(18),dp(12),dp(18),dp(12));
-        tgCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),pillBackground(0x1FD9BD83,SURFACE,16,1),background(Color.WHITE)));
-        LinearLayout.LayoutParams tgCardParams=new LinearLayout.LayoutParams(-1,-2);
-        tgCardParams.setMargins(0,0,0,dp(12));
-        tgCard.setLayoutParams(tgCardParams);
-        LinearLayout tgCol=new LinearLayout(this);
-        tgCol.setOrientation(LinearLayout.VERTICAL);
-        TextView tgTitle=label("\u26a1 TELEGRAM PROXY",11,GOLD);
-        tgTitle.setTypeface(body,Typeface.BOLD);
-        tgTitle.setLetterSpacing(0.06f);
-        TextView tgSub=label("اتصال دائم تلگرام بدون فیلترشکن",13,TEXT);
-        tgSub.setTypeface(body);
-        tgCol.addView(tgTitle);
-        tgCol.addView(tgSub);
-        tgCard.addView(tgCol,new LinearLayout.LayoutParams(0,-2,1));
-        TextView tgAction=label("دریافت \u203a",13,GOLD);
-        tgCard.addView(tgAction);
-        tgCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showTelegramProxyModal(); });
-        content.addView(tgCard);
-        LinearLayout quotaCard=new LinearLayout(this);
-        quotaCard.setOrientation(LinearLayout.VERTICAL);
-        quotaCard.setPadding(dp(18),dp(14),dp(18),dp(14));
-        quotaCard.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x22D9BD83),pillBackground(0x1F9FA7B4,SURFACE,16,1),background(Color.WHITE)));
-        LinearLayout.LayoutParams quotaCardParams=new LinearLayout.LayoutParams(-1,-2);
-        quotaCardParams.setMargins(0,0,0,dp(12));
-        quotaCard.setLayoutParams(quotaCardParams);
-        LinearLayout quotaTop=new LinearLayout(this);
-        quotaTop.setOrientation(LinearLayout.HORIZONTAL);
-        quotaTop.setGravity(Gravity.CENTER_VERTICAL);
-        TextView quotaTitle=label("ACCOUNT QUOTA",11,GOLD);
-        quotaTitle.setTypeface(body,Typeface.BOLD);
-        quotaTitle.setLetterSpacing(0.06f);
-        quotaTop.addView(quotaTitle,new LinearLayout.LayoutParams(0,-2,1));
-        TextView manageAction=label("Manage \u203a",13,MUTED);
-        quotaTop.addView(manageAction);
-        quotaCard.addView(quotaTop);
-        quotaSummary=label("Loading quota\u2026",14,TEXT);
-        quotaSummary.setTypeface(body,Typeface.BOLD);
-        LinearLayout.LayoutParams qsLp=new LinearLayout.LayoutParams(-1,-2);
-        qsLp.setMargins(0,dp(3),0,dp(6));
-        quotaSummary.setLayoutParams(qsLp);
-        quotaCard.addView(quotaSummary);
-        quotaBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
-        quotaBar.setMax(100);
-        quotaBar.setProgress(100);
-        quotaBar.setProgressTintList(android.content.res.ColorStateList.valueOf(GOLD));
-        quotaBar.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(0x229FA7B4));
-        LinearLayout.LayoutParams qbLp=new LinearLayout.LayoutParams(-1,dp(4));
-        qbLp.setMargins(0,dp(2),0,0);
-        quotaBar.setLayoutParams(qbLp);
-        quotaCard.addView(quotaBar);
-        quotaCard.setOnClickListener(v->{ v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY); showPage(3); });
-        content.addView(quotaCard);
-        addTrafficReadouts();
+
+        quotaSummary = label("", 12, MUTED);
+        quotaSummary.setGravity(Gravity.CENTER);
+        quotaSummary.setPadding(dp(8), dp(4), dp(8), dp(4));
+        quotaSummary.setMinHeight(dp(44));
+        quotaSummary.setOnClickListener(v -> showPage(3));
+        content.addView(quotaSummary);
         updateHome();
+    }
+
+    private GradientDrawable connectionButtonBackground() {
+        GradientDrawable shape = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+            new int[]{0xfff0f3f9, 0xffb2bbcc, 0xff858fa1});
+        shape.setCornerRadius(dp(28));
+        shape.setStroke(dp(1), 0xffd5dce9);
+        return shape;
     }
 
     private void addTrafficReadouts() {
@@ -697,7 +609,7 @@ public final class MainActivity extends Activity {
             setInfinityState(InfinityLoopView.STATE_CONNECTING);
         }else if(verified && problem.isEmpty()){
             if ("Starting the VPN connection\u2026".contentEquals(feedback.getText())) feedback.setText("");
-            statusText.setText("PROTECTED");
+            statusText.setText("Connected");
             statusText.setTextColor(GOLD);
             dotBg.setColor(GOLD);
             if(statusDot!=null)statusDot.setBackground(dotBg);
@@ -741,14 +653,14 @@ public final class MainActivity extends Activity {
             power.setBackground(pillBackground(GOLD,SURFACE,28,2));
             setInfinityState(InfinityLoopView.STATE_CONNECTING);
         }else{
-            statusText.setText("DISCONNECTED");
+            statusText.setText("Ready");
             statusText.setTextColor(MUTED);
             dotBg.setColor(MUTED);
             if(statusDot!=null)statusDot.setBackground(dotBg);
             detailText.setVisibility(View.GONE);
             power.setText("CONNECT");
             power.setTextColor(BG);
-            power.setBackground(pillBackground(0,GOLD,28,0));
+            power.setBackground(connectionButtonBackground());
             setInfinityState(InfinityLoopView.STATE_DISCONNECTED);
         }
         power.setEnabled(transition!=VpnLifecycle.Phase.STOPPING);
