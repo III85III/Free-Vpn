@@ -1,27 +1,29 @@
-# ONYX // VPN
+<p align="center">
+  <img src="desktop/interface/icon.png" width="132" alt="ONYX emblem" />
+</p>
 
-VPN client for Windows and Android with Mozilla account sign-in, server selection, connection modes and application routing.
+<h1 align="center">ONYX // VPN</h1>
 
-The Windows interface uses a local glass-style dashboard with animated connection feedback, live traffic and compact mode. Account and connection information comes from the VPN engine.
+<p align="center">Obsidian tones. Brushed silver. Your connection at a glance.</p>
 
-## Downloads
+ONYX is a VPN client for Windows and Android that uses Mozilla account sign-in. On Windows, a dark glass dashboard brings the connection state, server selection, and live traffic into one view. Compact mode keeps the essentials within reach. On Android, the native interface carries the ONYX emblem and dark palette.
 
-* **[Windows Setup (.exe)](https://github.com/III85III/ONYX/releases/download/v1.1.20/ONYX-VPN-Setup.exe)**
-* **[ONYX for Android](https://github.com/III85III/ONYX/releases/download/v1.1.24/ONYX-VPN.apk)**
-* **[Releases](https://github.com/III85III/ONYX/releases/latest)** · **[Telegram](https://t.me/cabicy)**
+## Download ONYX
 
-The ONYX Windows interface is available as source below. Some Shield controls are disabled while their engine integration is pending.
+| Platform | Download | Open |
+| --- | --- | --- |
+| Windows x64 | **[ONYX for Windows](https://github.com/III85III/ONYX/releases/latest/download/ONYX-Windows-x64.zip)** | Extract the ZIP, then run `onyx_vpn.exe`. Uses WebView2 Runtime. |
+| Android 8.0+ | **[ONYX for Android](https://github.com/III85III/ONYX/releases/latest/download/ONYX-VPN.apk)** | Open the downloaded APK on your phone. |
 
-## Source
+## Connection controls
 
-`desktop/Onyx.Vpn.cs` contains the Windows client and its connection controls. `desktop/OnyxWindow.cs` connects the ONYX interface to those controls. Edit `desktop/interface/index.html` to change its appearance.
+Choose a server, switch connection modes, and set which apps bypass the VPN on Windows. The dashboard displays connection status and traffic reported by the engine. Some controls in the Windows Shield panel are currently disabled.
 
-Run `desktop/Build.ps1` on Windows with .NET Framework 4.8. WebView2 Runtime must be installed. Build outputs go to `desktop/output`.
+Mozilla controls account verification, availability, and quota. ONYX displays the quota reported for your account.
 
-`core` contains the shared Go engine. `mobile/android` contains the Android client and its build instructions.
+## Source and support
 
-Legacy profile folders, service identifiers, Android application identifiers and update URLs remain compatibility identifiers so existing accounts and installations can be recognized. The branding is ONYX.
-
-Mozilla controls account availability, verification and quota. The application displays the quota returned for each account.
-
-Licensed under GPLv3. Dependency notices are included with the source.
+- [Windows client](desktop) · Build with `desktop/Build.ps1` on Windows with .NET Framework 4.8.
+- [Android client](mobile/android) · See the [Android build guide](mobile/android/BUILDING.md).
+- [Shared Go engine](core) · [GPLv3 license](licenses/GPL-3.0.txt) and [dependency notices](licenses/NOTICE.txt).
+- [Release notes](https://github.com/III85III/ONYX/releases) · [Telegram](https://t.me/cabicy)
