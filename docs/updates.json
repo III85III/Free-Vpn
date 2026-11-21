@@ -1,4 +1,4 @@
-﻿{
+{
   "schema": 1,
   "display_version": "1.1.20",
   "changelog": "Built-in YouTube ad shield, network-level adblock, and anti-abuse account renewal.",
@@ -9,11 +9,11 @@
     "sha256": "a0ee6250dae042393580149ae5a68754e7715950601a76bf76509e3135ed995b"
   },
   "android": {
-    "version": "1.1.23",
-    "version_code": 23050,
-    "url": "https://github.com/III85III/ONYX/releases/download/v1.1.23/ONYX-VPN.apk",
-    "size": 53092617,
-    "sha256": "a6772162be0a0a4c667cee287afe723db7ee77cd0a33839b0b12c031e54fd18a",
-    "changelog": "Verifies the connection in the background, keeps the selected account after network timeouts, and shows when Mozilla requires account verification."
+    "version": "1.1.24",
+    "version_code": 23051,
+    "url": "https://github.com/III85III/ONYX/releases/download/v1.1.24/ONYX-VPN.apk",
+    "size": 53969217,
+    "sha256": "22c8d5dc9c1ec7b83f5ccbe9d67815bd919b9cdd3e590b68c0400ff1cd6ff411",
+    "changelog": "ONYX app name, logo and dark mobile theme."
   }
 }

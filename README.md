@@ -7,7 +7,7 @@ The Windows interface uses a local glass-style dashboard with animated connectio
 ## Downloads
 
 * **[Windows Setup (.exe)](https://github.com/III85III/ONYX/releases/download/v1.1.20/ONYX-VPN-Setup.exe)**
-* **[Android APK (.apk)](https://github.com/III85III/ONYX/releases/download/v1.1.23/ONYX-VPN.apk)**
+* **[ONYX for Android](https://github.com/III85III/ONYX/releases/download/v1.1.24/ONYX-VPN.apk)**
 * **[Releases](https://github.com/III85III/ONYX/releases/latest)** · **[Telegram](https://t.me/cabicy)**
 
 The ONYX Windows interface is available as source below. Some Shield controls are disabled while their engine integration is pending.
