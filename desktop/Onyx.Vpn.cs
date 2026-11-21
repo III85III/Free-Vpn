@@ -533,7 +533,11 @@ namespace Onyx.Vpn {
             Endpoint = "http://127.0.0.1:" + port;
             var servicePoint = ServicePointManager.FindServicePoint(new Uri(Endpoint)); servicePoint.Expect100Continue = false; servicePoint.ConnectionLimit = 16; servicePoint.UseNagleAlgorithm = false;
             process = new Process();
-            string coreExe = Path.Combine(Directory.Exists(Path.Combine(Root, "core")) ? Path.Combine(Root, "core") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core"), "iii85iii-core.exe"); if (!File.Exists(coreExe)) coreExe = Path.Combine(Directory.Exists(Path.Combine(Root, "core")) ? Path.Combine(Root, "core") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core"), "firefox-vpn-core.exe");
+            string coreDirectory = Path.Combine(Root, "core");
+            if (!Directory.Exists(coreDirectory)) coreDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core");
+            string coreExe = Path.Combine(coreDirectory, "onyx-core.exe");
+            if (!File.Exists(coreExe)) coreExe = Path.Combine(coreDirectory, "iii85iii-core.exe");
+            if (!File.Exists(coreExe)) coreExe = Path.Combine(coreDirectory, "firefox-vpn-core.exe");
             try {
                 string normalData=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN","user-data");
                 if(SamePath(DataDir,normalData))Microsoft.Win32.Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "III85III-VPN-Proxy", "\"" + coreExe + "\" -tray -data-dir \"" + DataDir + "\"");
