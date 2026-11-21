@@ -54,7 +54,7 @@ public final class MainActivity extends Activity {
     private FrameLayout adContainer;
     private TextView statusText,detailText,speedText,feedback,server,quotaSummary;
     private Button power;
-    private InfinityLoopView heroInfinity;
+    private OnyxConnectionView heroInfinity;
     private View statusDot;
     private LinearLayout updateBanner,speedCard;
     private ProgressBar quotaBar;
@@ -320,7 +320,7 @@ public final class MainActivity extends Activity {
         updateBanner.setLayoutParams(ubParams);
         content.addView(updateBanner);
         updateUpdateBanner();
-        heroInfinity=new InfinityLoopView(this);
+        heroInfinity=new OnyxConnectionView(this);
         LinearLayout.LayoutParams imgParams=new LinearLayout.LayoutParams(dp(260),dp(140));
         imgParams.gravity=Gravity.CENTER_HORIZONTAL;
         imgParams.setMargins(0,dp(6),0,dp(16));
