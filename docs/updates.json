@@ -9,11 +9,11 @@
     "sha256": "a0ee6250dae042393580149ae5a68754e7715950601a76bf76509e3135ed995b"
   },
   "android": {
-    "version": "1.1.24",
-    "version_code": 23051,
-    "url": "https://github.com/III85III/ONYX/releases/download/v1.1.24/ONYX-VPN.apk",
-    "size": 53969217,
-    "sha256": "22c8d5dc9c1ec7b83f5ccbe9d67815bd919b9cdd3e590b68c0400ff1cd6ff411",
-    "changelog": "ONYX app name, logo and dark mobile theme."
+    "version": "1.1.25",
+    "version_code": 23052,
+    "url": "https://github.com/III85III/ONYX/releases/download/v1.1.25/ONYX-VPN.apk",
+    "size": 53973313,
+    "sha256": "e40c0a21ec634f98d9aa5094403cf39ca962cb9f5b44278ec112d32196b22052",
+    "changelog": "Animated ONYX connection emblem driven by VPN status."
   }
 }
