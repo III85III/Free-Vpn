@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
@@ -451,11 +451,11 @@ namespace Onyx.Vpn {
             new DirectoryInfo(path).SetAccessControl(security);
         }
         public void VerifyFiles() {
-            string manifestPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core", "manifest.json");
+            string manifestPath = Path.Combine(Directory.Exists(Path.Combine(Root, "core")) ? Path.Combine(Root, "core") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core"), "manifest.json");
             if (File.Exists(manifestPath)) {
                 var manifest = Json.Decode(File.ReadAllText(manifestPath));
                 foreach (var kvp in manifest) {
-                    var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core", kvp.Key);
+                    var path = Path.Combine(Directory.Exists(Path.Combine(Root, "core")) ? Path.Combine(Root, "core") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core"), kvp.Key);
                     if (!File.Exists(path)) continue;
                     using (var hash = SHA256.Create()) using (var stream = File.OpenRead(path)) {
                         var actual = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
@@ -533,7 +533,7 @@ namespace Onyx.Vpn {
             Endpoint = "http://127.0.0.1:" + port;
             var servicePoint = ServicePointManager.FindServicePoint(new Uri(Endpoint)); servicePoint.Expect100Continue = false; servicePoint.ConnectionLimit = 16; servicePoint.UseNagleAlgorithm = false;
             process = new Process();
-            string coreExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core", "iii85iii-core.exe"); if (!File.Exists(coreExe)) coreExe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core", "firefox-vpn-core.exe");
+            string coreExe = Path.Combine(Directory.Exists(Path.Combine(Root, "core")) ? Path.Combine(Root, "core") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core"), "iii85iii-core.exe"); if (!File.Exists(coreExe)) coreExe = Path.Combine(Directory.Exists(Path.Combine(Root, "core")) ? Path.Combine(Root, "core") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core"), "firefox-vpn-core.exe");
             try {
                 string normalData=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"III85III VPN","user-data");
                 if(SamePath(DataDir,normalData))Microsoft.Win32.Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", "III85III-VPN-Proxy", "\"" + coreExe + "\" -tray -data-dir \"" + DataDir + "\"");
@@ -599,7 +599,7 @@ namespace Onyx.Vpn {
         }
         public async Task InstallTun() {
             AllowTunServiceRead();
-            using (var installer = Process.Start(new ProcessStartInfo(File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core", "iii85iii-tun.exe")) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core", "iii85iii-tun.exe") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core", "firefox-vpn-tun.exe"), "install") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })) {
+            using (var installer = Process.Start(new ProcessStartInfo(File.Exists(Path.Combine(Directory.Exists(Path.Combine(Root, "core")) ? Path.Combine(Root, "core") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core"), "iii85iii-tun.exe")) ? Path.Combine(Directory.Exists(Path.Combine(Root, "core")) ? Path.Combine(Root, "core") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core"), "iii85iii-tun.exe") : Path.Combine(Directory.Exists(Path.Combine(Root, "core")) ? Path.Combine(Root, "core") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "III85III VPN", "core"), "firefox-vpn-tun.exe"), "install") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })) {
                 Task<string> output = installer.StandardOutput.ReadToEndAsync(), error = installer.StandardError.ReadToEndAsync();
                 await Task.Run(delegate { installer.WaitForExit(); });
                 await output; var detail = await error;
