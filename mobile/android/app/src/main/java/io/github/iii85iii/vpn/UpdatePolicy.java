@@ -1,4 +1,4 @@
-﻿package io.github.iii85iii.vpn;
+package io.github.iii85iii.vpn;
 
 import java.net.URI;
 

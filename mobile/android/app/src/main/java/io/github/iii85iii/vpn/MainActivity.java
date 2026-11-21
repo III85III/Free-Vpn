@@ -23,7 +23,7 @@ import java.util.*;
 import java.io.File;
 import mobile.Mobile;
 public final class MainActivity extends Activity {
-    private final int BG=Color.rgb(16,19,25),SURFACE=Color.rgb(27,32,40),GOLD=Color.rgb(217,189,131),TEXT=Color.rgb(239,239,234),MUTED=Color.rgb(159,167,180),GREEN=Color.rgb(46,213,115),AMBER=Color.rgb(255,165,2);
+    private final int BG=Color.rgb(6,7,10),SURFACE=Color.rgb(18,21,29),GOLD=Color.rgb(213,220,233),TEXT=Color.rgb(245,247,250),MUTED=Color.rgb(148,163,184),GREEN=Color.rgb(46,213,115),AMBER=Color.rgb(255,165,2);
     private final Handler main=new Handler(Looper.getMainLooper());
     private TextView announcementView;
     private TextView downloadRate, uploadRate;
@@ -82,11 +82,11 @@ public final class MainActivity extends Activity {
         LinearLayout header=new LinearLayout(this);header.setGravity(Gravity.CENTER_VERTICAL);
         // آیکون لوگوی سه‌بعدی لوکس در بالای هدر اپلیکیشن
         android.widget.ImageView brandIcon = new android.widget.ImageView(this);
-        brandIcon.setImageResource(R.drawable.brand_85);
+        brandIcon.setImageResource(R.drawable.onyx_emblem);
         LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(dp(26), dp(26));
         iconLp.setMargins(0, 0, dp(10), 0);
-        TextView brand=label("III85III",20,GOLD);brand.setTypeface(body,Typeface.BOLD);brand.setLetterSpacing(0.06f);
-        TextView vpnBadge=label("VPN",11,BG);vpnBadge.setTypeface(body,Typeface.BOLD);vpnBadge.setBackground(cardBackground(GOLD,6));vpnBadge.setPadding(dp(7),dp(3),dp(7),dp(3));
+        TextView brand=label("ONYX",20,TEXT);brand.setTypeface(Typeface.SERIF,Typeface.BOLD);brand.setLetterSpacing(0.06f);
+        TextView vpnBadge=label("// VPN",11,MUTED);vpnBadge.setTypeface(body,Typeface.BOLD);
         LinearLayout brandBox=new LinearLayout(this);brandBox.setGravity(Gravity.CENTER_VERTICAL);brandBox.setPadding(0,dp(6),0,dp(12));
         brandBox.addView(brandIcon, iconLp);
         brandBox.addView(brand);
@@ -1803,7 +1803,7 @@ public final class MainActivity extends Activity {
             tag.setTypeface(Typeface.DEFAULT_BOLD);
             tag.setLetterSpacing(0.08f);
             TextView desc = new TextView(activity);
-            desc.setText("III85III Private Relays \u00b7 Ultra Low Latency");
+            desc.setText("ONYX Private Relays");
             desc.setTextSize(12);
             desc.setTextColor(0xFF9FA7B4);
             desc.setPadding(dp8, 0, 0, 0);
